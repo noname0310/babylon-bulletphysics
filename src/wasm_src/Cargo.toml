@@ -1,0 +1,42 @@
+[package]
+name = "bulletphysics-bind"
+version = "0.0.0"
+edition = "2021"
+description = "Bullet Physics WebAssembly bindings"
+repository = "https://github.com/noname0310/babylon-bulletphysics"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook", "parallel"]
+parallel = ["rayon", "wasm-bindgen-rayon"]
+
+[profile.release]
+opt-level = 3
+
+[profile.dev]
+opt-level = 3
+
+[dependencies]
+wasm-bindgen = "0.2.91"
+console_error_panic_hook = { version = "0.1.7", optional = true }
+byte-slice-cast = "1.2.2"
+num-traits = "0.2.18"
+glam = { version = "0.28.0", features = ["debug-glam-assert", "fast-math"] }
+rayon = { version = "1.8.1", optional = true }
+wasm-bindgen-rayon = { version = "1.2.1", optional = true }
+thread-id = "4.2.1"
+wasm_sync = "0.1.2"
+rustc-hash = "2.0.0"
+
+[dependencies.web-sys]
+version = "0.3.68"
+features = ["console"]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.41"
+
+[build-dependencies]
+cc = "1.0.86"

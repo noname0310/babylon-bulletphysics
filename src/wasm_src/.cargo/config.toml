@@ -1,0 +1,7 @@
+[unstable]
+build-std = ["std", "panic_abort"]
+
+[build]
+target = "wasm32-unknown-unknown"
+rustc-wrapper = "sccache"
+# rustflags = ["-Ctarget-feature=+simd128,+atomics,+bulk-memory,+mutable-globals"]
