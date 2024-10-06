@@ -11,7 +11,10 @@ import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Scene } from "@babylonjs/core/scene";
 
-import * as wasmBindgen from "../wasm/md/index";
+import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
+import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
+import { PhysicsBoxShape } from "@/Runtime/physicsShape";
+
 // import { Inspector } from "@babylonjs/inspector";
 import type { ISceneBuilder } from "./baseRuntime";
 
@@ -45,11 +48,11 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
 
-        const wasmInternal = await wasmBindgen.default();
-        wasmBindgen.init();
-        await wasmBindgen.initThreadPool(navigator.hardwareConcurrency);
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
 
-        wasmInternal;
+        const boxShape = new PhysicsBoxShape(wasmInstance, new Vector3(50, 50, 50));
+        boxShape;
+
         return scene;
     }
 }
