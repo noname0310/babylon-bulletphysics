@@ -2,6 +2,7 @@ mod bind;
 mod runtime;
 mod stdlib;
 
+use bind::rigidbody;
 use wasm_bindgen::prelude::*;
 
 #[link(name = "bullet")]
@@ -41,6 +42,11 @@ pub fn init() {
     web_sys::console::log_1(&format!("world_transform: {:?}", world_transform).into());
     let world_transform = mation_state_bundle.get_transform(1);
     web_sys::console::log_1(&format!("world_transform: {:?}", world_transform).into());
+
+    let rigidbody_info = bind::rigidbody::RigidBodyConstructionInfo::new(
+        &bind::collision_shape::CollisionShape::Box(bind::collision_shape::BoxShape::new(glam::Vec3::new(1.0, 1.0, 1.0))),
+        &motion_state,
+    );
 }
 
 #[wasm_bindgen(js_name = "createBulletRuntime")]

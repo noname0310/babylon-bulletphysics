@@ -20,7 +20,7 @@ struct bwRigidBodyConstructionInfo final
 
     // for rigid body
     uint8_t m_motionType; // bwRigidBodyMotionType
-    float m_mass = 1.0f;
+    float m_mass;
     // m_localInertia
     float m_linearDamping;
     float m_angularDamping;
@@ -112,10 +112,10 @@ public:
     bwRigidBody(bwRigidBody const&) = delete;
     bwRigidBody& operator=(bwRigidBody const&) = delete;
 
-    ~bwRigidBody()
-    {
+    // ~bwRigidBody()
+    // {
         // noting to do
-    }
+    // }
 
     btRigidBody* getBody()
     {
@@ -149,3 +149,28 @@ public:
         m_body.setCollisionFlags(m_body.getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
     }
 };
+
+extern "C" void* bw_create_rigidbody(void* info)
+{
+    bwRigidBodyConstructionInfo* i = static_cast<bwRigidBodyConstructionInfo*>(info);
+    bwRigidBody* body = new bwRigidBody(i);
+    return body;
+}
+
+extern "C" void bw_destroy_rigidbody(void* body)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    delete b;
+}
+
+extern "C" void bw_rigidbody_make_kinematic(void* body)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->makeKinematic();
+}
+
+extern "C" void bw_rigidbody_restore_dynamic(void* body)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->restoreDynamic();
+}

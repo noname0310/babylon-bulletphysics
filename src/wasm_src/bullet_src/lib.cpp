@@ -43,37 +43,7 @@ void operator delete[](void* ptr, size_t size) noexcept {
 
 #include "bwCollisionShape.h"
 #include "bwMotionState.h"
-
-// extern "C" void* bt_create_rigidbody(void* info) {
-//     bwRigidBodyConstructionInfo* i = static_cast<bwRigidBodyConstructionInfo*>(info);
-//     bwRigidBody* body = new bwRigidBody(i);
-//     return body;
-// }
-
-// extern "C" void bt_destroy_rigidbody(void* body) {
-//     bwRigidBody* b = static_cast<bwRigidBody*>(body);
-//     delete b;
-// }
-
-// extern "C" void bt_rigidbody_get_transform(void* body, float* transformBuffer) {
-//     bwRigidBody* b = static_cast<bwRigidBody*>(body);
-//     b->getTransform(transformBuffer);
-// }
-
-// extern "C" void bt_rigidbody_set_transform(void* body, float* transformBuffer) {
-//     bwRigidBody* b = static_cast<bwRigidBody*>(body);
-//     b->setTransform(transformBuffer);
-// }
-
-// extern "C" void bt_rigidbody_make_kinematic(void* body) {
-//     bwRigidBody* b = static_cast<bwRigidBody*>(body);
-//     b->makeKinematic();
-// }
-
-// extern "C" void bt_rigidbody_restore_dynamic(void* body) {
-//     bwRigidBody* b = static_cast<bwRigidBody*>(body);
-//     b->restoreDynamic();
-// }
+#include "bwRigidBody.h"
 
 // enum class bwConstraintType : uint8_t {
 //     // POINT2POINT = 0,
