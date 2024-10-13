@@ -33,7 +33,17 @@ impl BoxShape {
 
 impl Drop for BoxShape {
     fn drop(&mut self) {
-        unsafe { bw_destroy_boxshape(self.ptr) }
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("BoxShape already dropped");
+        }
+
+        unsafe { bw_destroy_boxshape(self.ptr); }
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }
 
@@ -51,7 +61,17 @@ impl SphereShape {
 
 impl Drop for SphereShape {
     fn drop(&mut self) {
-        unsafe { bw_destroy_sphereshape(self.ptr) }
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("SphereShape already dropped");
+        }
+
+        unsafe { bw_destroy_sphereshape(self.ptr); }
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }
 
@@ -69,7 +89,17 @@ impl CapsuleShape {
 
 impl Drop for CapsuleShape {
     fn drop(&mut self) {
-        unsafe { bw_destroy_capsuleshape(self.ptr) }
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("CapsuleShape already dropped");
+        }
+
+        unsafe { bw_destroy_capsuleshape(self.ptr); }
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }
 
@@ -87,6 +117,23 @@ impl StaticPlaneShape {
 
 impl Drop for StaticPlaneShape {
     fn drop(&mut self) {
-        unsafe { bw_destroy_staticplaneshape(self.ptr) }
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("StaticPlaneShape already dropped");
+        }
+
+        unsafe { bw_destroy_staticplaneshape(self.ptr); }
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
+}
+
+pub(crate) enum CollisionShape {
+    Box(BoxShape),
+    Sphere(SphereShape),
+    Capsule(CapsuleShape),
+    StaticPlane(StaticPlaneShape),
 }

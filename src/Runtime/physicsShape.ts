@@ -21,7 +21,7 @@ export abstract class PhysicsShape {
 function createBoxShapeFinalizer(wasmInstance: WeakRef<BulletWasmInstance>): (ptr: number) => void {
     return (ptr: number) => {
         const instance = wasmInstance.deref();
-        instance?.destroyBoxShape(ptr);
+        instance?.destroyShape(ptr);
     };
 }
 
@@ -46,7 +46,7 @@ export class PhysicsBoxShape extends PhysicsShape {
             return;
         }
 
-        this._wasmInstance.destroyBoxShape(this._ptr);
+        this._wasmInstance.destroyShape(this._ptr);
         this._ptr = 0;
 
         const registry = physicsBoxShapeRegistryMap.get(this._wasmInstance);
@@ -57,7 +57,7 @@ export class PhysicsBoxShape extends PhysicsShape {
 function createSphereShapeFinalizer(wasmInstance: WeakRef<BulletWasmInstance>): (ptr: number) => void {
     return (ptr: number) => {
         const instance = wasmInstance.deref();
-        instance?.destroySphereShape(ptr);
+        instance?.destroyShape(ptr);
     };
 }
 
@@ -82,7 +82,7 @@ export class PhysicsSphereShape extends PhysicsShape {
             return;
         }
 
-        this._wasmInstance.destroySphereShape(this._ptr);
+        this._wasmInstance.destroyShape(this._ptr);
         this._ptr = 0;
 
         const registry = physicsSphereShapeRegistryMap.get(this._wasmInstance);
@@ -93,7 +93,7 @@ export class PhysicsSphereShape extends PhysicsShape {
 function createCapsuleShapeFinalizer(wasmInstance: WeakRef<BulletWasmInstance>): (ptr: number) => void {
     return (ptr: number) => {
         const instance = wasmInstance.deref();
-        instance?.destroyCapsuleShape(ptr);
+        instance?.destroyShape(ptr);
     };
 }
 
@@ -118,7 +118,7 @@ export class PhysicsCapsuleShape extends PhysicsShape {
             return;
         }
 
-        this._wasmInstance.destroyCapsuleShape(this._ptr);
+        this._wasmInstance.destroyShape(this._ptr);
         this._ptr = 0;
 
         const registry = physicsCapsuleShapeRegistryMap.get(this._wasmInstance);
@@ -129,7 +129,7 @@ export class PhysicsCapsuleShape extends PhysicsShape {
 function createStaticPlaneShapeFinalizer(wasmInstance: WeakRef<BulletWasmInstance>): (ptr: number) => void {
     return (ptr: number) => {
         const instance = wasmInstance.deref();
-        instance?.destroyStaticPlaneShape(ptr);
+        instance?.destroyShape(ptr);
     };
 }
 
@@ -154,7 +154,7 @@ export class PhysicsStaticPlaneShape extends PhysicsShape {
             return;
         }
 
-        this._wasmInstance.destroyStaticPlaneShape(this._ptr);
+        this._wasmInstance.destroyShape(this._ptr);
         this._ptr = 0;
 
         const registry = physicsStaticPlaneShapeRegistryMap.get(this._wasmInstance);
