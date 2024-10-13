@@ -43,6 +43,9 @@ public:
 		m_count = count;
 	}
 
+	bwMotionStateBundle(const bwMotionStateBundle&) = delete;
+	bwMotionStateBundle& operator=(const bwMotionStateBundle&) = delete;
+
 	~bwMotionStateBundle()
 	{
 		delete[] m_motionStates;
@@ -89,4 +92,9 @@ extern "C" void bw_destroy_motion_state_bundle(void* bundle) {
 extern "C" void* bw_motion_state_bundle_get_motion_states_ptr(void* bundle) {
 	bwMotionStateBundle* b = static_cast<bwMotionStateBundle*>(bundle);
 	return b->getMotionStatesPtr();
+}
+
+extern "C" size_t bw_motion_state_bundle_get_count(void* bundle) {
+	bwMotionStateBundle* b = static_cast<bwMotionStateBundle*>(bundle);
+	return b->getCount();
 }
