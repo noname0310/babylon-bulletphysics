@@ -103,6 +103,14 @@ impl MotionStateBundle {
         raw.translation = Vec3A::new(transform.w_axis.x, transform.w_axis.y, transform.w_axis.z);
     }
 
+    pub(crate) fn get_nth_motion_state_ptr(&self, index: usize) -> *const std::ffi::c_void {
+        let motion_states_ptr = unsafe {
+            bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut *mut std::ffi::c_void
+        };
+
+        unsafe { *motion_states_ptr.add(index) }
+    }
+
     pub(crate) fn get_transform(&self, index: usize) -> glam::Mat4 {
         let motion_states_ptr = unsafe {
             bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut MotionStateRawRead
