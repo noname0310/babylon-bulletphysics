@@ -66,6 +66,10 @@ impl MotionState {
         raw.matrix_rowz = Vec3::new(transform.x_axis.z, transform.y_axis.z, transform.z_axis.z);
         raw.translation = Vec3::new(transform.w_axis.x, transform.w_axis.y, transform.w_axis.z);
     }
+
+    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+        self.ptr
+    }
 }
 
 impl Drop for MotionState {

@@ -29,6 +29,10 @@ impl BoxShape {
             ptr: unsafe { bw_create_boxshape(size.x, size.y, size.z) },
         }
     }
+
+    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+        self.ptr
+    }
 }
 
 impl Drop for BoxShape {
@@ -56,6 +60,10 @@ impl SphereShape {
         Self {
             ptr: unsafe { bw_create_sphereshape(radius) },
         }
+    }
+
+    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+        self.ptr
     }
 }
 
@@ -85,6 +93,10 @@ impl CapsuleShape {
             ptr: unsafe { bw_create_capsuleshape(radius, height) },
         }
     }
+
+    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+        self.ptr
+    }
 }
 
 impl Drop for CapsuleShape {
@@ -112,6 +124,10 @@ impl StaticPlaneShape {
         Self {
             ptr: unsafe { bw_create_staticplaneshape(normal.x, normal.y, normal.z, plane_constant) },
         }
+    }
+
+    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+        self.ptr
     }
 }
 

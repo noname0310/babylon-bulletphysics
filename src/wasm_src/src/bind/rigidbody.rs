@@ -53,8 +53,13 @@ impl RigidBodyConstructionInfo {
         motion_state: &MotionState,
     ) -> Self {
         Self {
-            shape: shape as *const CollisionShape as *const std::ffi::c_void,
-            motion_state: motion_state as *const MotionState as *const std::ffi::c_void,
+            shape: match shape {
+                CollisionShape::Box(box_shape) => box_shape.ptr(),
+                CollisionShape::Sphere(sphere_shape) => sphere_shape.ptr(),
+                CollisionShape::Capsule(capsule_shape) => capsule_shape.ptr(),
+                CollisionShape::StaticPlane(static_plane_shape) => static_plane_shape.ptr(),
+            },
+            motion_state: motion_state.ptr(),
             motion_type: MotionType::Dynamic as u8,
             mass: 1.0,
             linear_damping: 0.0,
