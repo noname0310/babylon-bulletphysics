@@ -53,3 +53,18 @@ pub fn init() {
 pub fn create_bullet_runtime() -> runtime::Runtime {
     runtime::Runtime::new()
 }
+
+#[wasm_bindgen(js_name = "allocateBuffer")]
+pub fn allocate_buffer(size: usize) -> *mut u8 {
+    let mut vec = vec![0; size].into_boxed_slice();
+    let ptr = vec.as_mut_ptr();
+    std::mem::forget(vec);
+    ptr
+}
+
+#[wasm_bindgen(js_name = "deallocateBuffer")]
+pub fn deallocate_buffer(ptr: *mut u8, size: usize) {
+    unsafe {
+        let _ = Box::from_raw(std::slice::from_raw_parts_mut(ptr, size));
+    }
+}
