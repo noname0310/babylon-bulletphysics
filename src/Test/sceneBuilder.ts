@@ -74,6 +74,8 @@ export class SceneBuilder implements ISceneBuilder {
         const world = new PhysicsWorld(wasmInstance);
 
         world.addRigidBody(rigidBody);
+        world.addRigidBodyBundle(rigidBodyBundle);
+
         for (let i = 0; i < 100; ++i) {
             world.stepSimulation(1 / 60, 10, 1 / 60);
         }

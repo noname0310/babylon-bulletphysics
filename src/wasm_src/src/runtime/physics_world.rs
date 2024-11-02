@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use crate::bind;
 
-use super::rigidbody::RigidBody;
+use super::rigidbody::{RigidBody, RigidBodyBundle};
 
 pub(crate) struct PhysicsWorld {
     inner: bind::physics_world::PhysicsWorld,
@@ -29,6 +29,18 @@ impl PhysicsWorld {
 
     pub(crate) fn remove_rigidbody(&mut self, rigidbody: &mut RigidBody) {
         self.inner.remove_rigidbody(rigidbody.get_inner_mut());
+    }
+
+    pub (crate) fn add_rigidbody_bundle(&mut self, bundle: &mut RigidBodyBundle) {
+        for i in 0..bundle.bodies().len() {
+            self.inner.add_rigidbody(&mut bundle.bodies_mut()[i]);
+        }
+    }
+
+    pub(crate) fn remove_rigidbody_bundle(&mut self, bundle: &mut RigidBodyBundle) {
+        for i in 0..bundle.bodies().len() {
+            self.inner.remove_rigidbody(&mut bundle.bodies_mut()[i]);
+        }
     }
 }
 
@@ -70,4 +82,18 @@ pub fn physics_world_remove_rigidbody(world: *mut usize, rigidbody: *mut usize) 
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
     world.remove_rigidbody(rigidbody);
+}
+
+#[wasm_bindgen(js_name = "physicsWorldAddRigidBodyBundle")]
+pub fn physics_world_add_rigidbody_bundle(world: *mut usize, bundle: *mut usize) {
+    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
+    let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
+    world.add_rigidbody_bundle(bundle);
+}
+
+#[wasm_bindgen(js_name = "physicsWorldRemoveRigidBodyBundle")]
+pub fn physics_world_remove_rigidbody_bundle(world: *mut usize, bundle: *mut usize) {
+    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
+    let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
+    world.remove_rigidbody_bundle(bundle);
 }

@@ -2,16 +2,19 @@ import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { RigidBody } from "./rigidBody";
+import type { RigidBodyBundle } from "./rigidBodyBundle";
 
 class PhysicsWorldInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
     private _ptr: number;
     private readonly _rigidBodyReferences: Set<RigidBody>;
+    private readonly _rigidBodyBundleReferences: Set<RigidBodyBundle>;
 
     public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
         this._rigidBodyReferences = new Set<RigidBody>();
+        this._rigidBodyBundleReferences = new Set<RigidBodyBundle>();
     }
 
     public dispose(): void {
@@ -25,6 +28,10 @@ class PhysicsWorldInner {
             rigidBody.removeReference();
         }
         this._rigidBodyReferences.clear();
+        for (const rigidBodyBundle of this._rigidBodyBundleReferences) {
+            rigidBodyBundle.removeReference();
+        }
+        this._rigidBodyBundleReferences.clear();
     }
 
     public get ptr(): number {
@@ -44,6 +51,24 @@ class PhysicsWorldInner {
     public removeRigidBodyReference(rigidBody: RigidBody): boolean {
         if (this._rigidBodyReferences.delete(rigidBody)) {
             rigidBody.removeReference();
+            return true;
+        }
+        return false;
+    }
+
+    public addRigidBodyBundleReference(rigidBodyBundle: RigidBodyBundle): boolean {
+        if (this._rigidBodyBundleReferences.has(rigidBodyBundle)) {
+            return false;
+        }
+
+        rigidBodyBundle.addReference();
+        this._rigidBodyBundleReferences.add(rigidBodyBundle);
+        return true;
+    }
+
+    public removeRigidBodyBundleReference(rigidBodyBundle: RigidBodyBundle): boolean {
+        if (this._rigidBodyBundleReferences.delete(rigidBodyBundle)) {
+            rigidBodyBundle.removeReference();
             return true;
         }
         return false;
@@ -121,6 +146,24 @@ export class PhysicsWorld {
         this._nullCheck();
         if (this._inner.removeRigidBodyReference(rigidBody)) {
             this._wasmInstance.physicsWorldRemoveRigidBody(this._inner.ptr, rigidBody.ptr);
+            return true;
+        }
+        return false;
+    }
+
+    public addRigidBodyBundle(rigidBodyBundle: RigidBodyBundle): boolean {
+        this._nullCheck();
+        if (this._inner.addRigidBodyBundleReference(rigidBodyBundle)) {
+            this._wasmInstance.physicsWorldAddRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+
+    public removeRigidBodyBundle(rigidBodyBundle: RigidBodyBundle): boolean {
+        this._nullCheck();
+        if (this._inner.removeRigidBodyBundleReference(rigidBodyBundle)) {
+            this._wasmInstance.physicsWorldRemoveRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
             return true;
         }
         return false;

@@ -100,6 +100,14 @@ impl RigidBodyBundle {
         }
     }
 
+    pub(super) fn bodies(&self) -> &[bind::rigidbody::RigidBody] {
+        &self.bodies
+    }
+
+    pub(super) fn bodies_mut(&mut self) -> &mut [bind::rigidbody::RigidBody] {
+        &mut self.bodies
+    }
+
     pub(crate) fn make_kinematic(&mut self, index: usize) {
         self.bodies[index].make_kinematic();
     }
