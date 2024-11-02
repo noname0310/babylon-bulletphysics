@@ -6,20 +6,37 @@ export abstract class PhysicsShape {
     protected readonly _wasmInstance: BulletWasmInstance;
     protected _ptr: number;
 
+    private _referenceCount: number;
+
     public constructor(wasmInstance: BulletWasmInstance, ptr: number) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
+
+        this._referenceCount = 0;
     }
 
-    public abstract dispose(): void;
+    public dispose(): void {
+        if (this._referenceCount > 0) {
+            throw new Error("Cannot dispose shape while it still has references");
+        }
+    }
 
     public get ptr(): number {
         return this._ptr;
+    }
+
+    public addReference(): void {
+        this._referenceCount += 1;
+    }
+
+    public removeReference(): void {
+        this._referenceCount -= 1;
     }
 }
 
 function createBoxShapeFinalizer(wasmInstance: WeakRef<BulletWasmInstance>): (ptr: number) => void {
     return (ptr: number) => {
+        console.log("destroying shape");
         const instance = wasmInstance.deref();
         instance?.destroyShape(ptr);
     };
@@ -41,7 +58,9 @@ export class PhysicsBoxShape extends PhysicsShape {
         registry.register(this, this._ptr, this);
     }
 
-    public dispose(): void {
+    public override dispose(): void {
+        super.dispose();
+
         if (this._ptr === 0) {
             return;
         }
@@ -77,7 +96,9 @@ export class PhysicsSphereShape extends PhysicsShape {
         registry.register(this, this._ptr, this);
     }
 
-    public dispose(): void {
+    public override dispose(): void {
+        super.dispose();
+
         if (this._ptr === 0) {
             return;
         }
@@ -113,7 +134,9 @@ export class PhysicsCapsuleShape extends PhysicsShape {
         registry.register(this, this._ptr, this);
     }
 
-    public dispose(): void {
+    public override dispose(): void {
+        super.dispose();
+
         if (this._ptr === 0) {
             return;
         }
@@ -149,7 +172,9 @@ export class PhysicsStaticPlaneShape extends PhysicsShape {
         registry.register(this, this._ptr, this);
     }
 
-    public dispose(): void {
+    public override dispose(): void {
+        super.dispose();
+
         if (this._ptr === 0) {
             return;
         }

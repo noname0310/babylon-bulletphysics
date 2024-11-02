@@ -1,4 +1,5 @@
 use super::{collision_shape::CollisionShape, motion_state::MotionState};
+use crate::runtime;
 
 #[link(name = "bullet")]
 extern "C" {
@@ -48,38 +49,45 @@ pub(crate) struct RigidBodyConstructionInfo {
 }
 
 impl RigidBodyConstructionInfo {
-    pub(crate) fn new(
-        shape: &CollisionShape,
-        motion_state: &MotionState,
+    pub(crate) fn from_runtime_info_raw(
+        info: &runtime::rigidbody::RigidBodyConstructionInfo,
+        motion_state: *const std::ffi::c_void,
     ) -> Self {
         Self {
-            shape: match shape {
+            shape: match info.shape {
                 CollisionShape::Box(box_shape) => box_shape.ptr(),
                 CollisionShape::Sphere(sphere_shape) => sphere_shape.ptr(),
                 CollisionShape::Capsule(capsule_shape) => capsule_shape.ptr(),
                 CollisionShape::StaticPlane(static_plane_shape) => static_plane_shape.ptr(),
             },
-            motion_state: motion_state.ptr(),
-            motion_type: MotionType::Dynamic as u8,
-            mass: 1.0,
-            linear_damping: 0.0,
-            angular_damping: 0.0,
-            friction: 0.5,
+            motion_state: motion_state,
+            motion_type: info.motion_type as u8,
+            mass: info.mass,
+            linear_damping: info.linear_damping,
+            angular_damping: info.angular_damping,
+            friction: info.friction,
             // rolling_friction: 0.0,
             // spinning_friction: 0.0,
-            restitution: 0.0,
-            linear_sleeping_threshold: 0.8,
-            angular_sleeping_threshold: 1.0,
-            collision_group: 0,
-            collision_mask: 0,
-            additional_damping: 0,
+            restitution: info.restitution,
+            linear_sleeping_threshold: info.linear_sleeping_threshold,
+            angular_sleeping_threshold: info.angular_sleeping_threshold,
+            collision_group: info.collision_group,
+            collision_mask: info.collision_mask,
+            additional_damping: info.additional_damping,
             // additional_damping_factor: 0.0,
             // additional_linear_damping_threshold_sqr: 0.0,
             // additional_angular_damping_threshold_sqr: 0.0,
             // additional_angular_damping_factor: 0.0,
-            no_contact_response: 0,
-            disable_deactivation: 0,
+            no_contact_response: info.no_contact_response,
+            disable_deactivation: info.disable_deactivation,
         }
+    }
+    
+    pub(crate) fn from_runtime_info(
+        info: &runtime::rigidbody::RigidBodyConstructionInfo,
+        motion_state: &MotionState,
+    ) -> Self {
+        Self::from_runtime_info_raw(info, motion_state.ptr())
     }
 
     pub(crate) fn get_motion_type(&self) -> MotionType {

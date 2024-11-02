@@ -35,18 +35,38 @@ pub fn init() {
     let world_transform = motion_state.get_transform();
     web_sys::console::log_1(&format!("world_transform: {:?}", world_transform).into());
 
-    let mation_state_bundle = bind::motion_state::MotionStateBundle::new(2);
-    mation_state_bundle.init_motion_state(0, &mat4);
-    mation_state_bundle.init_motion_state(1, &mat4);
+    let mut mation_state_bundle = bind::motion_state::MotionStateBundle::new(2);
+    mation_state_bundle.set_transform(0, &mat4);
+    mation_state_bundle.set_transform(1, &mat4);
     let world_transform = mation_state_bundle.get_transform(0);
     web_sys::console::log_1(&format!("world_transform: {:?}", world_transform).into());
     let world_transform = mation_state_bundle.get_transform(1);
     web_sys::console::log_1(&format!("world_transform: {:?}", world_transform).into());
 
-    let rigidbody_info = bind::rigidbody::RigidBodyConstructionInfo::new(
-        &bind::collision_shape::CollisionShape::Box(bind::collision_shape::BoxShape::new(glam::Vec3::new(1.0, 1.0, 1.0))),
-        &motion_state,
-    );
+    let shape = bind::collision_shape::CollisionShape::Box(bind::collision_shape::BoxShape::new(glam::Vec3::new(1.0, 1.0, 1.0)));
+    let shape = Box::new(shape);
+    let shape = Box::leak(shape);
+    let shape = shape as &'static bind::collision_shape::CollisionShape;
+
+    let rigidbody_info = runtime::rigidbody::RigidBodyConstructionInfo {
+        shape: &shape,
+        initial_transform: mat4,
+        motion_type: rigidbody::MotionType::Dynamic as u8,
+        mass: 1.0,
+        linear_damping: 0.0,
+        angular_damping: 0.0,
+        friction: 0.5,
+        restitution: 0.0,
+        linear_sleeping_threshold: 0.8,
+        angular_sleeping_threshold: 1.0,
+        collision_group: 1,
+        collision_mask: 1,
+        additional_damping: 0,
+        no_contact_response: 0,
+        disable_deactivation: 0,
+    };
+
+    let _rigidbody = runtime::rigidbody::RigidBody::new(&rigidbody_info);
 }
 
 #[wasm_bindgen(js_name = "createBulletRuntime")]

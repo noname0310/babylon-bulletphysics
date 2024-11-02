@@ -59,7 +59,7 @@ impl MotionState {
         )
     }
 
-    pub(crate) fn set_transform(&self, transform: &glam::Mat4) {
+    pub(crate) fn set_transform(&mut self, transform: &glam::Mat4) {
         let raw = unsafe { &mut *(self.ptr as *mut MotionStateRawWrite) };
         raw.matrix_rowx = Vec3::new(transform.x_axis.x, transform.y_axis.x, transform.z_axis.x);
         raw.matrix_rowy = Vec3::new(transform.x_axis.y, transform.y_axis.y, transform.z_axis.y);
@@ -89,20 +89,6 @@ impl MotionStateBundle {
         }
     }
 
-    pub(crate) fn init_motion_state(&self, index: usize, transform: &glam::Mat4) {
-        let motion_states_ptr = unsafe {
-            bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut MotionStateRawRead
-        };
-
-        let motion_state_ptr = unsafe { motion_states_ptr.add(index) };
-
-        let raw = unsafe { &mut *motion_state_ptr };
-        raw.matrix_rowx = Vec3A::new(transform.x_axis.x, transform.y_axis.x, transform.z_axis.x);
-        raw.matrix_rowy = Vec3A::new(transform.x_axis.y, transform.y_axis.y, transform.z_axis.y);
-        raw.matrix_rowz = Vec3A::new(transform.x_axis.z, transform.y_axis.z, transform.z_axis.z);
-        raw.translation = Vec3A::new(transform.w_axis.x, transform.w_axis.y, transform.w_axis.z);
-    }
-
     pub(crate) fn get_nth_motion_state_ptr(&self, index: usize) -> *const std::ffi::c_void {
         let motion_states_ptr = unsafe {
             bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut *mut std::ffi::c_void
@@ -127,7 +113,7 @@ impl MotionStateBundle {
         )
     }
 
-    pub(crate) fn set_transform(&self, index: usize, transform: &glam::Mat4) {
+    pub(crate) fn set_transform(&mut self, index: usize, transform: &glam::Mat4) {
         let motion_states_ptr = unsafe {
             bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut MotionStateRawWrite
         };
