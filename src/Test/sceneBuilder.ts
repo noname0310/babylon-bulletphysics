@@ -14,6 +14,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { PhysicsBoxShape } from "@/Runtime/physicsShape";
+import { PhysicsWorld } from "@/Runtime/physicsWorld";
 import { RigidBody } from "@/Runtime/rigidBody";
 import { RigidBodyBundle } from "@/Runtime/rigidBodyBundle";
 import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
@@ -69,6 +70,13 @@ export class SceneBuilder implements ISceneBuilder {
 
         const rigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
         rigidBodyBundle;
+
+        const world = new PhysicsWorld(wasmInstance);
+
+        world.addRigidBody(rigidBody);
+        for (let i = 0; i < 100; ++i) {
+            world.stepSimulation(1 / 60, 10, 1 / 60);
+        }
 
         return scene;
     }

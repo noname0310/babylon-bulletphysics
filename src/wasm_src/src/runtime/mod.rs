@@ -1,4 +1,5 @@
 pub(crate) mod collision_shape;
+pub(crate) mod physics_world;
 pub(crate) mod rigidbody;
 
 use wasm_bindgen::prelude::*;

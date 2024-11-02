@@ -58,6 +58,14 @@ impl RigidBody {
         }
     }
 
+    // pub(super) fn get_inner(&self) -> &bind::rigidbody::RigidBody {
+    //     &self.inner
+    // }
+
+    pub(super) fn get_inner_mut(&mut self) -> &mut bind::rigidbody::RigidBody {
+        &mut self.inner
+    }
+
     pub(crate) fn make_kinematic(&mut self) {
         self.inner.make_kinematic();
     }

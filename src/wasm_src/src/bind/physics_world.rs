@@ -1,3 +1,5 @@
+use super::rigidbody::RigidBody;
+
 #[link(name = "bullet")]
 extern "C" {
     fn bw_create_world() -> *mut std::ffi::c_void;
@@ -32,12 +34,12 @@ impl PhysicsWorld {
         unsafe { bw_world_step_simulation(self.ptr, time_step, max_sub_steps, fixed_time_step) };
     }
 
-    pub(crate) fn add_rigidbody(&mut self, rigidbody: *mut std::ffi::c_void) {
-        unsafe { bw_world_add_rigidbody(self.ptr, rigidbody) };
+    pub(crate) fn add_rigidbody(&mut self, rigidbody: &mut RigidBody) {
+        unsafe { bw_world_add_rigidbody(self.ptr, rigidbody.ptr_mut()) };
     }
 
-    pub(crate) fn remove_rigidbody(&mut self, rigidbody: *mut std::ffi::c_void) {
-        unsafe { bw_world_remove_rigidbody(self.ptr, rigidbody) };
+    pub(crate) fn remove_rigidbody(&mut self, rigidbody: &mut RigidBody) {
+        unsafe { bw_world_remove_rigidbody(self.ptr, rigidbody.ptr_mut()) };
     }
 }
 

@@ -211,11 +211,19 @@ impl RigidBody {
         }
     }
 
-    pub(crate) fn make_kinematic(&self) {
+    // pub(super) fn ptr(&self) -> *const std::ffi::c_void {
+    //     self.ptr
+    // }
+
+    pub(super) fn ptr_mut(&mut self) -> *mut std::ffi::c_void {
+        self.ptr
+    }
+
+    pub(crate) fn make_kinematic(&mut self) {
         unsafe { bw_rigidbody_make_kinematic(self.ptr) }
     }
 
-    pub(crate) fn restore_dynamic(&self) {
+    pub(crate) fn restore_dynamic(&mut self) {
         unsafe { bw_rigidbody_restore_dynamic(self.ptr) }
     }
 }

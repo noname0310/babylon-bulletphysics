@@ -62,7 +62,7 @@ impl SphereShape {
         }
     }
 
-    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+    pub(super) fn ptr(&self) -> *const std::ffi::c_void {
         self.ptr
     }
 }
