@@ -91,10 +91,10 @@ impl MotionStateBundle {
 
     pub(crate) fn get_nth_motion_state_ptr(&self, index: usize) -> *const std::ffi::c_void {
         let motion_states_ptr = unsafe {
-            bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut *mut std::ffi::c_void
+            bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *const MotionStateRawRead
         };
 
-        unsafe { *motion_states_ptr.add(index) }
+        unsafe { motion_states_ptr.add(index) as *const std::ffi::c_void }
     }
 
     pub(crate) fn get_transform(&self, index: usize) -> glam::Mat4 {

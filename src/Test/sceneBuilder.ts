@@ -14,7 +14,10 @@ import { Scene } from "@babylonjs/core/scene";
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { PhysicsBoxShape } from "@/Runtime/physicsShape";
+import { RigidBody } from "@/Runtime/rigidBody";
+import { RigidBodyBundle } from "@/Runtime/rigidBodyBundle";
 import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
+import { RigidBodyConstructionInfoList } from "@/Runtime/rigidBodyConstructionInfoList";
 
 // import { Inspector } from "@babylonjs/inspector";
 import type { ISceneBuilder } from "./baseRuntime";
@@ -56,10 +59,16 @@ export class SceneBuilder implements ISceneBuilder {
 
         const rbInfo = new RigidBodyConstructionInfo(wasmInstance);
         rbInfo.shape = boxShape;
-        // boxShape.dispose();
-        // rbInfo.dispose();
-        // (globalThis as any).rbInfo = rbInfo;
-        (globalThis as any).boxShape = boxShape;
+
+        const rigidBody = new RigidBody(wasmInstance, rbInfo);
+        rigidBody;
+
+        const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, 2);
+        rbInfoList.setShape(0, boxShape);
+        rbInfoList.setShape(1, boxShape);
+
+        const rigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
+        rigidBodyBundle;
 
         return scene;
     }

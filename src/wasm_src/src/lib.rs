@@ -45,8 +45,6 @@ pub fn init() {
 
     let shape = bind::collision_shape::CollisionShape::Box(bind::collision_shape::BoxShape::new(glam::Vec3::new(1.0, 1.0, 1.0)));
     let shape = Box::new(shape);
-    let shape = Box::leak(shape);
-    let shape = shape as &'static bind::collision_shape::CollisionShape;
 
     let rigidbody_info = runtime::rigidbody::RigidBodyConstructionInfo {
         shape: &shape,
@@ -76,15 +74,18 @@ pub fn create_bullet_runtime() -> runtime::Runtime {
 
 #[wasm_bindgen(js_name = "allocateBuffer")]
 pub fn allocate_buffer(size: usize) -> *mut u8 {
-    let mut vec = vec![0; size].into_boxed_slice();
-    let ptr = vec.as_mut_ptr();
-    std::mem::forget(vec);
+    let layout = std::alloc::Layout::from_size_align(size, 16).unwrap();
+    let ptr = unsafe { std::alloc::alloc_zeroed(layout) };
+    if ptr.is_null() {
+        return ptr;
+    }
     ptr
 }
 
 #[wasm_bindgen(js_name = "deallocateBuffer")]
 pub fn deallocate_buffer(ptr: *mut u8, size: usize) {
+    let layout = std::alloc::Layout::from_size_align(size, 16).unwrap();
     unsafe {
-        let _ = Box::from_raw(std::slice::from_raw_parts_mut(ptr, size));
+        std::alloc::dealloc(ptr, layout);
     }
 }

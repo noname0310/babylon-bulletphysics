@@ -224,16 +224,6 @@ export class RigidBodyConstructionInfo {
         this._uint32Ptr.array[0x0 / Uint32Array.BYTES_PER_ELEMENT] = value ? value.ptr : 0;
     }
 
-    public get mass(): number {
-        this._nullCheck();
-        return this._float32Ptr.array[0x54 / Float32Array.BYTES_PER_ELEMENT];
-    }
-
-    public set mass(value: number) {
-        this._nullCheck();
-        this._float32Ptr.array[0x54 / Float32Array.BYTES_PER_ELEMENT] = value;
-    }
-
     public get motionType(): MotionType {
         this._nullCheck();
         return this._uint8Ptr.array[0x50 / Uint8Array.BYTES_PER_ELEMENT];
@@ -244,24 +234,14 @@ export class RigidBodyConstructionInfo {
         this._uint8Ptr.array[0x50 / Uint8Array.BYTES_PER_ELEMENT] = value;
     }
 
-    public get collisionGroup(): number {
+    public get mass(): number {
         this._nullCheck();
-        return this._uint16Ptr.array[0x70 / Uint16Array.BYTES_PER_ELEMENT];
+        return this._float32Ptr.array[0x54 / Float32Array.BYTES_PER_ELEMENT];
     }
 
-    public set collisionGroup(value: number) {
+    public set mass(value: number) {
         this._nullCheck();
-        this._uint16Ptr.array[0x70 / Uint16Array.BYTES_PER_ELEMENT] = value;
-    }
-
-    public get collisionMask(): number {
-        this._nullCheck();
-        return this._uint16Ptr.array[0x72 / Uint16Array.BYTES_PER_ELEMENT];
-    }
-
-    public set collisionMask(value: number) {
-        this._nullCheck();
-        this._uint16Ptr.array[0x72 / Uint16Array.BYTES_PER_ELEMENT] = value;
+        this._float32Ptr.array[0x54 / Float32Array.BYTES_PER_ELEMENT] = value;
     }
 
     public get linearDamping(): number {
@@ -322,6 +302,26 @@ export class RigidBodyConstructionInfo {
     public set angularSleepingThreshold(value: number) {
         this._nullCheck();
         this._float32Ptr.array[0x6C / Float32Array.BYTES_PER_ELEMENT] = value;
+    }
+
+    public get collisionGroup(): number {
+        this._nullCheck();
+        return this._uint16Ptr.array[0x70 / Uint16Array.BYTES_PER_ELEMENT];
+    }
+
+    public set collisionGroup(value: number) {
+        this._nullCheck();
+        this._uint16Ptr.array[0x70 / Uint16Array.BYTES_PER_ELEMENT] = value;
+    }
+
+    public get collisionMask(): number {
+        this._nullCheck();
+        return this._uint16Ptr.array[0x72 / Uint16Array.BYTES_PER_ELEMENT];
+    }
+
+    public set collisionMask(value: number) {
+        this._nullCheck();
+        this._uint16Ptr.array[0x72 / Uint16Array.BYTES_PER_ELEMENT] = value;
     }
 
     public get additionalDamping(): boolean {

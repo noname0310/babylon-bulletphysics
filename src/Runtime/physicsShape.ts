@@ -8,7 +8,7 @@ export abstract class PhysicsShape {
 
     private _referenceCount: number;
 
-    public constructor(wasmInstance: BulletWasmInstance, ptr: number) {
+    protected constructor(wasmInstance: BulletWasmInstance, ptr: number) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
 
@@ -36,7 +36,6 @@ export abstract class PhysicsShape {
 
 function createBoxShapeFinalizer(wasmInstance: WeakRef<BulletWasmInstance>): (ptr: number) => void {
     return (ptr: number) => {
-        console.log("destroying shape");
         const instance = wasmInstance.deref();
         instance?.destroyShape(ptr);
     };
