@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Compile wasm
+        run: npm run build-wasm-all
+
       - name: Build
         run: npm run build
 
