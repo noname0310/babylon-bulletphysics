@@ -110,7 +110,7 @@ export class SceneBuilder implements ISceneBuilder {
         world.addRigidBodyBundle(boxRigidBodyBundle);
 
         scene.onBeforeRenderObservable.add(() => {
-            world.stepSimulation(1 / 60, 120, 1 / 60);
+            world.stepSimulation(1 / 60, 10, 1 / 60);
 
             for (let i = 0; i < rbCount; ++i) {
                 boxRigidBodyBundle.getTransformMatrixToRef(i, matrix);
