@@ -1,21 +1,76 @@
+import type { Matrix } from "@babylonjs/core/Maths/math.vector";
+
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
 import type { RigidBodyConstructionInfo } from "./rigidBodyConstructionInfo";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
 
-function createRigidBodyFinalizer(wasmInstance: WeakRef<BulletWasmInstance>): (ptr: number) => void {
-    return (ptr: number) => {
-        const instance = wasmInstance.deref();
-        instance?.destroyRigidBody(ptr);
-    };
+/**
+ * MotionState representations
+ *
+ * vtable: u32 : offset 0
+ * padding: u32[3] : offset 4
+ * matrix_rowx: f32[3] : offset 16
+ * padding: u32 : offset 28
+ * matrix_rowy: f32[3] : offset 32
+ * padding: u32 : offset 44
+ * matrix_rowz: f32[3] : offset 48
+ * padding: u32 : offset 60
+ * translation: f32[3] : offset 64
+ * padding: u32 : offset 76
+ *
+ * --size: 80
+ */
+
+class RigidBodyInner {
+    private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
+    private _ptr: number;
+    private _referenceCount: number;
+
+    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number) {
+        this._wasmInstance = wasmInstance;
+        this._ptr = ptr;
+        this._referenceCount = 0;
+    }
+
+    public dispose(): void {
+        if (this._referenceCount > 0) {
+            throw new Error("Cannot dispose rigid body while it still has references");
+        }
+
+        if (this._ptr === 0) {
+            return;
+        }
+
+        this._wasmInstance.deref()?.destroyRigidBody(this._ptr);
+        this._ptr = 0;
+    }
+
+    public get ptr(): number {
+        return this._ptr;
+    }
+
+    public addReference(): void {
+        this._referenceCount += 1;
+    }
+
+    public removeReference(): void {
+        this._referenceCount -= 1;
+    }
 }
 
-const physicsRigidBodyRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<number>>();
+function rigidBodyFinalizer(inner: RigidBodyInner): void {
+    inner.dispose();
+}
+
+const physicsRigidBodyRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<RigidBodyInner>>();
 
 export class RigidBody {
     private readonly _wasmInstance: BulletWasmInstance;
-    private _ptr: number;
 
-    private _referenceCount: number;
+    private readonly _motionStatePtr: IWasmTypedArray<Float32Array>;
+
+    private readonly _inner: RigidBodyInner;
 
     public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfo);
 
@@ -39,60 +94,84 @@ export class RigidBody {
         }
 
         this._wasmInstance = wasmInstance;
-        this._ptr = wasmInstance.createRigidBody(infoPtr);
-
-        this._referenceCount = 0;
+        const ptr = wasmInstance.createRigidBody(infoPtr);
+        const motionStatePtr = wasmInstance.rigidBodyGetMotionStatePtr(ptr);
+        this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, 80 / Float32Array.BYTES_PER_ELEMENT);
+        this._inner = new RigidBodyInner(new WeakRef(wasmInstance), ptr);
 
         let registry = physicsRigidBodyRegistryMap.get(wasmInstance);
         if (registry === undefined) {
-            registry = new FinalizationRegistry(createRigidBodyFinalizer(new WeakRef(wasmInstance)));
+            registry = new FinalizationRegistry(rigidBodyFinalizer);
             physicsRigidBodyRegistryMap.set(wasmInstance, registry);
         }
 
-        registry.register(this, this._ptr, this);
+        registry.register(this, this._inner, this);
     }
 
     public dispose(): void {
-        if (this._referenceCount > 0) {
-            throw new Error("Cannot dispose rigid body while it still has references");
-        }
-
-        if (this._ptr === 0) {
+        if (this._inner.ptr === 0) {
             return;
         }
 
-        this._wasmInstance.destroyRigidBody(this._ptr);
-        this._ptr = 0;
+        this._inner.dispose();
 
         const registry = physicsRigidBodyRegistryMap.get(this._wasmInstance);
         registry?.unregister(this);
     }
 
     public get ptr(): number {
-        return this._ptr;
+        return this._inner.ptr;
     }
 
     public addReference(): void {
-        this._referenceCount += 1;
+        this._inner.addReference();
     }
 
     public removeReference(): void {
-        this._referenceCount -= 1;
+        this._inner.removeReference();
     }
 
     private _nullCheck(): void {
-        if (this._ptr === 0) {
+        if (this._inner.ptr === 0) {
             throw new Error("Cannot access disposed rigid body");
         }
     }
 
     public makeKinematic(): void {
         this._nullCheck();
-        this._wasmInstance.rigidBodyMakeKinematic(this._ptr);
+        this._wasmInstance.rigidBodyMakeKinematic(this._inner.ptr);
     }
 
     public restoreDynamic(): void {
         this._nullCheck();
-        this._wasmInstance.rigidBodyRestoreDynamic(this._ptr);
+        this._wasmInstance.rigidBodyRestoreDynamic(this._inner.ptr);
+    }
+
+    public getTransformMatrixToRef(result: Matrix): Matrix {
+        this._nullCheck();
+        const motionStatePtr = this._motionStatePtr.array;
+        result.setRowFromFloats(0, motionStatePtr[4], motionStatePtr[8], motionStatePtr[12], 0);
+        result.setRowFromFloats(1, motionStatePtr[5], motionStatePtr[9], motionStatePtr[13], 0);
+        result.setRowFromFloats(2, motionStatePtr[6], motionStatePtr[10], motionStatePtr[14], 0);
+        result.setRowFromFloats(3, motionStatePtr[16], motionStatePtr[17], motionStatePtr[18], 1);
+        return result;
+    }
+
+    public setTransformMatrix(matrix: Matrix): void {
+        this._nullCheck();
+        const motionStatePtr = this._motionStatePtr.array;
+        motionStatePtr[4] = matrix.m[0];
+        motionStatePtr[8] = matrix.m[1];
+        motionStatePtr[12] = matrix.m[2];
+        motionStatePtr[5] = matrix.m[4];
+        motionStatePtr[9] = matrix.m[5];
+        motionStatePtr[13] = matrix.m[6];
+        motionStatePtr[6] = matrix.m[8];
+        motionStatePtr[10] = matrix.m[9];
+        motionStatePtr[14] = matrix.m[10];
+
+        motionStatePtr[16] = matrix.m[12];
+        motionStatePtr[17] = matrix.m[13];
+        motionStatePtr[18] = matrix.m[14];
     }
 }

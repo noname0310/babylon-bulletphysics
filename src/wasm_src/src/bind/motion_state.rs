@@ -10,7 +10,7 @@ extern "C" {
 
     fn bw_destroy_motion_state_bundle(bundle: *mut std::ffi::c_void);
 
-    fn bw_motion_state_bundle_get_motion_states_ptr(bundle: *const std::ffi::c_void) -> *const *mut std::ffi::c_void;
+    fn bw_motion_state_bundle_get_motion_states_ptr(bundle: *const std::ffi::c_void) -> *mut std::ffi::c_void;
 
     fn bw_motion_state_bundle_get_count(bundle: *const std::ffi::c_void) -> usize;
 }
@@ -27,6 +27,7 @@ struct MotionStateRawRead {
 #[repr(C, align(16))]
 struct MotionStateRawWrite {
     vtable: *const std::ffi::c_void,
+    padding0: [u32; 3],
     matrix_rowx: Vec3,
     padding1: f32,
     matrix_rowy: Vec3,
@@ -68,6 +69,10 @@ impl MotionState {
     }
 
     pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+        self.ptr
+    }
+
+    pub(crate) fn ptr_mut(&mut self) -> *mut std::ffi::c_void {
         self.ptr
     }
 }
@@ -125,6 +130,12 @@ impl MotionStateBundle {
         raw.matrix_rowy = Vec3::new(transform.x_axis.y, transform.y_axis.y, transform.z_axis.y);
         raw.matrix_rowz = Vec3::new(transform.x_axis.z, transform.y_axis.z, transform.z_axis.z);
         raw.translation = Vec3::new(transform.w_axis.x, transform.w_axis.y, transform.w_axis.z);
+    }
+
+    pub(crate) fn get_motion_states_ptr(&self) -> *mut std::ffi::c_void {
+        unsafe {
+            bw_motion_state_bundle_get_motion_states_ptr(self.ptr)
+        }
     }
 
     pub(crate) fn size(&self) -> usize {

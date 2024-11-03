@@ -82,8 +82,11 @@ pub fn allocate_buffer(size: usize) -> *mut u8 {
     ptr
 }
 
+/// Deallocate a buffer allocated by `allocateBuffer`.
+/// # Safety
+/// `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
 #[wasm_bindgen(js_name = "deallocateBuffer")]
-pub fn deallocate_buffer(ptr: *mut u8, size: usize) {
+pub unsafe  fn deallocate_buffer(ptr: *mut u8, size: usize) {
     let layout = std::alloc::Layout::from_size_align(size, 16).unwrap();
     unsafe {
         std::alloc::dealloc(ptr, layout);

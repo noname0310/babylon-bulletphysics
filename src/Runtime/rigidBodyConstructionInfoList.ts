@@ -1,3 +1,4 @@
+import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
@@ -222,6 +223,43 @@ export class RigidBodyConstructionInfoList {
 
         const offset = n * size;
         this._uint32Ptr.array[(offset + 0x0) / Uint32Array.BYTES_PER_ELEMENT] = value ? value.ptr : 0;
+    }
+
+    public getInitialTransformToRef(n: number, result: Matrix): Matrix {
+        this._nullCheck();
+        const offset = n * size;
+        const float32Ptr = this._float32Ptr.array;
+        const float32Bytes = Float32Array.BYTES_PER_ELEMENT;
+
+        result.set(
+            float32Ptr[(offset + 0x10) / float32Bytes],
+            float32Ptr[(offset + 0x14) / float32Bytes],
+            float32Ptr[(offset + 0x18) / float32Bytes],
+            float32Ptr[(offset + 0x1C) / float32Bytes],
+            float32Ptr[(offset + 0x20) / float32Bytes],
+            float32Ptr[(offset + 0x24) / float32Bytes],
+            float32Ptr[(offset + 0x28) / float32Bytes],
+            float32Ptr[(offset + 0x2C) / float32Bytes],
+            float32Ptr[(offset + 0x30) / float32Bytes],
+            float32Ptr[(offset + 0x34) / float32Bytes],
+            float32Ptr[(offset + 0x38) / float32Bytes],
+            float32Ptr[(offset + 0x3C) / float32Bytes],
+            float32Ptr[(offset + 0x40) / float32Bytes],
+            float32Ptr[(offset + 0x44) / float32Bytes],
+            float32Ptr[(offset + 0x48) / float32Bytes],
+            float32Ptr[(offset + 0x4C) / float32Bytes]
+        );
+
+        return result;
+    }
+
+    public setInitialTransform(n: number, value: Matrix): void {
+        this._nullCheck();
+        const offset = n * size;
+        const float32Ptr = this._float32Ptr.array;
+        const float32Bytes = Float32Array.BYTES_PER_ELEMENT;
+
+        value.copyToArray(float32Ptr, (offset + 0x10) / float32Bytes);
     }
 
     public getMotionType(n: number): MotionType {

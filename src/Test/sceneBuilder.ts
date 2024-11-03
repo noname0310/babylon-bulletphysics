@@ -8,7 +8,7 @@ import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Scene } from "@babylonjs/core/scene";
 
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
@@ -60,6 +60,12 @@ export class SceneBuilder implements ISceneBuilder {
 
         const rbInfo = new RigidBodyConstructionInfo(wasmInstance);
         rbInfo.shape = boxShape;
+        rbInfo.setInitialTransform(new Matrix().set(
+            1, 2, 3, 4,
+            5, 6, 7, 8,
+            9, 10, 11, 12,
+            13, 14, 15, 16
+        ));
 
         const rigidBody = new RigidBody(wasmInstance, rbInfo);
         rigidBody;

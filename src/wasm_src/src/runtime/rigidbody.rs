@@ -47,7 +47,7 @@ impl RigidBody {
 
         // let shape = info.shape;
         let info = bind::rigidbody::RigidBodyConstructionInfo::from_runtime_info(
-            &info,
+            info,
             &motion_state
         );
         let inner = bind::rigidbody::RigidBody::new(&info);
@@ -64,6 +64,10 @@ impl RigidBody {
 
     pub(super) fn get_inner_mut(&mut self) -> &mut bind::rigidbody::RigidBody {
         &mut self.inner
+    }
+
+    pub(crate) fn get_motion_state_ptr(&mut self) -> *mut std::ffi::c_void {
+        self.motion_state.ptr_mut()
     }
 
     pub(crate) fn make_kinematic(&mut self) {
@@ -84,11 +88,10 @@ impl RigidBodyBundle {
     pub(crate) fn new(info_list: &[RigidBodyConstructionInfo]) -> Self {
         let mut bodies = Vec::with_capacity(info_list.len());
         let mut motion_state_bundle = bind::motion_state::MotionStateBundle::new(info_list.len());
-        for i in 0..info_list.len() {
-            let info = &info_list[i];
+        for (i, info) in info_list.iter().enumerate() {
             motion_state_bundle.set_transform(i, &info.initial_transform);
             let info = bind::rigidbody::RigidBodyConstructionInfo::from_runtime_info_raw(
-                &info,
+                info,
                 motion_state_bundle.get_nth_motion_state_ptr(i)
             );
             let body = bind::rigidbody::RigidBody::new(&info);
@@ -106,6 +109,10 @@ impl RigidBodyBundle {
 
     pub(super) fn bodies_mut(&mut self) -> &mut [bind::rigidbody::RigidBody] {
         &mut self.bodies
+    }
+
+    pub(crate) fn get_motion_states_ptr(&mut self) -> *mut std::ffi::c_void {
+        self.motion_state_bundle.get_motion_states_ptr()
     }
 
     pub(crate) fn make_kinematic(&mut self, index: usize) {
@@ -132,14 +139,20 @@ pub fn destroy_rigidbody(ptr: *mut usize) {
     }
 }
 
+#[wasm_bindgen(js_name = "rigidBodyGetMotionStatePtr")]
+pub fn rigidbody_get_motion_state_ptr(ptr: *mut usize) -> *mut usize {
+    let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
+    rigidbody.get_motion_state_ptr() as *mut usize
+}
+
 #[wasm_bindgen(js_name = "rigidBodyMakeKinematic")]
-pub fn make_kinematic(ptr: *mut usize) {
+pub fn rigidbody_make_kinematic(ptr: *mut usize) {
     let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
     rigidbody.make_kinematic();
 }
 
 #[wasm_bindgen(js_name = "rigidBodyRestoreDynamic")]
-pub fn restore_dynamic(ptr: *mut usize) {
+pub fn rigidbody_restore_dynamic(ptr: *mut usize) {
     let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
     rigidbody.restore_dynamic();
 }
@@ -157,6 +170,12 @@ pub fn destroy_rigidbody_bundle(ptr: *mut usize) {
     unsafe {
         let _ = Box::from_raw(ptr as *mut RigidBodyBundle);
     }
+}
+
+#[wasm_bindgen(js_name = "rigidBodyBundleGetMotionStatesPtr")]
+pub fn rigid_body_bundle_get_motion_states_ptr(ptr: *mut usize) -> *mut usize {
+    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+    bundle.get_motion_states_ptr() as *mut usize
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleMakeKinematic")]
