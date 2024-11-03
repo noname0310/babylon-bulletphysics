@@ -12,10 +12,11 @@ import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { CreatePlane } from "@babylonjs/core/Meshes/Builders/planeBuilder";
 import { Scene } from "@babylonjs/core/scene";
-import { Inspector } from "@babylonjs/inspector";
 
+// import { Inspector } from "@babylonjs/inspector";
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
+import { MotionType } from "@/Runtime/motionType";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
 import { PhysicsWorld } from "@/Runtime/physicsWorld";
 import { RigidBody } from "@/Runtime/rigidBody";
@@ -23,7 +24,6 @@ import { RigidBodyBundle } from "@/Runtime/rigidBodyBundle";
 import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
 import { RigidBodyConstructionInfoList } from "@/Runtime/rigidBodyConstructionInfoList";
 
-// import { Inspector } from "@babylonjs/inspector";
 import type { ISceneBuilder } from "./baseRuntime";
 
 export class SceneBuilder implements ISceneBuilder {
@@ -33,8 +33,8 @@ export class SceneBuilder implements ISceneBuilder {
 
         const camera = new ArcRotateCamera("arcRotateCamera", 0, 0, 500, new Vector3(0, 0, 0), scene);
         camera.minZ = 1;
-        camera.maxZ = 500;
-        camera.setPosition(new Vector3(30, 50, -50));
+        camera.maxZ = 1000;
+        camera.setPosition(new Vector3(60, 40, -50));
         camera.attachControl(undefined, false);
         camera.inertia = 0.8;
         camera.speed = 10;
@@ -46,8 +46,16 @@ export class SceneBuilder implements ISceneBuilder {
 
         const directionalLight = new DirectionalLight("directionalLight", new Vector3(0.5, -1, 1), scene);
         directionalLight.intensity = 0.5;
-        directionalLight.shadowMaxZ = 30;
-        directionalLight.shadowMinZ = -30;
+        const shadowBound = 60;
+        directionalLight.shadowMaxZ = shadowBound;
+        directionalLight.shadowMinZ = -shadowBound;
+        directionalLight.autoCalcShadowZBounds = false;
+        directionalLight.autoUpdateExtends = false;
+        directionalLight.shadowOrthoScale = 0;
+        directionalLight.orthoTop = shadowBound;
+        directionalLight.orthoBottom = -shadowBound;
+        directionalLight.orthoLeft = -shadowBound;
+        directionalLight.orthoRight = shadowBound;
 
         const shadowGenerator = new ShadowGenerator(2048, directionalLight, true);
         shadowGenerator.transparencyShadow = true;
@@ -56,7 +64,7 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
 
-        Inspector.Show(scene, { enablePopup: false });
+        // Inspector.Show(scene, { enablePopup: false });
 
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
         const world = new PhysicsWorld(wasmInstance);
@@ -64,41 +72,51 @@ export class SceneBuilder implements ISceneBuilder {
         const matrix = new Matrix();
 
         {
-            const ground = CreatePlane("ground", { size: 600 }, scene);
+            const ground = CreatePlane("ground", { size: 120 }, scene);
             ground.rotationQuaternion = Quaternion.RotationAxis(new Vector3(1, 0, 0), Math.PI / 2);
             shadowGenerator.addShadowCaster(ground);
             ground.receiveShadows = true;
 
-            const groundShape = new PhysicsStaticPlaneShape(wasmInstance, new Vector3(0, 1, 0), 0);
+            const groundShape = new PhysicsStaticPlaneShape(wasmInstance, new Vector3(0, 0, -1), 0);
             const groundRbInfo = new RigidBodyConstructionInfo(wasmInstance);
             groundRbInfo.shape = groundShape;
-            groundRbInfo.setInitialTransform(Matrix.FromQuaternionToRef(ground.rotationQuaternion, matrix));
+            Matrix.FromQuaternionToRef(ground.rotationQuaternion, matrix);
+            groundRbInfo.setInitialTransform(matrix);
+            groundRbInfo.motionType = MotionType.Static;
 
             const groundRigidBody = new RigidBody(wasmInstance, groundRbInfo);
             world.addRigidBody(groundRigidBody);
         }
 
-        {
-            const baseBox = CreateBox("box", { size: 2 }, scene);
-            // baseBox.isEnabled(false);
-            baseBox.scaling.set(1, 1, 1);
-            shadowGenerator.addShadowCaster(baseBox);
-            baseBox.receiveShadows = true;
-            const boxShape = new PhysicsBoxShape(wasmInstance, new Vector3(50, 50, 0));
+        const rbCount = 1024;
 
-            const rbCount = 1024;
-            const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
-            for (let i = 0; i < rbCount; ++i) {
-                rbInfoList.setShape(i, boxShape);
-                rbInfoList.setInitialTransform(i, Matrix.Translation(0, i * 2, 0));
-            }
+        const baseBox = CreateBox("box", { size: 2 }, scene);
+        shadowGenerator.addShadowCaster(baseBox);
+        baseBox.receiveShadows = true;
+        const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16);
+        baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
 
-            const bundle = new RigidBodyBundle(wasmInstance, rbInfoList);
-            world.addRigidBodyBundle(bundle);
+        const boxShape = new PhysicsBoxShape(wasmInstance, new Vector3(1, 1, 1));
+        const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
+        for (let i = 0; i < rbCount; ++i) {
+            rbInfoList.setShape(i, boxShape);
+            const initialTransform = Matrix.TranslationToRef(0, 1 + i * 2, 0, matrix);
+            rbInfoList.setInitialTransform(i, initialTransform);
+            rbInfoList.setFriction(i, 1.0);
+            rbInfoList.setLinearDamping(i, 0.3);
+            rbInfoList.setAngularDamping(i, 0.3);
         }
+        const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
+        world.addRigidBodyBundle(boxRigidBodyBundle);
 
         scene.onBeforeRenderObservable.add(() => {
-            world.stepSimulation(1 / 60, 10, 1 / 60);
+            world.stepSimulation(1 / 60, 120, 1 / 60);
+
+            for (let i = 0; i < rbCount; ++i) {
+                boxRigidBodyBundle.getTransformMatrixToRef(i, matrix);
+                matrix.copyToArray(rigidbodyMatrixBuffer, i * 16);
+            }
+            baseBox.thinInstanceBufferUpdated("matrix");
         });
 
         return scene;

@@ -168,10 +168,10 @@ export class RigidBodyConstructionInfo {
         float32Ptr[0x6C / float32Bytes] = 1.0;
 
         // collisionGroup
-        uint16Ptr[0x70 / uint16Bytes] = 0;
+        uint16Ptr[0x70 / uint16Bytes] = 1 << 0;
 
         // collisionMask
-        uint16Ptr[0x72 / uint16Bytes] = 0;
+        uint16Ptr[0x72 / uint16Bytes] = 0xFFFF;
 
         // additionalDamping
         uint8Ptr[0x74 / uint8Bytes] = +false;

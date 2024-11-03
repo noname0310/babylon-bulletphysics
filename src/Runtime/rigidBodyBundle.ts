@@ -156,7 +156,7 @@ export class RigidBodyBundle {
         }
 
         const motionStatesPtr = this._motionStatesPtr.array;
-        const offset = index * motionStateSize;
+        const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
         result.setRowFromFloats(0, motionStatesPtr[offset + 4], motionStatesPtr[offset + 8], motionStatesPtr[offset + 12], 0);
         result.setRowFromFloats(1, motionStatesPtr[offset + 5], motionStatesPtr[offset + 9], motionStatesPtr[offset + 13], 0);
         result.setRowFromFloats(2, motionStatesPtr[offset + 6], motionStatesPtr[offset + 10], motionStatesPtr[offset + 14], 0);
@@ -171,7 +171,7 @@ export class RigidBodyBundle {
         }
 
         const motionStatesPtr = this._motionStatesPtr.array;
-        const offset = index * motionStateSize;
+        const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
         motionStatesPtr[offset + 4] = matrix.m[0];
         motionStatesPtr[offset + 8] = matrix.m[1];
         motionStatesPtr[offset + 12] = matrix.m[2];
