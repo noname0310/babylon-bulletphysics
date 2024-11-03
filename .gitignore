@@ -132,3 +132,5 @@ dist
 src/wasm_src/bullet_src/BulletCollision
 src/wasm_src/bullet_src/BulletDynamics
 src/wasm_src/bullet_src/LinearMath
+
+test_dist

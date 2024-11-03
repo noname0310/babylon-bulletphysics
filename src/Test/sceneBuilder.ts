@@ -93,6 +93,7 @@ export class SceneBuilder implements ISceneBuilder {
         const baseBox = CreateBox("box", { size: 2 }, scene);
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
+
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
 
