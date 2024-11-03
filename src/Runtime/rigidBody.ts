@@ -1,7 +1,9 @@
 import type { Matrix } from "@babylonjs/core/Maths/math.vector";
+import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
+import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfo } from "./rigidBodyConstructionInfo";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
 
@@ -25,11 +27,14 @@ import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoL
 class RigidBodyInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
     private _ptr: number;
+    private _shapeReference: Nullable<PhysicsShape>;
     private _referenceCount: number;
 
-    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number) {
+    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, shapeReference: PhysicsShape) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
+        this._shapeReference = shapeReference;
+        shapeReference.addReference();
         this._referenceCount = 0;
     }
 
@@ -44,6 +49,8 @@ class RigidBodyInner {
 
         this._wasmInstance.deref()?.destroyRigidBody(this._ptr);
         this._ptr = 0;
+        this._shapeReference!.removeReference();
+        this._shapeReference = null;
     }
 
     public get ptr(): number {
@@ -83,12 +90,15 @@ export class RigidBody {
             throw new Error("Cannot create rigid body with null pointer");
         }
 
+        let shape: Nullable<PhysicsShape>;
         if (n !== undefined) {
-            if ((info as RigidBodyConstructionInfoList).getShape(n) === null) {
+            shape = (info as RigidBodyConstructionInfoList).getShape(n);
+            if (shape === null) {
                 throw new Error("Cannot create rigid body with null shape");
             }
         } else {
-            if ((info as RigidBodyConstructionInfo).shape === null) {
+            shape = (info as RigidBodyConstructionInfo).shape;
+            if (shape === null) {
                 throw new Error("Cannot create rigid body with null shape");
             }
         }
@@ -97,7 +107,7 @@ export class RigidBody {
         const ptr = wasmInstance.createRigidBody(infoPtr);
         const motionStatePtr = wasmInstance.rigidBodyGetMotionStatePtr(ptr);
         this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, 80 / Float32Array.BYTES_PER_ELEMENT);
-        this._inner = new RigidBodyInner(new WeakRef(wasmInstance), ptr);
+        this._inner = new RigidBodyInner(new WeakRef(wasmInstance), ptr, shape);
 
         let registry = physicsRigidBodyRegistryMap.get(wasmInstance);
         if (registry === undefined) {

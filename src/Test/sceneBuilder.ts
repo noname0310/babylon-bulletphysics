@@ -98,7 +98,7 @@ export class SceneBuilder implements ISceneBuilder {
         }
 
         scene.onBeforeRenderObservable.add(() => {
-            // world.stepSimulation(1 / 60, 10, 1 / 60);
+            world.stepSimulation(1 / 60, 10, 1 / 60);
         });
 
         return scene;

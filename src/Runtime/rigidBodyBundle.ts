@@ -2,6 +2,7 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
+import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
 
 const motionStateSize = 80;
@@ -9,11 +10,16 @@ const motionStateSize = 80;
 class RigidBodyBundleInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
     private _ptr: number;
+    private readonly _shapeReferences: Set<PhysicsShape>;
     private _referenceCount: number;
 
-    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number) {
+    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, shapeReferences: Set<PhysicsShape>) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
+        this._shapeReferences = shapeReferences;
+        for (const shape of shapeReferences) {
+            shape.addReference();
+        }
         this._referenceCount = 0;
     }
 
@@ -28,6 +34,10 @@ class RigidBodyBundleInner {
 
         this._wasmInstance.deref()?.destroyRigidBodyBundle(this._ptr);
         this._ptr = 0;
+        for (const shape of this._shapeReferences) {
+            shape.removeReference();
+        }
+        this._shapeReferences.clear();
     }
 
     public get ptr(): number {
@@ -62,17 +72,20 @@ export class RigidBodyBundle {
             throw new Error("Cannot create rigid body bundle with null pointer");
         }
         const count = info.count;
+        const shapeReferences = new Set<PhysicsShape>();
         for (let i = 0; i < count; ++i) {
-            if (info.getShape(i) === null) {
+            const shape = info.getShape(i);
+            if (shape === null) {
                 throw new Error("Cannot create rigid body bundle with null shape");
             }
+            shapeReferences.add(shape);
         }
 
         this._wasmInstance = wasmInstance;
         const ptr = wasmInstance.createRigidBodyBundle(info.ptr, count);
         const motionStatesPtr = wasmInstance.rigidBodyBundleGetMotionStatesPtr(ptr);
         this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * motionStateSize / Float32Array.BYTES_PER_ELEMENT);
-        this._inner = new RigidBodyBundleInner(new WeakRef(wasmInstance), ptr);
+        this._inner = new RigidBodyBundleInner(new WeakRef(wasmInstance), ptr, shapeReferences);
         this._count = count;
 
 
