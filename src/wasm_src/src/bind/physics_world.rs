@@ -1,4 +1,4 @@
-use super::rigidbody::RigidBody;
+use super::{constraint::Constraint, rigidbody::RigidBody};
 
 #[link(name = "bullet")]
 extern "C" {
@@ -13,6 +13,10 @@ extern "C" {
     fn bw_world_add_rigidbody(world: *mut std::ffi::c_void, rigidbody: *mut std::ffi::c_void);
 
     fn bw_world_remove_rigidbody(world: *mut std::ffi::c_void, rigidbody: *mut std::ffi::c_void);
+
+    fn bw_world_add_constraint(world: *mut std::ffi::c_void, constraint: *mut std::ffi::c_void, disable_collisions_between_linked_bodies: u8);
+
+    fn bw_world_remove_constraint(world: *mut std::ffi::c_void, constraint: *mut std::ffi::c_void);
 }
 
 pub(crate) struct PhysicsWorld {
@@ -40,6 +44,15 @@ impl PhysicsWorld {
 
     pub(crate) fn remove_rigidbody(&mut self, rigidbody: &mut RigidBody) {
         unsafe { bw_world_remove_rigidbody(self.ptr, rigidbody.ptr_mut()) };
+    }
+
+    pub(crate) fn add_constraint(&mut self, constraint: &mut Constraint, disable_collisions_between_linked_bodies: bool) {
+        unsafe { bw_world_add_constraint(self.ptr, constraint.ptr_mut(), disable_collisions_between_linked_bodies as u8) };
+    }
+
+    pub(crate) fn remove_constraint(&mut self, constraint: &mut Constraint) {
+
+        unsafe { bw_world_remove_constraint(self.ptr, constraint.ptr_mut()) };
     }
 }
 

@@ -42,6 +42,14 @@ impl PhysicsWorld {
             self.inner.remove_rigidbody(&mut bundle.bodies_mut()[i]);
         }
     }
+
+    pub(crate) fn add_constraint(&mut self, constraint: &mut bind::constraint::Constraint, disable_collisions_between_linked_bodies: bool) {
+        self.inner.add_constraint(constraint, disable_collisions_between_linked_bodies);
+    }
+
+    pub(crate) fn remove_constraint(&mut self, constraint: &mut bind::constraint::Constraint) {
+        self.inner.remove_constraint(constraint);
+    }
 }
 
 #[wasm_bindgen(js_name = "createPhysicsWorld")]
@@ -96,4 +104,18 @@ pub fn physics_world_remove_rigidbody_bundle(world: *mut usize, bundle: *mut usi
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
     world.remove_rigidbody_bundle(bundle);
+}
+
+#[wasm_bindgen(js_name = "physicsWorldAddConstraint")]
+pub fn physics_world_add_constraint(world: *mut usize, constraint: *mut usize, disable_collisions_between_linked_bodies: bool) {
+    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
+    let constraint = unsafe { &mut *(constraint as *mut bind::constraint::Constraint) };
+    world.add_constraint(constraint, disable_collisions_between_linked_bodies);
+}
+
+#[wasm_bindgen(js_name = "physicsWorldRemoveConstraint")]
+pub fn physics_world_remove_constraint(world: *mut usize, constraint: *mut usize) {
+    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
+    let constraint = unsafe { &mut *(constraint as *mut bind::constraint::Constraint) };
+    world.remove_constraint(constraint);
 }

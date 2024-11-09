@@ -30,7 +30,7 @@ impl BoxShape {
         }
     }
 
-    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+    pub(super) fn ptr(&self) -> *const std::ffi::c_void {
         self.ptr
     }
 }
@@ -94,7 +94,7 @@ impl CapsuleShape {
         }
     }
 
-    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+    pub(super) fn ptr(&self) -> *const std::ffi::c_void {
         self.ptr
     }
 }
@@ -126,7 +126,7 @@ impl StaticPlaneShape {
         }
     }
 
-    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+    pub(super) fn ptr(&self) -> *const std::ffi::c_void {
         self.ptr
     }
 }
@@ -152,4 +152,15 @@ pub(crate) enum CollisionShape {
     Sphere(SphereShape),
     Capsule(CapsuleShape),
     StaticPlane(StaticPlaneShape),
+}
+
+impl CollisionShape {
+    pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
+        match self {
+            CollisionShape::Box(shape) => shape.ptr(),
+            CollisionShape::Sphere(shape) => shape.ptr(),
+            CollisionShape::Capsule(shape) => shape.ptr(),
+            CollisionShape::StaticPlane(shape) => shape.ptr(),
+        }
+    }
 }

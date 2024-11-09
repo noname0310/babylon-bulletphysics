@@ -67,34 +67,40 @@ public:
 	}
 };
 
-extern "C" void* bw_create_motion_state(float* transformBuffer) {
+extern "C" void* bw_create_motion_state(float* transformBuffer)
+{
     btTransform transform;
     transform.setFromOpenGLMatrix(transformBuffer);
     bwMotionState* motionState = new bwMotionState(transform);
     return motionState;
 }
 
-extern "C" void bw_destroy_motion_state(void* motionState) {
+extern "C" void bw_destroy_motion_state(void* motionState)
+{
 	bwMotionState* m = static_cast<bwMotionState*>(motionState);
 	delete m;
 }
 
-extern "C" void* bw_create_motion_state_bundle(size_t count) {
+extern "C" void* bw_create_motion_state_bundle(size_t count)
+{
 	bwMotionStateBundle* bundle = new bwMotionStateBundle(count);
 	return bundle;
 }
 
-extern "C" void bw_destroy_motion_state_bundle(void* bundle) {
+extern "C" void bw_destroy_motion_state_bundle(void* bundle)
+{
 	bwMotionStateBundle* b = static_cast<bwMotionStateBundle*>(bundle);
 	delete b;
 }
 
-extern "C" void* bw_motion_state_bundle_get_motion_states_ptr(void* bundle) {
+extern "C" void* bw_motion_state_bundle_get_motion_states_ptr(void* bundle)
+{
 	bwMotionStateBundle* b = static_cast<bwMotionStateBundle*>(bundle);
 	return b->getMotionStatesPtr();
 }
 
-extern "C" size_t bw_motion_state_bundle_get_count(void* bundle) {
+extern "C" size_t bw_motion_state_bundle_get_count(void* bundle)
+{
 	bwMotionStateBundle* b = static_cast<bwMotionStateBundle*>(bundle);
 	return b->getCount();
 }

@@ -1,4 +1,4 @@
-use super::{collision_shape::CollisionShape, motion_state::MotionState};
+use super::motion_state::MotionState;
 use crate::runtime;
 
 #[link(name = "bullet")]
@@ -54,12 +54,7 @@ impl RigidBodyConstructionInfo {
         motion_state: *const std::ffi::c_void,
     ) -> Self {
         Self {
-            shape: match info.shape {
-                CollisionShape::Box(box_shape) => box_shape.ptr(),
-                CollisionShape::Sphere(sphere_shape) => sphere_shape.ptr(),
-                CollisionShape::Capsule(capsule_shape) => capsule_shape.ptr(),
-                CollisionShape::StaticPlane(static_plane_shape) => static_plane_shape.ptr(),
-            },
+            shape: info.shape.ptr(),
             motion_state,
             motion_type: info.motion_type,
             mass: info.mass,
