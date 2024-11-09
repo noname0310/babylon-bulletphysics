@@ -124,6 +124,8 @@ impl Drop for Generic6DofSpringConstraint {
 pub(crate) enum Constraint {
     Generic6Dof(Generic6DofConstraint),
     Generic6DofSpring(Generic6DofSpringConstraint),
+    #[allow(dead_code)]
+    Unknown,
 }
 
 impl Constraint {
@@ -131,6 +133,7 @@ impl Constraint {
         match self {
             Constraint::Generic6Dof(constraint) => constraint.ptr_mut(),
             Constraint::Generic6DofSpring(constraint) => constraint.ptr_mut(),
+            Constraint::Unknown => panic!("Unknown constraint"),
         }
     }
 }
