@@ -60,7 +60,7 @@ pub fn destroy_constraint(ptr: *mut usize) {
 }
 
 #[wasm_bindgen(js_name = "constraintSetLinearLowerLimit")]
-pub fn generic6dof_constraint_set_linear_lower_limit(ptr: *mut usize, x: f32, y: f32, z: f32) {
+pub fn constraint_set_linear_lower_limit(ptr: *mut usize, x: f32, y: f32, z: f32) {
     let constraint = unsafe { &mut *(ptr as *mut Constraint) };
     
     match constraint {
@@ -77,7 +77,7 @@ pub fn generic6dof_constraint_set_linear_lower_limit(ptr: *mut usize, x: f32, y:
 }
 
 #[wasm_bindgen(js_name = "constraintSetLinearUpperLimit")]
-pub fn generic6dof_constraint_set_linear_upper_limit(ptr: *mut usize, x: f32, y: f32, z: f32) {
+pub fn constraint_set_linear_upper_limit(ptr: *mut usize, x: f32, y: f32, z: f32) {
     let constraint = unsafe { &mut *(ptr as *mut Constraint) };
     
     match constraint {
@@ -94,7 +94,7 @@ pub fn generic6dof_constraint_set_linear_upper_limit(ptr: *mut usize, x: f32, y:
 }
 
 #[wasm_bindgen(js_name = "constraintSetAngularLowerLimit")]
-pub fn generic6dof_constraint_set_angular_lower_limit(ptr: *mut usize, x: f32, y: f32, z: f32) {
+pub fn constraint_set_angular_lower_limit(ptr: *mut usize, x: f32, y: f32, z: f32) {
     let constraint = unsafe { &mut *(ptr as *mut Constraint) };
     
     match constraint {
@@ -111,8 +111,8 @@ pub fn generic6dof_constraint_set_angular_lower_limit(ptr: *mut usize, x: f32, y
 }
 
 #[wasm_bindgen(js_name = "constraintSetAngularUpperLimit")]
-pub fn generic6dof_constraint_set_angular_upper_limit(ptr: *mut usize, x: f32, y: f32, z: f32) {
-    let constraint = unsafe { &mut *(ptr as *mut Constraint) };
+pub fn constraint_set_angular_upper_limit(ptr: *mut usize, x: f32, y: f32, z: f32) {
+    let constraint: &mut Constraint = unsafe { &mut *(ptr as *mut Constraint) };
     
     match constraint {
         Constraint::Generic6Dof(constraint) => {
@@ -128,7 +128,7 @@ pub fn generic6dof_constraint_set_angular_upper_limit(ptr: *mut usize, x: f32, y
 }
 
 #[wasm_bindgen(js_name = "constraintEnableSpring")]
-pub fn generic6dof_spring_constraint_enable_spring(ptr: *mut usize, index: u8, on_off: bool) {
+pub fn constraint_enable_spring(ptr: *mut usize, index: u8, on_off: bool) {
     let constraint = unsafe { &mut *(ptr as *mut Constraint) };
     
     match constraint {
@@ -142,7 +142,7 @@ pub fn generic6dof_spring_constraint_enable_spring(ptr: *mut usize, index: u8, o
 }
 
 #[wasm_bindgen(js_name = "constraintSetStiffness")]
-pub fn generic6dof_spring_constraint_set_stiffness(ptr: *mut usize, index: u8, stiffness: f32) {
+pub fn constraint_set_stiffness(ptr: *mut usize, index: u8, stiffness: f32) {
     let constraint = unsafe { &mut *(ptr as *mut Constraint) };
     
     match constraint {
@@ -156,7 +156,7 @@ pub fn generic6dof_spring_constraint_set_stiffness(ptr: *mut usize, index: u8, s
 }
 
 #[wasm_bindgen(js_name = "constraintSetDamping")]
-pub fn generic6dof_spring_constraint_set_damping(ptr: *mut usize, index: u8, damping: f32) {
+pub fn constraint_set_damping(ptr: *mut usize, index: u8, damping: f32) {
     let constraint = unsafe { &mut *(ptr as *mut Constraint) };
     
     match constraint {
