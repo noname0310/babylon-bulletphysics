@@ -2441,7 +2441,7 @@ class SceneBuilder {
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "3878fc9906a61437e725.wasm";
+module.exports = __webpack_require__.p + "f79c89ed679563d4cb43.wasm";
 
 /***/ })
 
