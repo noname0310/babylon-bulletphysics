@@ -97,7 +97,8 @@ export default (env: any): webpack.Configuration & { devServer?: WebpackDevServe
         new eslintPlugin({
             extensions: ["ts", "tsx"],
             fix: true,
-            cache: true
+            cache: true,
+            configType: "flat"
         }),
         new copyWebpackPlugin({
             patterns: [
