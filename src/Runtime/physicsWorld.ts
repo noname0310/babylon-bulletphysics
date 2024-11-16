@@ -1,6 +1,7 @@
 import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import type { Constraint } from "./constraint";
 import type { RigidBody } from "./rigidBody";
 import type { RigidBodyBundle } from "./rigidBodyBundle";
 
@@ -9,12 +10,14 @@ class PhysicsWorldInner {
     private _ptr: number;
     private readonly _rigidBodyReferences: Set<RigidBody>;
     private readonly _rigidBodyBundleReferences: Set<RigidBodyBundle>;
+    private readonly _constraintReferences: Set<Constraint>;
 
     public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
         this._rigidBodyReferences = new Set<RigidBody>();
         this._rigidBodyBundleReferences = new Set<RigidBodyBundle>();
+        this._constraintReferences = new Set<Constraint>();
     }
 
     public dispose(): void {
@@ -24,14 +27,21 @@ class PhysicsWorldInner {
 
         this._wasmInstance.deref()?.destroyPhysicsWorld(this._ptr);
         this._ptr = 0;
+
         for (const rigidBody of this._rigidBodyReferences) {
             rigidBody.removeReference();
         }
         this._rigidBodyReferences.clear();
+
         for (const rigidBodyBundle of this._rigidBodyBundleReferences) {
             rigidBodyBundle.removeReference();
         }
         this._rigidBodyBundleReferences.clear();
+
+        for (const constraint of this._constraintReferences) {
+            constraint.removeReference();
+        }
+        this._constraintReferences.clear();
     }
 
     public get ptr(): number {
@@ -69,6 +79,24 @@ class PhysicsWorldInner {
     public removeRigidBodyBundleReference(rigidBodyBundle: RigidBodyBundle): boolean {
         if (this._rigidBodyBundleReferences.delete(rigidBodyBundle)) {
             rigidBodyBundle.removeReference();
+            return true;
+        }
+        return false;
+    }
+
+    public addConstraintReference(constraint: Constraint): boolean {
+        if (this._constraintReferences.has(constraint)) {
+            return false;
+        }
+
+        constraint.addReference();
+        this._constraintReferences.add(constraint);
+        return true;
+    }
+
+    public removeConstraintReference(constraint: Constraint): boolean {
+        if (this._constraintReferences.delete(constraint)) {
+            constraint.removeReference();
             return true;
         }
         return false;
@@ -164,6 +192,24 @@ export class PhysicsWorld {
         this._nullCheck();
         if (this._inner.removeRigidBodyBundleReference(rigidBodyBundle)) {
             this._wasmInstance.physicsWorldRemoveRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+
+    public addConstraint(constraint: Constraint, disableCollisionsBetweenLinkedBodies: boolean): boolean {
+        this._nullCheck();
+        if (this._inner.addConstraintReference(constraint)) {
+            this._wasmInstance.physicsWorldAddConstraint(this._inner.ptr, constraint.ptr, disableCollisionsBetweenLinkedBodies);
+            return true;
+        }
+        return false;
+    }
+
+    public removeConstraint(constraint: Constraint): boolean {
+        this._nullCheck();
+        if (this._inner.removeConstraintReference(constraint)) {
+            this._wasmInstance.physicsWorldRemoveConstraint(this._inner.ptr, constraint.ptr);
             return true;
         }
         return false;
