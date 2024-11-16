@@ -335,26 +335,6 @@ async function startWorkers(module, memory, builder) {
 
 let wasm;
 
-const heap = new Array(128).fill(undefined);
-
-heap.push(undefined, null, true, false);
-
-function getObject(idx) { return heap[idx]; }
-
-let heap_next = heap.length;
-
-function dropObject(idx) {
-    if (idx < 132) return;
-    heap[idx] = heap_next;
-    heap_next = idx;
-}
-
-function takeObject(idx) {
-    const ret = getObject(idx);
-    dropObject(idx);
-    return ret;
-}
-
 const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
 
 if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
@@ -373,6 +353,12 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8ArrayMemory0().slice(ptr, ptr + len));
 }
 
+const heap = new Array(128).fill(undefined);
+
+heap.push(undefined, null, true, false);
+
+let heap_next = heap.length;
+
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);
     const idx = heap_next;
@@ -384,15 +370,65 @@ function addHeapObject(obj) {
     return idx;
 }
 
+function getObject(idx) { return heap[idx]; }
+
+function dropObject(idx) {
+    if (idx < 132) return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
+}
+
 function _assertBoolean(n) {
     if (typeof(n) !== 'boolean') {
         throw new Error(`expected a boolean argument, found ${typeof(n)}`);
     }
 }
+/**
+*/
+function init() {
+    wasm.init();
+}
+
+/**
+* @returns {Runtime}
+*/
+function createBulletRuntime() {
+    const ret = wasm.createBulletRuntime();
+    return Runtime.__wrap(ret);
+}
 
 function _assertNum(n) {
     if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
 }
+/**
+* @param {number} size
+* @returns {number}
+*/
+function allocateBuffer(size) {
+    _assertNum(size);
+    const ret = wasm.allocateBuffer(size);
+    return ret >>> 0;
+}
+
+/**
+* Deallocate a buffer allocated by `allocateBuffer`.
+* # Safety
+* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
+* @param {number} ptr
+* @param {number} size
+*/
+function deallocateBuffer(ptr, size) {
+    _assertNum(ptr);
+    _assertNum(size);
+    wasm.deallocateBuffer(ptr, size);
+}
+
 /**
 * @param {number} info
 * @returns {number}
@@ -485,56 +521,6 @@ function rigidBodyBundleRestoreDynamic(ptr, index) {
     _assertNum(ptr);
     _assertNum(index);
     wasm.rigidBodyBundleRestoreDynamic(ptr, index);
-}
-
-/**
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @returns {number}
-*/
-function createBoxShape(x, y, z) {
-    const ret = wasm.createBoxShape(x, y, z);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @returns {number}
-*/
-function createSphereShape(radius) {
-    const ret = wasm.createSphereShape(radius);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @param {number} height
-* @returns {number}
-*/
-function createCapsuleShape(radius, height) {
-    const ret = wasm.createCapsuleShape(radius, height);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} normal_x
-* @param {number} normal_y
-* @param {number} normal_z
-* @param {number} plane_constant
-* @returns {number}
-*/
-function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
-    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyShape(ptr) {
-    _assertNum(ptr);
-    wasm.destroyShape(ptr);
 }
 
 /**
@@ -660,40 +646,53 @@ function constraintSetDamping(ptr, index, damping) {
 }
 
 /**
-*/
-function init() {
-    wasm.init();
-}
-
-/**
-* @returns {Runtime}
-*/
-function createBulletRuntime() {
-    const ret = wasm.createBulletRuntime();
-    return Runtime.__wrap(ret);
-}
-
-/**
-* @param {number} size
+* @param {number} x
+* @param {number} y
+* @param {number} z
 * @returns {number}
 */
-function allocateBuffer(size) {
-    _assertNum(size);
-    const ret = wasm.allocateBuffer(size);
+function createBoxShape(x, y, z) {
+    const ret = wasm.createBoxShape(x, y, z);
     return ret >>> 0;
 }
 
 /**
-* Deallocate a buffer allocated by `allocateBuffer`.
-* # Safety
-* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
-* @param {number} ptr
-* @param {number} size
+* @param {number} radius
+* @returns {number}
 */
-function deallocateBuffer(ptr, size) {
+function createSphereShape(radius) {
+    const ret = wasm.createSphereShape(radius);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @param {number} height
+* @returns {number}
+*/
+function createCapsuleShape(radius, height) {
+    const ret = wasm.createCapsuleShape(radius, height);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} normal_x
+* @param {number} normal_y
+* @param {number} normal_z
+* @param {number} plane_constant
+* @returns {number}
+*/
+function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
+    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyShape(ptr) {
     _assertNum(ptr);
-    _assertNum(size);
-    wasm.deallocateBuffer(ptr, size);
+    wasm.destroyShape(ptr);
 }
 
 /**
@@ -1024,12 +1023,12 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-        takeObject(arg0);
-    };
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
         const ret = getStringFromWasm0(arg0, arg1);
         return addHeapObject(ret);
+    };
+    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+        takeObject(arg0);
     };
     imports.wbg.__wbg_new_abda76e883ba8a5f = function() { return logError(function () {
         const ret = new Error();
@@ -1303,11 +1302,13 @@ class PhysicsWorldInner {
     _ptr;
     _rigidBodyReferences;
     _rigidBodyBundleReferences;
+    _constraintReferences;
     constructor(wasmInstance, ptr) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
         this._rigidBodyReferences = new Set();
         this._rigidBodyBundleReferences = new Set();
+        this._constraintReferences = new Set();
     }
     dispose() {
         if (this._ptr === 0) {
@@ -1323,6 +1324,10 @@ class PhysicsWorldInner {
             rigidBodyBundle.removeReference();
         }
         this._rigidBodyBundleReferences.clear();
+        for (const constraint of this._constraintReferences) {
+            constraint.removeReference();
+        }
+        this._constraintReferences.clear();
     }
     get ptr() {
         return this._ptr;
@@ -1353,6 +1358,21 @@ class PhysicsWorldInner {
     removeRigidBodyBundleReference(rigidBodyBundle) {
         if (this._rigidBodyBundleReferences.delete(rigidBodyBundle)) {
             rigidBodyBundle.removeReference();
+            return true;
+        }
+        return false;
+    }
+    addConstraintReference(constraint) {
+        if (this._constraintReferences.has(constraint)) {
+            return false;
+        }
+        constraint.addReference();
+        this._constraintReferences.add(constraint);
+        return true;
+    }
+    removeConstraintReference(constraint) {
+        if (this._constraintReferences.delete(constraint)) {
+            constraint.removeReference();
             return true;
         }
         return false;
@@ -1428,6 +1448,22 @@ class PhysicsWorld {
         this._nullCheck();
         if (this._inner.removeRigidBodyBundleReference(rigidBodyBundle)) {
             this._wasmInstance.physicsWorldRemoveRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+    addConstraint(constraint, disableCollisionsBetweenLinkedBodies) {
+        this._nullCheck();
+        if (this._inner.addConstraintReference(constraint)) {
+            this._wasmInstance.physicsWorldAddConstraint(this._inner.ptr, constraint.ptr, disableCollisionsBetweenLinkedBodies);
+            return true;
+        }
+        return false;
+    }
+    removeConstraint(constraint) {
+        this._nullCheck();
+        if (this._inner.removeConstraintReference(constraint)) {
+            this._wasmInstance.physicsWorldRemoveConstraint(this._inner.ptr, constraint.ptr);
             return true;
         }
         return false;
@@ -2441,7 +2477,7 @@ class SceneBuilder {
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "f79c89ed679563d4cb43.wasm";
+module.exports = __webpack_require__.p + "e4472634f5e165d59196.wasm";
 
 /***/ })
 
