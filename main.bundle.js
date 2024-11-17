@@ -55,7 +55,7 @@ class BaseRuntime {
 __webpack_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3720);
 /* harmony import */ var _baseRuntime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1478);
-/* harmony import */ var _sceneBuilder__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3708);
+/* harmony import */ var _sceneBuilder__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3266);
 
 
 
@@ -88,7 +88,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 3708:
+/***/ 3266:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -272,6 +272,163 @@ async function getBulletWasmInstance(instanceType, threadCount = navigator.hardw
     await bulletWasmInstance.initThreadPool?.(threadCount);
     resolvePromise(bulletWasmInstance);
     return bulletWasmInstance;
+}
+
+;// ./src/Runtime/constraint.ts
+class ConstraintInner {
+    _wasmInstance;
+    _ptr;
+    _bodyReference;
+    _referenceCount;
+    constructor(wasmInstance, ptr, bodyReference) {
+        this._wasmInstance = wasmInstance;
+        this._ptr = ptr;
+        this._bodyReference = bodyReference;
+        if (Array.isArray(bodyReference)) {
+            bodyReference[0].addReference();
+            bodyReference[1].addReference();
+        }
+        else {
+            bodyReference.addReference();
+        }
+        this._referenceCount = 0;
+    }
+    dispose() {
+        if (this._referenceCount > 0) {
+            throw new Error("Cannot dispose constraint while it still has references");
+        }
+        if (this._ptr === 0) {
+            return;
+        }
+        this._wasmInstance.deref()?.destroyConstraint(this._ptr);
+        this._ptr = 0;
+        if (Array.isArray(this._bodyReference)) {
+            this._bodyReference[0].removeReference();
+            this._bodyReference[1].removeReference();
+        }
+        else {
+            this._bodyReference.removeReference();
+        }
+        this._bodyReference = null;
+    }
+    get ptr() {
+        return this._ptr;
+    }
+    addReference() {
+        this._referenceCount += 1;
+    }
+    removeReference() {
+        this._referenceCount -= 1;
+    }
+}
+function constraintFinalizer(inner) {
+    inner.dispose();
+}
+const constraintRegistryMap = new WeakMap();
+class Constraint {
+    _wasmInstance;
+    _inner;
+    constructor(wasmInstance, ptr, bodyReference) {
+        this._wasmInstance = wasmInstance;
+        this._inner = new ConstraintInner(new WeakRef(wasmInstance), ptr, bodyReference);
+        let registry = constraintRegistryMap.get(wasmInstance);
+        if (registry === undefined) {
+            registry = new FinalizationRegistry(constraintFinalizer);
+            constraintRegistryMap.set(wasmInstance, registry);
+        }
+        registry.register(this, this._inner, this);
+    }
+    dispose() {
+        if (this._inner.ptr === 0) {
+            return;
+        }
+        this._inner.dispose();
+        const registry = constraintRegistryMap.get(this._wasmInstance);
+        registry?.unregister(this);
+    }
+    get ptr() {
+        return this._inner.ptr;
+    }
+    addReference() {
+        this._inner.addReference();
+    }
+    removeReference() {
+        this._inner.removeReference();
+    }
+}
+const matrixBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
+class Generic6DofConstraint extends Constraint {
+    constructor(wasmInstance, bodyAOrBundle, bodyBOrIndices, frameA, frameB, useLinearReferenceFrameA) {
+        const frameABufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
+        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
+        frameA.copyToArray(frameABuffer.array);
+        const frameBBufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
+        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
+        frameB.copyToArray(frameBBuffer.array);
+        const isBundleParam = Array.isArray(bodyBOrIndices);
+        const ptr = isBundleParam
+            ? wasmInstance.createGeneric6DofConstraintFromBundle(bodyAOrBundle.ptr, bodyBOrIndices[0], bodyBOrIndices[1], frameABufferPtr, frameBBufferPtr, useLinearReferenceFrameA)
+            : wasmInstance.createGeneric6DofConstraint(bodyAOrBundle.ptr, bodyBOrIndices.ptr, frameABufferPtr, frameBBufferPtr, useLinearReferenceFrameA);
+        wasmInstance.deallocateBuffer(frameABufferPtr, matrixBufferSize);
+        wasmInstance.deallocateBuffer(frameBBufferPtr, matrixBufferSize);
+        const bodyReference = isBundleParam
+            ? bodyAOrBundle
+            : [bodyAOrBundle, bodyBOrIndices];
+        super(wasmInstance, ptr, bodyReference);
+    }
+    setLinearLowerLimit(limit) {
+        this._wasmInstance.constraintSetLinearLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+    }
+    setLinearUpperLimit(limit) {
+        this._wasmInstance.constraintSetLinearUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+    }
+    setAngularLowerLimit(limit) {
+        this._wasmInstance.constraintSetAngularLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+    }
+    setAngularUpperLimit(limit) {
+        this._wasmInstance.constraintSetAngularUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+    }
+}
+class Generic6DofSpringConstraint extends Constraint {
+    constructor(wasmInstance, bodyAOrBundle, bodyBOrIndices, frameA, frameB, useLinearReferenceFrameA) {
+        const frameABufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
+        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
+        frameA.copyToArray(frameABuffer.array);
+        const frameBBufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
+        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
+        frameB.copyToArray(frameBBuffer.array);
+        const isBundleParam = Array.isArray(bodyBOrIndices);
+        const ptr = isBundleParam
+            ? wasmInstance.createGeneric6DofSpringConstraintFromBundle(bodyAOrBundle.ptr, bodyBOrIndices[0], bodyBOrIndices[1], frameABufferPtr, frameBBufferPtr, useLinearReferenceFrameA)
+            : wasmInstance.createGeneric6DofSpringConstraint(bodyAOrBundle.ptr, bodyBOrIndices.ptr, frameABufferPtr, frameBBufferPtr, useLinearReferenceFrameA);
+        wasmInstance.deallocateBuffer(frameABufferPtr, matrixBufferSize);
+        wasmInstance.deallocateBuffer(frameBBufferPtr, matrixBufferSize);
+        const bodyReference = isBundleParam
+            ? bodyAOrBundle
+            : [bodyAOrBundle, bodyBOrIndices];
+        super(wasmInstance, ptr, bodyReference);
+    }
+    setLinearLowerLimit(limit) {
+        this._wasmInstance.constraintSetLinearLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+    }
+    setLinearUpperLimit(limit) {
+        this._wasmInstance.constraintSetLinearUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+    }
+    setAngularLowerLimit(limit) {
+        this._wasmInstance.constraintSetAngularLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+    }
+    setAngularUpperLimit(limit) {
+        this._wasmInstance.constraintSetAngularUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+    }
+    enableSpring(index, onOff) {
+        this._wasmInstance.constraintEnableSpring(this._inner.ptr, index, onOff);
+    }
+    setStiffness(index, stiffness) {
+        this._wasmInstance.constraintSetStiffness(this._inner.ptr, index, stiffness);
+    }
+    setDamping(index, damping) {
+        this._wasmInstance.constraintSetDamping(this._inner.ptr, index, damping);
+    }
 }
 
 ;// ./src/wasm/md/snippets/wasm-bindgen-rayon-9d40dbf53d170728/src/workerHelpers.js
@@ -2435,6 +2592,7 @@ class RigidBodyConstructionInfoList {
 
 
 
+
 class SceneBuilder {
     async build(_canvas, engine) {
         const scene = new core_scene/* Scene */.Z(engine);
@@ -2486,7 +2644,7 @@ class SceneBuilder {
             const groundRigidBody = new RigidBody(wasmInstance, groundRbInfo);
             world.addRigidBody(groundRigidBody);
         }
-        const rbCount = 1024;
+        const rbCount = 512 * 2;
         const baseBox = (0,boxBuilder/* CreateBox */.an)("box", { size: 2 }, scene);
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
@@ -2504,6 +2662,23 @@ class SceneBuilder {
         }
         const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
         world.addRigidBodyBundle(boxRigidBodyBundle);
+        for (let i = 0; i < rbCount; i += 2) {
+            const indices = [i, i + 1];
+            const constraint = new Generic6DofSpringConstraint(wasmInstance, boxRigidBodyBundle, indices, math_vector/* Matrix */.uq.Translation(0, -1.2, 0), math_vector/* Matrix */.uq.Translation(0, 1.2, 0), true);
+            constraint.setLinearLowerLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
+            constraint.setLinearUpperLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
+            constraint.setAngularLowerLimit(new math_vector/* Vector3 */.Pq(Math.PI / 4, 0, 0));
+            constraint.setAngularUpperLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
+            for (let i = 0; i < 6; ++i) {
+                constraint.enableSpring(i, true);
+                constraint.setStiffness(i, 100);
+                constraint.setDamping(i, 1);
+            }
+            world.addConstraint(constraint, false);
+        }
+        world.stepSimulation(1 / 60, 10, 1 / 60);
+        world.stepSimulation(1 / 60, 10, 1 / 60);
+        world.stepSimulation(1 / 60, 10, 1 / 60);
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < rbCount; ++i) {
