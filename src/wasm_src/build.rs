@@ -33,8 +33,14 @@ fn main() {
         // .define("BT_USE_SSE_IN_API", None)
         .define("BT_NO_SIMD_OPERATOR_OVERLOADS", None)
         .define("BT_USE_SIMD_VECTOR3", None)
-        .define("__wasm32__", None)
+        .define("__wasm32__", None);
+
+    
+    #[cfg(debug_assertions)]
+    build
+        .define("BT_DEBUG", None);
         
+    build
         .includes([
             "bullet_stdlib",
             "bullet_src"
