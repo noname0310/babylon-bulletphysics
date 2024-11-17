@@ -58,7 +58,7 @@ export async function getBulletWasmInstance(
 
     const bulletWasmInstance = {...wasmBindgen} as BulletWasmInstance;
 
-    const initOutput = await bulletWasmInstance.default();
+    const initOutput = await bulletWasmInstance.default({});
 
     bulletWasmInstance.init();
     const memory = initOutput.memory;
