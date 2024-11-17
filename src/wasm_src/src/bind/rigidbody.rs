@@ -206,9 +206,9 @@ impl RigidBody {
         }
     }
 
-    // pub(super) fn ptr(&self) -> *const std::ffi::c_void {
-    //     self.ptr
-    // }
+    pub(super) fn ptr(&self) -> *const std::ffi::c_void {
+        self.ptr
+    }
 
     pub(super) fn ptr_mut(&mut self) -> *mut std::ffi::c_void {
         self.ptr

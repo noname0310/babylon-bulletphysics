@@ -2,7 +2,7 @@ use glam::{Vec3, Mat4};
 
 use crate::bind::constraint::{Generic6DofConstraint, Generic6DofSpringConstraint, Constraint};
 
-use super::rigidbody::RigidBody;
+use super::rigidbody::{RigidBody, RigidBodyBundle};
 
 use wasm_bindgen::prelude::*;
 
@@ -29,6 +29,29 @@ pub fn create_generic6dof_constraint(
     Box::into_raw(constraint) as *mut usize
 }
 
+#[wasm_bindgen(js_name = "createGeneric6DofConstraintFromBundle")]
+pub fn create_generic6dof_constraint_from_bundle(
+    body_bundle: *mut usize,
+    body_a_index: u32,
+    body_b_index: u32,
+    frame_a: *const f32,
+    frame_b: *const f32,
+    use_linear_reference_frame_a: bool,
+) -> *mut usize {
+    let body_bundle = unsafe { &mut *(body_bundle as *mut RigidBodyBundle) };
+    let body_a = &body_bundle.bodies()[body_a_index as usize];
+    let body_b = &body_bundle.bodies()[body_b_index as usize];
+
+    let frame_a = unsafe { std::slice::from_raw_parts(frame_a, 16) };
+    let frame_b = unsafe { std::slice::from_raw_parts(frame_b, 16) };
+    let frame_a = Mat4::from_cols_slice(frame_a);
+    let frame_b = Mat4::from_cols_slice(frame_b);
+
+    let constraint = Generic6DofConstraint::new(body_a, body_b, &frame_a, &frame_b, use_linear_reference_frame_a);
+    let constraint = Box::new(Constraint::Generic6Dof(constraint));
+    Box::into_raw(constraint) as *mut usize
+}
+
 #[wasm_bindgen(js_name = "createGeneric6DofSpringConstraint")]
 pub fn create_generic6dof_spring_constraint(
     body_a: *mut usize,
@@ -41,6 +64,29 @@ pub fn create_generic6dof_spring_constraint(
     let body_b = unsafe { &mut *(body_b as *mut RigidBody) };
     let body_a = body_a.get_inner_mut();
     let body_b = body_b.get_inner_mut();
+
+    let frame_a = unsafe { std::slice::from_raw_parts(frame_a, 16) };
+    let frame_b = unsafe { std::slice::from_raw_parts(frame_b, 16) };
+    let frame_a = Mat4::from_cols_slice(frame_a);
+    let frame_b = Mat4::from_cols_slice(frame_b);
+
+    let constraint = Generic6DofSpringConstraint::new(body_a, body_b, &frame_a, &frame_b, use_linear_reference_frame_a);
+    let constraint = Box::new(Constraint::Generic6DofSpring(constraint));
+    Box::into_raw(constraint) as *mut usize
+}
+
+#[wasm_bindgen(js_name = "createGeneric6DofSpringConstraintFromBundle")]
+pub fn create_generic6dof_spring_constraint_from_bundle(
+    body_bundle: *mut usize,
+    body_a_index: u32,
+    body_b_index: u32,
+    frame_a: *const f32,
+    frame_b: *const f32,
+    use_linear_reference_frame_a: bool,
+) -> *mut usize {
+    let body_bundle = unsafe { &mut *(body_bundle as *mut RigidBodyBundle) };
+    let body_a = &body_bundle.bodies()[body_a_index as usize];
+    let body_b = &body_bundle.bodies()[body_b_index as usize];
 
     let frame_a = unsafe { std::slice::from_raw_parts(frame_a, 16) };
     let frame_b = unsafe { std::slice::from_raw_parts(frame_b, 16) };

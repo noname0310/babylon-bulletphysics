@@ -51,7 +51,6 @@ impl PhysicsWorld {
     }
 
     pub(crate) fn remove_constraint(&mut self, constraint: &mut Constraint) {
-
         unsafe { bw_world_remove_constraint(self.ptr, constraint.ptr_mut()) };
     }
 }

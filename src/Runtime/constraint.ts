@@ -3,19 +3,24 @@ import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { RigidBody } from "./rigidBody";
+import type { RigidBodyBundle } from "./rigidBodyBundle";
 
 class ConstraintInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
     private _ptr: number;
-    private _bodyReference: Nullable<[RigidBody, RigidBody]>;
+    private _bodyReference: Nullable<readonly [RigidBody, RigidBody] | RigidBodyBundle>;
     private _referenceCount: number;
 
-    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, bodyReference: [RigidBody, RigidBody]) {
+    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, bodyReference: readonly [RigidBody, RigidBody] | RigidBodyBundle) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
         this._bodyReference = bodyReference;
-        bodyReference[0].addReference();
-        bodyReference[1].addReference();
+        if (Array.isArray(bodyReference)) {
+            bodyReference[0].addReference();
+            bodyReference[1].addReference();
+        } else {
+            (bodyReference as RigidBodyBundle).addReference();
+        }
         this._referenceCount = 0;
     }
 
@@ -30,8 +35,12 @@ class ConstraintInner {
 
         this._wasmInstance.deref()?.destroyConstraint(this._ptr);
         this._ptr = 0;
-        this._bodyReference![0].removeReference();
-        this._bodyReference![1].removeReference();
+        if (Array.isArray(this._bodyReference)) {
+            this._bodyReference[0].removeReference();
+            this._bodyReference[1].removeReference();
+        } else {
+            (this._bodyReference as RigidBodyBundle).removeReference();
+        }
         this._bodyReference = null;
     }
 
@@ -58,7 +67,7 @@ export abstract class Constraint {
     protected readonly _wasmInstance: BulletWasmInstance;
     protected readonly _inner: ConstraintInner;
 
-    protected constructor(wasmInstance: BulletWasmInstance, ptr: number, bodyReference: [RigidBody, RigidBody]) {
+    protected constructor(wasmInstance: BulletWasmInstance, ptr: number, bodyReference: readonly [RigidBody, RigidBody] | RigidBodyBundle) {
         this._wasmInstance = wasmInstance;
         this._inner = new ConstraintInner(new WeakRef(wasmInstance), ptr, bodyReference);
 
@@ -103,6 +112,24 @@ export class Generic6DofConstraint extends Constraint {
         frameA: Matrix,
         frameB: Matrix,
         useLinearReferenceFrameA: boolean
+    );
+
+    public constructor(
+        wasmInstance: BulletWasmInstance,
+        bodyBundle: RigidBodyBundle,
+        bodyIndices: readonly [number, number],
+        frameA: Matrix,
+        frameB: Matrix,
+        useLinearReferenceFrameA: boolean
+    );
+
+    public constructor(
+        wasmInstance: BulletWasmInstance,
+        bodyAOrBundle: RigidBody | RigidBodyBundle,
+        bodyBOrIndices: RigidBody | readonly [number, number],
+        frameA: Matrix,
+        frameB: Matrix,
+        useLinearReferenceFrameA: boolean
     ) {
         const frameABufferPtr = wasmInstance.allocateBuffer(16);
         const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, 16);
@@ -112,11 +139,33 @@ export class Generic6DofConstraint extends Constraint {
         const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, 16);
         frameB.copyToArray(frameBBuffer.array);
 
-        const ptr = wasmInstance.createGeneric6DofConstraint(bodyA.ptr, bodyB.ptr, frameABufferPtr, frameBBufferPtr, useLinearReferenceFrameA);
+        const isBundleParam = Array.isArray(bodyBOrIndices);
+
+        const ptr = isBundleParam
+            ? wasmInstance.createGeneric6DofConstraintFromBundle(
+                bodyAOrBundle.ptr,
+                bodyBOrIndices[0],
+                bodyBOrIndices[1],
+                frameABufferPtr,
+                frameBBufferPtr,
+                useLinearReferenceFrameA
+            )
+            : wasmInstance.createGeneric6DofConstraint(
+                bodyAOrBundle.ptr,
+                (bodyBOrIndices as RigidBody).ptr,
+                frameABufferPtr,
+                frameBBufferPtr,
+                useLinearReferenceFrameA
+            );
 
         wasmInstance.deallocateBuffer(frameABufferPtr, 16);
         wasmInstance.deallocateBuffer(frameBBufferPtr, 16);
-        super(wasmInstance, ptr, [bodyA, bodyB]);
+
+        const bodyReference = isBundleParam
+            ? (bodyAOrBundle as RigidBodyBundle)
+            : [bodyAOrBundle as RigidBody, bodyBOrIndices as RigidBody] as const;
+
+        super(wasmInstance, ptr, bodyReference);
     }
 
     public setLinearLowerLimit(limit: Vector3): void {
@@ -144,6 +193,24 @@ export class Generic6DofSpringConstraint extends Constraint {
         frameA: Matrix,
         frameB: Matrix,
         useLinearReferenceFrameA: boolean
+    );
+
+    public constructor(
+        wasmInstance: BulletWasmInstance,
+        bodyBundle: RigidBodyBundle,
+        bodyIndices: readonly [number, number],
+        frameA: Matrix,
+        frameB: Matrix,
+        useLinearReferenceFrameA: boolean
+    );
+
+    public constructor(
+        wasmInstance: BulletWasmInstance,
+        bodyAOrBundle: RigidBody | RigidBodyBundle,
+        bodyBOrIndices: RigidBody | readonly [number, number],
+        frameA: Matrix,
+        frameB: Matrix,
+        useLinearReferenceFrameA: boolean
     ) {
         const frameABufferPtr = wasmInstance.allocateBuffer(16);
         const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, 16);
@@ -153,11 +220,33 @@ export class Generic6DofSpringConstraint extends Constraint {
         const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, 16);
         frameB.copyToArray(frameBBuffer.array);
 
-        const ptr = wasmInstance.createGeneric6DofSpringConstraint(bodyA.ptr, bodyB.ptr, frameABufferPtr, frameBBufferPtr, useLinearReferenceFrameA);
+        const isBundleParam = Array.isArray(bodyBOrIndices);
+
+        const ptr = isBundleParam
+            ? wasmInstance.createGeneric6DofSpringConstraintFromBundle(
+                bodyAOrBundle.ptr,
+                bodyBOrIndices[0],
+                bodyBOrIndices[1],
+                frameABufferPtr,
+                frameBBufferPtr,
+                useLinearReferenceFrameA
+            )
+            : wasmInstance.createGeneric6DofSpringConstraint(
+                bodyAOrBundle.ptr,
+                (bodyBOrIndices as RigidBody).ptr,
+                frameABufferPtr,
+                frameBBufferPtr,
+                useLinearReferenceFrameA
+            );
 
         wasmInstance.deallocateBuffer(frameABufferPtr, 16);
         wasmInstance.deallocateBuffer(frameBBufferPtr, 16);
-        super(wasmInstance, ptr, [bodyA, bodyB]);
+
+        const bodyReference = isBundleParam
+            ? (bodyAOrBundle as RigidBodyBundle)
+            : [bodyAOrBundle as RigidBody, bodyBOrIndices as RigidBody] as const;
+
+        super(wasmInstance, ptr, bodyReference);
     }
 
     public setLinearLowerLimit(limit: Vector3): void {
