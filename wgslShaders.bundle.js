@@ -461,8 +461,7 @@ attribute instanceColor : vec4<f32>;
 #if defined(THIN_INSTANCES) && !defined(WORLD_UBO)
 uniform world : mat4x4<f32>;
 #endif
-#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 attribute previousWorld0 : vec4<f32>;attribute previousWorld1 : vec4<f32>;attribute previousWorld2 : vec4<f32>;attribute previousWorld3 : vec4<f32>;
 #ifdef THIN_INSTANCES
 uniform previousWorld : mat4x4<f32>;
@@ -472,8 +471,7 @@ uniform previousWorld : mat4x4<f32>;
 #if !defined(WORLD_UBO)
 uniform world : mat4x4<f32>;
 #endif
-#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 uniform previousWorld : mat4x4<f32>;
 #endif
 #endif
@@ -496,8 +494,7 @@ const instancesDeclarationWGSL = { name, shader };
 const name = "instancesVertex";
 const shader = `#ifdef INSTANCES
 var finalWorld=mat4x4<f32>(vertexInputs.world0,vertexInputs.world1,vertexInputs.world2,vertexInputs.world3);
-#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 var finalPreviousWorld=mat4x4<f32>(
 vertexInputs.previousWorld0,vertexInputs.previousWorld1,
 vertexInputs.previousWorld2,vertexInputs.previousWorld3);
@@ -508,8 +505,7 @@ finalWorld=uniforms.world*finalWorld;
 #else
 finalWorld=mesh.world*finalWorld;
 #endif
-#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 finalPreviousWorld=uniforms.previousWorld*finalPreviousWorld;
 #endif
 #endif
@@ -519,8 +515,7 @@ var finalWorld=uniforms.world;
 #else
 var finalWorld=mesh.world;
 #endif
-#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 var finalPreviousWorld=uniforms.previousWorld;
 #endif
 #endif
@@ -2386,63 +2381,52 @@ color=vec4f(color.rgb*color.a, color.a);
 #endif
 #define CUSTOM_FRAGMENT_BEFORE_FRAGCOLOR
 #ifdef PREPASS
-var writeGeometryInfo: f32=select(0.0,1.0,color.a>0.4);var fragData: array<vec4<f32>,SCENE_MRT_COUNT>;fragData[0]=color; 
+var writeGeometryInfo: f32=select(0.0,1.0,color.a>0.4);var fragData: array<vec4<f32>,SCENE_MRT_COUNT>;
+#ifdef PREPASS_COLOR
+fragData[PREPASS_COLOR_INDEX]=color; 
+#endif
 #ifdef PREPASS_POSITION
-fragData[PREPASS_POSITION_INDEX]= vec4f(fragmentInputs.vPositionW,writeGeometryInfo);
+fragData[PREPASS_POSITION_INDEX]=vec4f(fragmentInputs.vPositionW,writeGeometryInfo);
 #endif
 #ifdef PREPASS_LOCAL_POSITION
-fragData[PREPASS_LOCAL_POSITION_INDEX] =
-vec4f(fragmentInputs.vPosition,writeGeometryInfo);
+fragData[PREPASS_LOCAL_POSITION_INDEX]=vec4f(fragmentInputs.vPosition,writeGeometryInfo);
 #endif
 #ifdef PREPASS_VELOCITY
 var a: vec2f=(fragmentInputs.vCurrentPosition.xy/fragmentInputs.vCurrentPosition.w)*0.5+0.5;var b: vec2f=(fragmentInputs.vPreviousPosition.xy/fragmentInputs.vPreviousPosition.w)*0.5+0.5;var velocity: vec2f=abs(a-b);velocity= vec2f(pow(velocity.x,1.0/3.0),pow(velocity.y,1.0/3.0))*sign(a-b)*0.5+0.5;fragData[PREPASS_VELOCITY_INDEX]= vec4f(velocity,0.0,writeGeometryInfo);
 #elif defined(PREPASS_VELOCITY_LINEAR)
-var velocity : vec2f=vec2f(0.5)*((fragmentInputs.vPreviousPosition.xy /
-fragmentInputs.vPreviousPosition.w) -
-(fragmentInputs.vCurrentPosition.xy /
-fragmentInputs.vCurrentPosition.w));fragData[PREPASS_VELOCITY_LINEAR_INDEX] =
-vec4f(velocity,0.0,writeGeometryInfo);
+var velocity : vec2f=vec2f(0.5)*((fragmentInputs.vPreviousPosition.xy/fragmentInputs.vPreviousPosition.w) -
+(fragmentInputs.vCurrentPosition.xy/fragmentInputs.vCurrentPosition.w));fragData[PREPASS_VELOCITY_LINEAR_INDEX]=vec4f(velocity,0.0,writeGeometryInfo);
 #endif
 #ifdef PREPASS_IRRADIANCE
-fragData[PREPASS_IRRADIANCE_INDEX] =
-vec4f(0.0,0.0,0.0,
-writeGeometryInfo); 
+fragData[PREPASS_IRRADIANCE_INDEX]=vec4f(0.0,0.0,0.0,writeGeometryInfo); 
 #endif
 #ifdef PREPASS_DEPTH
-fragData[PREPASS_DEPTH_INDEX]=vec4f(fragmentInputs.vViewPos.z,0.0,0.0,
-writeGeometryInfo); 
+fragData[PREPASS_DEPTH_INDEX]=vec4f(fragmentInputs.vViewPos.z,0.0,0.0,writeGeometryInfo); 
 #endif
 #ifdef PREPASS_SCREENSPACE_DEPTH
-fragData[PREPASS_SCREENSPACE_DEPTH_INDEX] =
-vec4f(fragmentInputs.position.z,0.0,0.0,writeGeometryInfo);
+fragData[PREPASS_SCREENSPACE_DEPTH_INDEX]=vec4f(fragmentInputs.position.z,0.0,0.0,writeGeometryInfo);
 #endif
 #ifdef PREPASS_NORMAL
 #ifdef PREPASS_NORMAL_WORLDSPACE
-fragData[PREPASS_NORMAL_INDEX] =
-vec4f(normalW,writeGeometryInfo); 
+fragData[PREPASS_NORMAL_INDEX]=vec4f(normalW,writeGeometryInfo);
 #else
-fragData[PREPASS_NORMAL_INDEX] =
-vec4f(normalize((scene.view*vec4f(normalW,0.0)).rgb),
-writeGeometryInfo); 
+fragData[PREPASS_NORMAL_INDEX]=vec4f(normalize((scene.view*vec4f(normalW,0.0)).rgb),writeGeometryInfo);
 #endif
 #endif
 #ifdef PREPASS_WORLD_NORMAL
-fragData[PREPASS_WORLD_NORMAL_INDEX] =
-vec4f(normalW*0.5+0.5,writeGeometryInfo); 
+fragData[PREPASS_WORLD_NORMAL_INDEX]=vec4f(normalW*0.5+0.5,writeGeometryInfo);
+#endif
+#ifdef PREPASS_ALBEDO
+fragData[PREPASS_ALBEDO_INDEX]=vec4f(baseColor.rgb,writeGeometryInfo);
 #endif
 #ifdef PREPASS_ALBEDO_SQRT
-fragData[PREPASS_ALBEDO_SQRT_INDEX] =
-vec4f(0.0,0.0,0.0,
-writeGeometryInfo); 
+fragData[PREPASS_ALBEDO_SQRT_INDEX]=vec4f(sqrt(baseColor.rgb),writeGeometryInfo);
 #endif
 #ifdef PREPASS_REFLECTIVITY
 #if defined(SPECULAR)
-fragData[PREPASS_REFLECTIVITY_INDEX] =
-vec4f(toLinearSpaceVec4(specularMapColor)) *
-writeGeometryInfo; 
+fragData[PREPASS_REFLECTIVITY_INDEX]=vec4f(toLinearSpaceVec4(specularMapColor))*writeGeometryInfo; 
 #else
-fragData[PREPASS_REFLECTIVITY_INDEX] =
-vec4f(toLinearSpaceVec3(specularColor),1.0)*writeGeometryInfo;
+fragData[PREPASS_REFLECTIVITY_INDEX]=vec4f(toLinearSpaceVec3(specularColor),1.0)*writeGeometryInfo;
 #endif
 #endif
 #if SCENE_MRT_COUNT>0
@@ -2684,8 +2668,7 @@ vertexOutputs.vViewPos=(scene.view*worldPos).rgb;
 #ifdef PREPASS_LOCAL_POSITION
 vertexOutputs.vPosition=positionUpdated.xyz;
 #endif
-#if defined(PREPASS_VELOCITY) && defined(BONES_VELOCITY_ENABLED) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if (defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR)) && defined(BONES_VELOCITY_ENABLED)
 vertexOutputs.vCurrentPosition=scene.viewProjection*worldPos;
 #if NUM_BONE_INFLUENCERS>0
 var previousInfluence: mat4x4f;previousInfluence=mPreviousBones[ i32(matricesIndices[0])]*matricesWeights[0];
@@ -3003,11 +2986,8 @@ vertexOutputs.vPositionUVW=positionUpdated;
 #define CUSTOM_VERTEX_UPDATE_POSITION
 #define CUSTOM_VERTEX_UPDATE_NORMAL
 #include<instancesVertex>
-#if defined(PREPASS) && (defined(PREPASS_VELOCITY) && !defined(BONES_VELOCITY_ENABLED) || defined(PREPASS_VELOCITY_LINEAR))
-vertexOutputs.vCurrentPosition =
-scene.viewProjection*finalWorld*vec4f(positionUpdated,1.0);vertexOutputs.vPreviousPosition=uniforms.previousViewProjection *
-finalPreviousWorld *
-vec4f(positionUpdated,1.0);
+#if defined(PREPASS) && ((defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR)) && !defined(BONES_VELOCITY_ENABLED)
+vertexOutputs.vCurrentPosition=scene.viewProjection*finalWorld*vec4f(positionUpdated,1.0);vertexOutputs.vPreviousPosition=uniforms.previousViewProjection*finalPreviousWorld*vec4f(positionUpdated,1.0);
 #endif
 #include<bonesVertex>
 #include<bakedVertexAnimation>
@@ -3030,7 +3010,9 @@ if (gl_ViewID_OVR==0u) {vertexOutputs.position=scene.viewProjection*worldPos;} e
 vertexOutputs.position=scene.viewProjection*worldPos;
 #endif
 vertexOutputs.vPositionW= worldPos.xyz;
+#ifdef PREPASS
 #include<prePassVertex>
+#endif
 #if defined(REFLECTIONMAP_EQUIRECTANGULAR_FIXED) || defined(REFLECTIONMAP_MIRROREDEQUIRECTANGULAR_FIXED)
 vertexOutputs.vDirectionW=normalize((finalWorld* vec4f(positionUpdated,0.0)).xyz);
 #endif

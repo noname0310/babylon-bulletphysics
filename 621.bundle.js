@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[80],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[621],{
 
 /***/ 5616:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
@@ -828,6 +828,8 @@ var decorators = __webpack_require__(9259);
 var observable = __webpack_require__(9848);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
 var math_vector = __webpack_require__(9923);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.scalar.functions.js
+var math_scalar_functions = __webpack_require__(4867);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/node.js
 var node = __webpack_require__(4870);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/mesh.js + 8 modules
@@ -978,6 +980,7 @@ class AutoRotationBehavior {
         }
         this._attachedCamera.onAfterCheckInputsObservable.remove(this._onAfterCheckInputsObserver);
         this._attachedCamera = null;
+        this._lastFrameTime = null;
     }
     /**
      * Force-reset the last interaction time
@@ -1382,8 +1385,6 @@ class BezierCurveEase extends EasingFunction {
 //# sourceMappingURL=easing.js.map
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.color.js
 var math_color = __webpack_require__(6041);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.scalar.functions.js
-var math_scalar_functions = __webpack_require__(4867);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/typeStore.js
 var typeStore = __webpack_require__(6552);
 ;// ./node_modules/@babylonjs/core/Animations/animationRange.js
@@ -5190,6 +5191,7 @@ class ArcRotateCameraInputsManager extends CameraInputsManager {
 
 
 
+
 node/* Node */.b.AddNodeConstructor("ArcRotateCamera", (name, scene) => {
     return () => new ArcRotateCamera(name, 0, 0, 1.0, math_vector/* Vector3 */.Pq.Zero(), scene);
 });
@@ -5792,11 +5794,11 @@ class ArcRotateCamera extends TargetCamera {
      * @returns the camera itself
      */
     storeState() {
-        this._storedAlpha = this.alpha;
-        this._storedBeta = this.beta;
-        this._storedRadius = this.radius;
-        this._storedTarget = this._getTargetPosition().clone();
-        this._storedTargetScreenOffset = this.targetScreenOffset.clone();
+        this._storedAlpha = this._goalAlpha = this.alpha;
+        this._storedBeta = this._goalBeta = this.beta;
+        this._storedRadius = this._goalRadius = this.radius;
+        this._storedTarget = this._goalTarget = this._getTargetPosition().clone();
+        this._storedTargetScreenOffset = this._goalTargetScreenOffset = this.targetScreenOffset.clone();
         return super.storeState();
     }
     /**
@@ -5805,12 +5807,7 @@ class ArcRotateCamera extends TargetCamera {
      */
     _restoreStateValues() {
         if (this.hasStateStored() && this.restoreStateInterpolationFactor > math_constants/* Epsilon */.bH && this.restoreStateInterpolationFactor < 1) {
-            this._progressiveRestore = true;
-            this.inertialAlphaOffset = 0;
-            this.inertialBetaOffset = 0;
-            this.inertialRadiusOffset = 0;
-            this.inertialPanningX = 0;
-            this.inertialPanningY = 0;
+            this.interpolateTo(this._storedAlpha, this._storedBeta, this._storedRadius, this._storedTarget, this._storedTargetScreenOffset);
             return true;
         }
         if (!super._restoreStateValues()) {
@@ -5827,6 +5824,30 @@ class ArcRotateCamera extends TargetCamera {
         this.inertialPanningX = 0;
         this.inertialPanningY = 0;
         return true;
+    }
+    /**
+     * Interpolates the camera to a goal state.
+     * @param alpha Defines the goal alpha.
+     * @param beta Defines the goal beta.
+     * @param radius Defines the goal radius.
+     * @param target Defines the goal target.
+     * @param targetScreenOffset Defines the goal target screen offset.
+     */
+    interpolateTo(alpha = this.alpha, beta = this.beta, radius = this.radius, target = this.target, targetScreenOffset = this.targetScreenOffset) {
+        this._progressiveRestore = true;
+        this.inertialAlphaOffset = 0;
+        this.inertialBetaOffset = 0;
+        this.inertialRadiusOffset = 0;
+        this.inertialPanningX = 0;
+        this.inertialPanningY = 0;
+        alpha = (0,math_scalar_functions/* Clamp */.OQ)(alpha, this.lowerAlphaLimit ?? -Infinity, this.upperAlphaLimit ?? Infinity);
+        beta = (0,math_scalar_functions/* Clamp */.OQ)(beta, this.lowerBetaLimit ?? -Infinity, this.upperBetaLimit ?? Infinity);
+        radius = (0,math_scalar_functions/* Clamp */.OQ)(radius, this.lowerRadiusLimit ?? -Infinity, this.upperRadiusLimit ?? Infinity);
+        this._goalAlpha = alpha;
+        this._goalBeta = beta;
+        this._goalRadius = radius;
+        this._goalTarget = target;
+        this._goalTargetScreenOffset = targetScreenOffset;
     }
     // Synchronized
     /** @internal */
@@ -5892,22 +5913,22 @@ class ArcRotateCamera extends TargetCamera {
             const dt = this._scene.getEngine().getDeltaTime() / 1000;
             const t = 1 - Math.pow(2, -dt / this.restoreStateInterpolationFactor);
             // can't use tmp vector here because of assignment
-            this.setTarget(math_vector/* Vector3 */.Pq.Lerp(this.getTarget(), this._storedTarget, t));
+            this.setTarget(math_vector/* Vector3 */.Pq.Lerp(this.getTarget(), this._goalTarget, t));
             // Using quaternion for smoother interpolation (and no Euler angles modulo)
-            math_vector/* Quaternion */.PT.RotationAlphaBetaGammaToRef(this._storedAlpha, this._storedBeta, 0, math_vector/* TmpVectors */.AA.Quaternion[0]);
+            math_vector/* Quaternion */.PT.RotationAlphaBetaGammaToRef(this._goalAlpha, this._goalBeta, 0, math_vector/* TmpVectors */.AA.Quaternion[0]);
             math_vector/* Quaternion */.PT.RotationAlphaBetaGammaToRef(this.alpha, this.beta, 0, math_vector/* TmpVectors */.AA.Quaternion[1]);
             math_vector/* Quaternion */.PT.SlerpToRef(math_vector/* TmpVectors */.AA.Quaternion[1], math_vector/* TmpVectors */.AA.Quaternion[0], t, math_vector/* TmpVectors */.AA.Quaternion[2]);
             math_vector/* TmpVectors */.AA.Quaternion[2].normalize();
             math_vector/* TmpVectors */.AA.Quaternion[2].toAlphaBetaGammaToRef(math_vector/* TmpVectors */.AA.Vector3[0]);
             this.alpha = math_vector/* TmpVectors */.AA.Vector3[0].x;
             this.beta = math_vector/* TmpVectors */.AA.Vector3[0].y;
-            this.radius += (this._storedRadius - this.radius) * t;
-            math_vector/* Vector2 */.I9.LerpToRef(this.targetScreenOffset, this._storedTargetScreenOffset, t, this.targetScreenOffset);
-            // stop restoring when wihtin close range or when user starts interacting
-            if ((math_vector/* Vector3 */.Pq.DistanceSquared(this.getTarget(), this._storedTarget) < math_constants/* Epsilon */.bH &&
+            this.radius += (this._goalRadius - this.radius) * t;
+            math_vector/* Vector2 */.I9.LerpToRef(this.targetScreenOffset, this._goalTargetScreenOffset, t, this.targetScreenOffset);
+            // stop restoring when within close range or when user starts interacting
+            if ((math_vector/* Vector3 */.Pq.DistanceSquared(this.getTarget(), this._goalTarget) < math_constants/* Epsilon */.bH &&
                 math_vector/* TmpVectors */.AA.Quaternion[2].equalsWithEpsilon(math_vector/* TmpVectors */.AA.Quaternion[0]) &&
-                Math.pow(this._storedRadius - this.radius, 2) < math_constants/* Epsilon */.bH &&
-                math_vector/* Vector2 */.I9.Distance(this.targetScreenOffset, this._storedTargetScreenOffset) < math_constants/* Epsilon */.bH) ||
+                Math.pow(this._goalRadius - this.radius, 2) < math_constants/* Epsilon */.bH &&
+                math_vector/* Vector2 */.I9.Distance(this.targetScreenOffset, this._goalTargetScreenOffset) < math_constants/* Epsilon */.bH) ||
                 this.inertialAlphaOffset !== 0 ||
                 this.inertialBetaOffset !== 0 ||
                 this.inertialRadiusOffset !== 0 ||
@@ -7099,6 +7120,7 @@ class Camera extends _node_js__WEBPACK_IMPORTED_MODULE_6__/* .Node */ .b {
         const targetCamera = this;
         return (arcRotateCamera.radius || (targetCamera.target ? _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_5__/* .Vector3 */ .Pq.Distance(this.position, targetCamera.target) : this.position.length())) + offset;
     }
+    /** @internal */
     _updateFrustumPlanes() {
         if (!this._refreshFrustumPlanes) {
             return;
@@ -10961,13 +10983,13 @@ class AbstractEngine {
      */
     // Not mixed with Version for tooling purpose.
     static get NpmPackage() {
-        return "babylonjs@7.32.0";
+        return "babylonjs@7.34.1";
     }
     /**
      * Returns the current version of the framework
      */
     static get Version() {
-        return "7.32.0";
+        return "7.34.1";
     }
     /**
      * Gets the HTML canvas attached with the current webGL context
@@ -12704,6 +12726,21 @@ class RenderTargetWrapper {
         return this._layerIndices;
     }
     /**
+     * Gets the base array layer of a texture in the textures array
+     * This is an number that is calculated based on the layer and face indices set for this texture at that index
+     * @param index The index of the texture in the textures array to get the base array layer for
+     * @returns the base array layer of the texture at the given index
+     */
+    getBaseArrayLayer(index) {
+        if (!this._textures) {
+            return -1;
+        }
+        const texture = this._textures[index];
+        const layerIndex = this._layerIndices?.[index] ?? 0;
+        const faceIndex = this._faceIndices?.[index] ?? 0;
+        return texture.isCube ? layerIndex * 6 + faceIndex : texture.is3D ? 0 : layerIndex;
+    }
+    /**
      * Gets the sample count of the render target
      */
     get samples() {
@@ -13345,7 +13382,19 @@ thinEngine.ThinEngine.prototype.createRenderTargetTexture = function (size, opti
     rtWrapper._generateDepthBuffer = generateDepthBuffer;
     rtWrapper._generateStencilBuffer = generateStencilBuffer;
     rtWrapper.setTextures(texture);
-    this.updateRenderTargetTextureSampleCount(rtWrapper, samples);
+    if (!colorAttachment) {
+        this.updateRenderTargetTextureSampleCount(rtWrapper, samples);
+    }
+    else {
+        rtWrapper._samples = colorAttachment.samples;
+        if (colorAttachment.samples > 1) {
+            const msaaRenderBuffer = colorAttachment._hardwareTexture.getMSAARenderBuffer(0);
+            rtWrapper._MSAAFramebuffer = gl.createFramebuffer();
+            this._bindUnboundFramebuffer(rtWrapper._MSAAFramebuffer);
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, msaaRenderBuffer);
+            this._bindUnboundFramebuffer(null);
+        }
+    }
     return rtWrapper;
 };
 thinEngine.ThinEngine.prototype._createDepthStencilTexture = function (size, options, rtWrapper) {
@@ -13448,12 +13497,12 @@ thinEngine.ThinEngine.prototype.updateRenderTargetTextureSampleCount = function 
     }
     const hardwareTexture = rtWrapper.texture?._hardwareTexture;
     hardwareTexture?.releaseMSAARenderBuffers();
-    const framebuffer = gl.createFramebuffer();
-    if (!framebuffer) {
-        throw new Error("Unable to create multi sampled framebuffer");
-    }
-    rtWrapper._MSAAFramebuffer = framebuffer;
     if (rtWrapper.texture && samples > 1 && typeof gl.renderbufferStorageMultisample === "function") {
+        const framebuffer = gl.createFramebuffer();
+        if (!framebuffer) {
+            throw new Error("Unable to create multi sampled framebuffer");
+        }
+        rtWrapper._MSAAFramebuffer = framebuffer;
         this._bindUnboundFramebuffer(rtWrapper._MSAAFramebuffer);
         const colorRenderbuffer = this._createRenderBuffer(rtWrapper.texture.width, rtWrapper.texture.height, samples, -1 /* not used */, this._getRGBABufferInternalSizedFormat(rtWrapper.texture.type, rtWrapper.texture.format, rtWrapper.texture._useSRGBBuffer), gl.COLOR_ATTACHMENT0, false);
         if (!colorRenderbuffer) {
@@ -13472,8 +13521,8 @@ thinEngine.ThinEngine.prototype.updateRenderTargetTextureSampleCount = function 
     return samples;
 };
 thinEngine.ThinEngine.prototype._setupDepthStencilTexture = function (internalTexture, size, bilinearFiltering, comparisonFunction, samples = 1) {
-    const width = size.width || size;
-    const height = size.height || size;
+    const width = size.width ?? size;
+    const height = size.height ?? size;
     const layers = size.layers || 0;
     const depth = size.depth || 0;
     internalTexture.baseWidth = width;
@@ -20360,7 +20409,7 @@ class PointerInfo extends PointerInfoBase {
 
 /***/ }),
 
-/***/ 1671:
+/***/ 9711:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 
@@ -20391,19 +20440,66 @@ var typeStore = __webpack_require__(6552);
 var decorators = __webpack_require__(9259);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/decorators.serialization.js
 var decorators_serialization = __webpack_require__(6877);
-;// ./node_modules/@babylonjs/core/PostProcesses/blurPostProcess.js
-
-
-
-
-
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/effectRenderer.js
+var effectRenderer = __webpack_require__(4255);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Engines/engine.js + 21 modules
+var Engines_engine = __webpack_require__(3720);
+;// ./node_modules/@babylonjs/core/PostProcesses/thinBlurPostProcess.js
 
 
 /**
- * The Blur Post Process which blurs an image based on a kernel and direction.
- * Can be used twice in x and y directions to perform a gaussian blur in two passes.
+ * Post process used to apply a blur effect
  */
-class BlurPostProcess extends postProcess/* PostProcess */.w {
+class ThinBlurPostProcess extends effectRenderer/* EffectWrapper */.$ {
+    _gatherImports(useWebGPU, list) {
+        if (useWebGPU) {
+            this._webGPUReady = true;
+            list.push(Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 2850)), __webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 5417))]));
+        }
+        else {
+            list.push(Promise.all([__webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 4509)), __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 3802))]));
+        }
+    }
+    /**
+     * Constructs a new blur post process
+     * @param name Name of the effect
+     * @param engine Engine to use to render the effect. If not provided, the last created engine will be used
+     * @param direction Direction in which to apply the blur
+     * @param kernel Kernel size of the blur
+     * @param options Options to configure the effect
+     */
+    constructor(name, engine = null, direction, kernel, options) {
+        const blockCompilationFinal = !!options?.blockCompilation;
+        super({
+            ...options,
+            name,
+            engine: engine || Engines_engine/* Engine */.N.LastCreatedEngine,
+            useShaderStore: true,
+            useAsPostProcess: true,
+            fragmentShader: ThinBlurPostProcess.FragmentUrl,
+            uniforms: ThinBlurPostProcess.Uniforms,
+            samplers: ThinBlurPostProcess.Samplers,
+            vertexUrl: ThinBlurPostProcess.VertexUrl,
+            blockCompilation: true,
+        });
+        this._packedFloat = false;
+        this._staticDefines = "";
+        /**
+         * Width of the texture to apply the blur on
+         */
+        this.textureWidth = 0;
+        /**
+         * Height of the texture to apply the blur on
+         */
+        this.textureHeight = 0;
+        this.options.blockCompilation = blockCompilationFinal;
+        if (direction !== undefined) {
+            this.direction = direction;
+        }
+        if (kernel !== undefined) {
+            this.kernel = kernel;
+        }
+    }
     /**
      * Sets the length in pixels of the blur sample region
      */
@@ -20414,7 +20510,7 @@ class BlurPostProcess extends postProcess/* PostProcess */.w {
         v = Math.max(v, 1);
         this._idealKernel = v;
         this._kernel = this._nearestBestKernel(v);
-        if (!this._blockCompilation) {
+        if (!this.options.blockCompilation) {
             this._updateParameters();
         }
     }
@@ -20432,7 +20528,7 @@ class BlurPostProcess extends postProcess/* PostProcess */.w {
             return;
         }
         this._packedFloat = v;
-        if (!this._blockCompilation) {
+        if (!this.options.blockCompilation) {
             this._updateParameters();
         }
     }
@@ -20442,67 +20538,11 @@ class BlurPostProcess extends postProcess/* PostProcess */.w {
     get packedFloat() {
         return this._packedFloat;
     }
-    /**
-     * Gets a string identifying the name of the class
-     * @returns "BlurPostProcess" string
-     */
-    getClassName() {
-        return "BlurPostProcess";
+    bind() {
+        super.bind();
+        this._drawWrapper.effect.setFloat2("delta", (1 / this.textureWidth) * this.direction.x, (1 / this.textureHeight) * this.direction.y);
     }
-    /**
-     * Creates a new instance BlurPostProcess
-     * @param name The name of the effect.
-     * @param direction The direction in which to blur the image.
-     * @param kernel The size of the kernel to be used when computing the blur. eg. Size of 3 will blur the center pixel by 2 pixels surrounding it.
-     * @param options The required width/height ratio to downsize to before computing the render pass. (Use 1.0 for full size)
-     * @param camera The camera to apply the render pass to.
-     * @param samplingMode The sampling mode to be used when computing the pass. (default: 0)
-     * @param engine The engine which the post process will be applied. (default: current engine)
-     * @param reusable If the post process can be reused on the same frame. (default: false)
-     * @param textureType Type of textures used when performing the post process. (default: 0)
-     * @param defines
-     * @param _blockCompilation If compilation of the shader should not be done in the constructor. The updateEffect method can be used to compile the shader at a later time. (default: false)
-     * @param textureFormat Format of textures used when performing the post process. (default: TEXTUREFORMAT_RGBA)
-     */
-    constructor(name, direction, kernel, options, camera, samplingMode = texture/* Texture */.g.BILINEAR_SAMPLINGMODE, engine, reusable, textureType = 0, defines = "", _blockCompilation = false, textureFormat = 5) {
-        super(name, "kernelBlur", ["delta", "direction"], ["circleOfConfusionSampler"], options, camera, samplingMode, engine, reusable, null, textureType, "kernelBlur", { varyingCount: 0, depCount: 0 }, true, textureFormat);
-        this._blockCompilation = _blockCompilation;
-        this._packedFloat = false;
-        this._staticDefines = "";
-        this._staticDefines = defines;
-        this.direction = direction;
-        this.onApplyObservable.add((effect) => {
-            if (this._outputTexture) {
-                effect.setFloat2("delta", (1 / this._outputTexture.width) * this.direction.x, (1 / this._outputTexture.height) * this.direction.y);
-            }
-            else {
-                effect.setFloat2("delta", (1 / this.width) * this.direction.x, (1 / this.height) * this.direction.y);
-            }
-        });
-        this.kernel = kernel;
-    }
-    _gatherImports(useWebGPU, list) {
-        if (useWebGPU) {
-            this._webGPUReady = true;
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 2850)), __webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 5417))]));
-        }
-        else {
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 4509)), __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 3802))]));
-        }
-        super._gatherImports(useWebGPU, list);
-    }
-    /**
-     * Updates the effect with the current post process compile time values and recompiles the shader.
-     * @param defines Define statements that should be added at the beginning of the shader. (default: null)
-     * @param uniforms Set of uniform variables that will be passed to the shader. (default: null)
-     * @param samplers Set of Texture2D variables that will be passed to the shader. (default: null)
-     * @param indexParameters The index parameters to be used for babylons include syntax "#include<kernelBlurVaryingDeclaration>[0..varyingCount]". (default: undefined) See usage in babylon.blurPostProcess.ts and kernelBlur.vertex.fx
-     * @param onCompiled Called when the shader has been compiled.
-     * @param onError Called if there is an error when compiling a shader.
-     */
-    updateEffect(defines = null, uniforms = null, samplers = null, indexParameters, onCompiled, onError) {
-        this._updateParameters(onCompiled, onError);
-    }
+    /** @internal */
     _updateParameters(onCompiled, onError) {
         // Generate sampling offsets and weights
         const N = this._kernel;
@@ -20555,7 +20595,7 @@ class BlurPostProcess extends postProcess/* PostProcess */.w {
         offsets = linearSamplingOffsets;
         weights = linearSamplingWeights;
         // Generate shaders
-        const maxVaryingRows = this.getEngine().getCaps().maxVaryingVectors - (this.shaderLanguage === 1 /* ShaderLanguage.WGSL */ ? 1 : 0); // Because of the additional builtins
+        const maxVaryingRows = this.options.engine.getCaps().maxVaryingVectors - (this.options.shaderLanguage === 1 /* ShaderLanguage.WGSL */ ? 1 : 0); // Because of the additional builtins
         const freeVaryingVec2 = Math.max(maxVaryingRows, 0) - 1; // Because of sampleCenter
         let varyingCount = Math.min(offsets.length, freeVaryingVec2);
         let defines = "";
@@ -20578,8 +20618,8 @@ class BlurPostProcess extends postProcess/* PostProcess */.w {
         if (this.packedFloat) {
             defines += `#define PACKEDFLOAT 1`;
         }
-        this._blockCompilation = false;
-        super.updateEffect(defines, null, null, {
+        this.options.blockCompilation = false;
+        this.updateEffect(defines, null, null, {
             varyingCount: varyingCount,
             depCount: depCount,
         }, onCompiled, onError);
@@ -20629,6 +20669,124 @@ class BlurPostProcess extends postProcess/* PostProcess */.w {
     _glslFloat(x, decimalFigures = 8) {
         return x.toFixed(decimalFigures).replace(/0+$/, "");
     }
+}
+/**
+ * The vertex shader url
+ */
+ThinBlurPostProcess.VertexUrl = "kernelBlur";
+/**
+ * The fragment shader url
+ */
+ThinBlurPostProcess.FragmentUrl = "kernelBlur";
+/**
+ * The list of uniforms used by the effect
+ */
+ThinBlurPostProcess.Uniforms = ["delta", "direction"];
+/**
+ * The list of samplers used by the effect
+ */
+ThinBlurPostProcess.Samplers = ["circleOfConfusionSampler"];
+//# sourceMappingURL=thinBlurPostProcess.js.map
+;// ./node_modules/@babylonjs/core/PostProcesses/blurPostProcess.js
+
+
+
+
+
+
+
+
+/**
+ * The Blur Post Process which blurs an image based on a kernel and direction.
+ * Can be used twice in x and y directions to perform a gaussian blur in two passes.
+ */
+class BlurPostProcess extends postProcess/* PostProcess */.w {
+    /** The direction in which to blur the image. */
+    get direction() {
+        return this._effectWrapper.direction;
+    }
+    set direction(value) {
+        this._effectWrapper.direction = value;
+    }
+    /**
+     * Sets the length in pixels of the blur sample region
+     */
+    set kernel(v) {
+        this._effectWrapper.kernel = v;
+    }
+    /**
+     * Gets the length in pixels of the blur sample region
+     */
+    get kernel() {
+        return this._effectWrapper.kernel;
+    }
+    /**
+     * Sets whether or not the blur needs to unpack/repack floats
+     */
+    set packedFloat(v) {
+        this._effectWrapper.packedFloat = v;
+    }
+    /**
+     * Gets whether or not the blur is unpacking/repacking floats
+     */
+    get packedFloat() {
+        return this._effectWrapper.packedFloat;
+    }
+    /**
+     * Gets a string identifying the name of the class
+     * @returns "BlurPostProcess" string
+     */
+    getClassName() {
+        return "BlurPostProcess";
+    }
+    /**
+     * Creates a new instance BlurPostProcess
+     * @param name The name of the effect.
+     * @param direction The direction in which to blur the image.
+     * @param kernel The size of the kernel to be used when computing the blur. eg. Size of 3 will blur the center pixel by 2 pixels surrounding it.
+     * @param options The required width/height ratio to downsize to before computing the render pass. (Use 1.0 for full size)
+     * @param camera The camera to apply the render pass to.
+     * @param samplingMode The sampling mode to be used when computing the pass. (default: 0)
+     * @param engine The engine which the post process will be applied. (default: current engine)
+     * @param reusable If the post process can be reused on the same frame. (default: false)
+     * @param textureType Type of textures used when performing the post process. (default: 0)
+     * @param defines
+     * @param blockCompilation If compilation of the shader should not be done in the constructor. The updateEffect method can be used to compile the shader at a later time. (default: false)
+     * @param textureFormat Format of textures used when performing the post process. (default: TEXTUREFORMAT_RGBA)
+     */
+    constructor(name, direction, kernel, options, camera = null, samplingMode = texture/* Texture */.g.BILINEAR_SAMPLINGMODE, engine, reusable, textureType = 0, defines = "", blockCompilation = false, textureFormat = 5) {
+        const blockCompilationFinal = typeof options === "number" ? blockCompilation : !!options.blockCompilation;
+        const localOptions = {
+            uniforms: ThinBlurPostProcess.Uniforms,
+            samplers: ThinBlurPostProcess.Samplers,
+            size: typeof options === "number" ? options : undefined,
+            camera,
+            samplingMode,
+            engine,
+            reusable,
+            textureType,
+            vertexUrl: ThinBlurPostProcess.VertexUrl,
+            indexParameters: { varyingCount: 0, depCount: 0 },
+            textureFormat,
+            defines,
+            ...options,
+            blockCompilation: true,
+        };
+        super(name, ThinBlurPostProcess.FragmentUrl, {
+            effectWrapper: typeof options === "number" || !options.effectWrapper ? new ThinBlurPostProcess(name, engine, undefined, undefined, localOptions) : undefined,
+            ...localOptions,
+        });
+        this._effectWrapper.options.blockCompilation = blockCompilationFinal;
+        this.direction = direction;
+        this.onApplyObservable.add(() => {
+            this._effectWrapper.textureWidth = this._outputTexture ? this._outputTexture.width : this.width;
+            this._effectWrapper.textureHeight = this._outputTexture ? this._outputTexture.height : this.height;
+        });
+        this.kernel = kernel;
+    }
+    updateEffect(_defines = null, _uniforms = null, _samplers = null, _indexParameters, onCompiled, onError) {
+        this._effectWrapper._updateParameters(onCompiled, onError);
+    }
     /**
      * @internal
      */
@@ -20639,14 +20797,14 @@ class BlurPostProcess extends postProcess/* PostProcess */.w {
     }
 }
 (0,tslib_es6/* __decorate */.Cg)([
-    (0,decorators/* serialize */.lK)("kernel")
-], BlurPostProcess.prototype, "_kernel", void 0);
-(0,tslib_es6/* __decorate */.Cg)([
-    (0,decorators/* serialize */.lK)("packedFloat")
-], BlurPostProcess.prototype, "_packedFloat", void 0);
-(0,tslib_es6/* __decorate */.Cg)([
     (0,decorators/* serializeAsVector2 */.WM)()
-], BlurPostProcess.prototype, "direction", void 0);
+], BlurPostProcess.prototype, "direction", null);
+(0,tslib_es6/* __decorate */.Cg)([
+    (0,decorators/* serialize */.lK)()
+], BlurPostProcess.prototype, "kernel", null);
+(0,tslib_es6/* __decorate */.Cg)([
+    (0,decorators/* serialize */.lK)()
+], BlurPostProcess.prototype, "packedFloat", null);
 (0,typeStore/* RegisterClass */.Y5)("BABYLON.BlurPostProcess", BlurPostProcess);
 //# sourceMappingURL=blurPostProcess.js.map
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/observable.js
@@ -22387,8 +22545,8 @@ ShadowGenerator._SceneComponentInitialization = (_) => {
 
 // UNUSED EXPORTS: ShadowGeneratorSceneComponent
 
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGenerator.js + 1 modules
-var Shadows_shadowGenerator = __webpack_require__(1671);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGenerator.js + 2 modules
+var Shadows_shadowGenerator = __webpack_require__(9711);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
 var math_vector = __webpack_require__(9923);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/renderTargetTexture.js
@@ -25916,7 +26074,7 @@ function _GetCompatibleTextureLoader(extension, mimeType) {
             registerTextureLoader(".basis", () => __webpack_require__.e(/* import() */ 692).then(__webpack_require__.bind(__webpack_require__, 6692)).then((module) => new module._BasisTextureLoader()));
         }
         if (extension.endsWith(".env")) {
-            registerTextureLoader(".env", () => Promise.all(/* import() */[__webpack_require__.e(71), __webpack_require__.e(834)]).then(__webpack_require__.bind(__webpack_require__, 5834)).then((module) => new module._ENVTextureLoader()));
+            registerTextureLoader(".env", () => __webpack_require__.e(/* import() */ 834).then(__webpack_require__.bind(__webpack_require__, 5834)).then((module) => new module._ENVTextureLoader()));
         }
         if (extension.endsWith(".hdr")) {
             registerTextureLoader(".hdr", () => __webpack_require__.e(/* import() */ 608).then(__webpack_require__.bind(__webpack_require__, 5608)).then((module) => new module._HDRTextureLoader()));
@@ -27683,6 +27841,9 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         return this._renderList;
     }
     set renderList(value) {
+        if (this._renderList === value) {
+            return;
+        }
         if (this._unObserveRenderList) {
             this._unObserveRenderList();
             this._unObserveRenderList = null;
@@ -27856,6 +28017,11 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
                 });
             }
         };
+        /**
+         * Define the list of particle systems to render in the texture. If not provided, will render all the particle systems of the scene.
+         * Note that the particle systems are rendered only if renderParticles is set to true.
+         */
+        this.particleSystemList = null;
         /**
          * Define if particles should be rendered in your texture.
          */
@@ -28227,7 +28393,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         if (!this._dumpToolsLoading) {
             this._dumpToolsLoading = true;
             // avoid a static import to allow ignoring the import in some cases
-            Promise.all(/* import() */[__webpack_require__.e(71), __webpack_require__.e(999)]).then(__webpack_require__.bind(__webpack_require__, 5999)).then((module) => (this._dumpTools = module));
+            __webpack_require__.e(/* import() */ 928).then(__webpack_require__.bind(__webpack_require__, 9928)).then((module) => (this._dumpTools = module));
         }
         return this._render(false, false, true);
     }
@@ -28350,15 +28516,21 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
                     scene.resetCachedMaterial();
                 }
             }
+            const particleSystems = this.particleSystemList || scene.particleSystems;
+            for (const particleSystem of particleSystems) {
+                if (!particleSystem.isReady()) {
+                    returnValue = false;
+                }
+            }
         }
         this.onAfterUnbindObservable.notifyObservers(this);
         engine.currentRenderPassId = currentRenderPassId;
+        scene.activeCamera = sceneCamera;
         if (sceneCamera) {
-            scene.activeCamera = sceneCamera;
             if (this.activeCamera && this.activeCamera !== scene.activeCamera) {
-                scene.setTransformMatrix(scene.activeCamera.getViewMatrix(), scene.activeCamera.getProjectionMatrix(true));
+                scene.setTransformMatrix(sceneCamera.getViewMatrix(), sceneCamera.getProjectionMatrix(true));
             }
-            engine.setViewport(scene.activeCamera.viewport);
+            engine.setViewport(sceneCamera.viewport);
         }
         scene.resetCachedMaterial();
         return returnValue;
@@ -28390,16 +28562,17 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
                     this.resetRefreshCounter();
                     continue;
                 }
-                if (!mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate && scene.activeCamera) {
-                    mesh._internalAbstractMeshDataInfo._currentLOD = scene.customLODSelector
-                        ? scene.customLODSelector(mesh, this.activeCamera || scene.activeCamera)
-                        : mesh.getLOD(this.activeCamera || scene.activeCamera);
+                if (!mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate && camera) {
+                    mesh._internalAbstractMeshDataInfo._currentLOD = scene.customLODSelector ? scene.customLODSelector(mesh, camera) : mesh.getLOD(camera);
                     mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate = true;
                 }
                 if (!mesh._internalAbstractMeshDataInfo._currentLOD) {
                     continue;
                 }
                 let meshToRender = mesh._internalAbstractMeshDataInfo._currentLOD;
+                if (meshToRender !== mesh && meshToRender.billboardMode !== 0) {
+                    meshToRender.computeWorldMatrix(); // Compute world matrix if LOD is billboard
+                }
                 meshToRender._preActivateForIntermediateRendering(sceneRenderId);
                 let isMasked;
                 if (checkLayerMask && camera) {
@@ -28422,6 +28595,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
                             }
                         }
                         meshToRender._internalAbstractMeshDataInfo._isActiveIntermediate = true;
+                        scene._prepareSkeleton(meshToRender);
                         for (let subIndex = 0; subIndex < meshToRender.subMeshes.length; subIndex++) {
                             const subMesh = meshToRender.subMeshes[subIndex];
                             this._renderingManager.dispatch(subMesh, meshToRender);
@@ -28431,8 +28605,9 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
                 }
             }
         }
-        for (let particleIndex = 0; particleIndex < scene.particleSystems.length; particleIndex++) {
-            const particleSystem = scene.particleSystems[particleIndex];
+        const particleSystems = this.particleSystemList || scene.particleSystems;
+        for (let particleIndex = 0; particleIndex < particleSystems.length; particleIndex++) {
+            const particleSystem = particleSystems[particleIndex];
             const emitter = particleSystem.emitter;
             if (!particleSystem.isStarted() || !emitter || (emitter.position && !emitter.isEnabled())) {
                 continue;
@@ -28484,7 +28659,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         const engine = scene.getEngine();
         // Bind
         this._prepareFrame(scene, faceIndex, layer, useCameraPostProcess);
-        engine._debugInsertMarker?.(`render to face #${faceIndex} layer #${layer}`);
+        engine._debugPushGroup?.(`render to face #${faceIndex} layer #${layer}`, 2);
         if (this.is2DArray || this.is3D) {
             engine.currentRenderPassId = this._renderPassIds[layer];
             this.onBeforeRenderObservable.notifyObservers(layer);
@@ -28581,6 +28756,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
                 }
             }
         }
+        engine._debugPopGroup?.(2);
         // Unbind
         this._unbindFrameBuffer(engine, faceIndex);
         if (this._texture && this.isCube && faceIndex === 5) {
@@ -31505,6 +31681,427 @@ class EffectFallbacks {
     }
 }
 //# sourceMappingURL=effectFallbacks.js.map
+
+/***/ }),
+
+/***/ 4255:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   $: () => (/* binding */ EffectWrapper),
+/* harmony export */   J: () => (/* binding */ EffectRenderer)
+/* harmony export */ });
+/* harmony import */ var _Buffers_buffer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5616);
+/* harmony import */ var _Maths_math_viewport_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4494);
+/* harmony import */ var _Misc_observable_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9848);
+/* harmony import */ var _effect_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4420);
+/* harmony import */ var _drawWrapper_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5476);
+/* harmony import */ var _Shaders_postprocess_vertex_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(6612);
+
+
+
+
+
+
+// Prevents ES6 issue if not imported.
+
+// Fullscreen quad buffers by default.
+const defaultOptions = {
+    positions: [1, 1, -1, 1, -1, -1, 1, -1],
+    indices: [0, 1, 2, 0, 2, 3],
+};
+/**
+ * Helper class to render one or more effects.
+ * You can access the previous rendering in your shader by declaring a sampler named textureSampler
+ */
+class EffectRenderer {
+    /**
+     * Creates an effect renderer
+     * @param engine the engine to use for rendering
+     * @param options defines the options of the effect renderer
+     */
+    constructor(engine, options = defaultOptions) {
+        this._fullscreenViewport = new _Maths_math_viewport_js__WEBPACK_IMPORTED_MODULE_1__/* .Viewport */ .L(0, 0, 1, 1);
+        const positions = options.positions ?? defaultOptions.positions;
+        const indices = options.indices ?? defaultOptions.indices;
+        this.engine = engine;
+        this._vertexBuffers = {
+            [_Buffers_buffer_js__WEBPACK_IMPORTED_MODULE_0__/* .VertexBuffer */ .R.PositionKind]: new _Buffers_buffer_js__WEBPACK_IMPORTED_MODULE_0__/* .VertexBuffer */ .R(engine, positions, _Buffers_buffer_js__WEBPACK_IMPORTED_MODULE_0__/* .VertexBuffer */ .R.PositionKind, false, false, 2),
+        };
+        this._indexBuffer = engine.createIndexBuffer(indices);
+        this._onContextRestoredObserver = engine.onContextRestoredObservable.add(() => {
+            this._indexBuffer = engine.createIndexBuffer(indices);
+            for (const key in this._vertexBuffers) {
+                const vertexBuffer = this._vertexBuffers[key];
+                vertexBuffer._rebuild();
+            }
+        });
+    }
+    /**
+     * Sets the current viewport in normalized coordinates 0-1
+     * @param viewport Defines the viewport to set (defaults to 0 0 1 1)
+     */
+    setViewport(viewport = this._fullscreenViewport) {
+        this.engine.setViewport(viewport);
+    }
+    /**
+     * Binds the embedded attributes buffer to the effect.
+     * @param effect Defines the effect to bind the attributes for
+     */
+    bindBuffers(effect) {
+        this.engine.bindBuffers(this._vertexBuffers, this._indexBuffer, effect);
+    }
+    /**
+     * Sets the current effect wrapper to use during draw.
+     * The effect needs to be ready before calling this api.
+     * This also sets the default full screen position attribute.
+     * @param effectWrapper Defines the effect to draw with
+     */
+    applyEffectWrapper(effectWrapper) {
+        this.engine.setState(true);
+        this.engine.depthCullingState.depthTest = false;
+        this.engine.stencilState.stencilTest = false;
+        this.engine.enableEffect(effectWrapper.drawWrapper);
+        this.bindBuffers(effectWrapper.effect);
+        effectWrapper.onApplyObservable.notifyObservers({});
+    }
+    /**
+     * Saves engine states
+     */
+    saveStates() {
+        this._savedStateDepthTest = this.engine.depthCullingState.depthTest;
+        this._savedStateStencilTest = this.engine.stencilState.stencilTest;
+    }
+    /**
+     * Restores engine states
+     */
+    restoreStates() {
+        this.engine.depthCullingState.depthTest = this._savedStateDepthTest;
+        this.engine.stencilState.stencilTest = this._savedStateStencilTest;
+    }
+    /**
+     * Draws a full screen quad.
+     */
+    draw() {
+        this.engine.drawElementsType(0, 0, 6);
+    }
+    _isRenderTargetTexture(texture) {
+        return texture.renderTarget !== undefined;
+    }
+    /**
+     * renders one or more effects to a specified texture
+     * @param effectWrapper the effect to renderer
+     * @param outputTexture texture to draw to, if null it will render to the currently bound frame buffer
+     */
+    render(effectWrapper, outputTexture = null) {
+        // Ensure effect is ready
+        if (!effectWrapper.effect.isReady()) {
+            return;
+        }
+        this.saveStates();
+        // Reset state
+        this.setViewport();
+        const out = outputTexture === null ? null : this._isRenderTargetTexture(outputTexture) ? outputTexture.renderTarget : outputTexture;
+        if (out) {
+            this.engine.bindFramebuffer(out);
+        }
+        this.applyEffectWrapper(effectWrapper);
+        this.draw();
+        if (out) {
+            this.engine.unBindFramebuffer(out);
+        }
+        this.restoreStates();
+    }
+    /**
+     * Disposes of the effect renderer
+     */
+    dispose() {
+        const vertexBuffer = this._vertexBuffers[_Buffers_buffer_js__WEBPACK_IMPORTED_MODULE_0__/* .VertexBuffer */ .R.PositionKind];
+        if (vertexBuffer) {
+            vertexBuffer.dispose();
+            delete this._vertexBuffers[_Buffers_buffer_js__WEBPACK_IMPORTED_MODULE_0__/* .VertexBuffer */ .R.PositionKind];
+        }
+        if (this._indexBuffer) {
+            this.engine._releaseBuffer(this._indexBuffer);
+        }
+        if (this._onContextRestoredObserver) {
+            this.engine.onContextRestoredObservable.remove(this._onContextRestoredObserver);
+            this._onContextRestoredObserver = null;
+        }
+    }
+}
+/**
+ * Wraps an effect to be used for rendering
+ */
+class EffectWrapper {
+    /**
+     * Registers a shader code processing with an effect wrapper name.
+     * @param effectWrapperName name of the effect wrapper. Use null for the fallback shader code processing. This is the shader code processing that will be used in case no specific shader code processing has been associated to an effect wrapper name
+     * @param customShaderCodeProcessing shader code processing to associate to the effect wrapper name
+     */
+    static RegisterShaderCodeProcessing(effectWrapperName, customShaderCodeProcessing) {
+        if (!customShaderCodeProcessing) {
+            delete EffectWrapper._CustomShaderCodeProcessing[effectWrapperName ?? ""];
+            return;
+        }
+        EffectWrapper._CustomShaderCodeProcessing[effectWrapperName ?? ""] = customShaderCodeProcessing;
+    }
+    static _GetShaderCodeProcessing(effectWrapperName) {
+        return EffectWrapper._CustomShaderCodeProcessing[effectWrapperName] ?? EffectWrapper._CustomShaderCodeProcessing[""];
+    }
+    /**
+     * Gets or sets the name of the effect wrapper
+     */
+    get name() {
+        return this.options.name;
+    }
+    set name(value) {
+        this.options.name = value;
+    }
+    /**
+     * Get a value indicating if the effect is ready to be used
+     * @returns true if the post-process is ready (shader is compiled)
+     */
+    isReady() {
+        return this._drawWrapper.effect?.isReady() ?? false;
+    }
+    /**
+     * Get the draw wrapper associated with the effect wrapper
+     * @returns the draw wrapper associated with the effect wrapper
+     */
+    get drawWrapper() {
+        return this._drawWrapper;
+    }
+    /**
+     * The underlying effect
+     */
+    get effect() {
+        return this._drawWrapper.effect;
+    }
+    set effect(effect) {
+        this._drawWrapper.effect = effect;
+    }
+    /**
+     * Creates an effect to be rendered
+     * @param creationOptions options to create the effect
+     */
+    constructor(creationOptions) {
+        /**
+         * Type of alpha mode to use when applying the effect (default: Engine.ALPHA_DISABLE). Used only if useAsPostProcess is true.
+         */
+        this.alphaMode = 0;
+        /**
+         * Executed when the effect is created
+         * @returns effect that was created for this effect wrapper
+         */
+        this.onEffectCreatedObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_2__/* .Observable */ .cP(undefined, true);
+        /**
+         * Event that is fired (only when the EffectWrapper is used with an EffectRenderer) right before the effect is drawn (should be used to update uniforms)
+         */
+        this.onApplyObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_2__/* .Observable */ .cP();
+        this._shadersLoaded = false;
+        /** @internal */
+        this._webGPUReady = false;
+        this._importPromises = [];
+        this.options = {
+            ...creationOptions,
+            name: creationOptions.name || "effectWrapper",
+            engine: creationOptions.engine,
+            uniforms: creationOptions.uniforms || creationOptions.uniformNames || [],
+            uniformNames: undefined,
+            samplers: creationOptions.samplers || creationOptions.samplerNames || [],
+            samplerNames: undefined,
+            attributeNames: creationOptions.attributeNames || ["position"],
+            uniformBuffers: creationOptions.uniformBuffers || [],
+            defines: creationOptions.defines || "",
+            useShaderStore: creationOptions.useShaderStore || false,
+            vertexUrl: creationOptions.vertexUrl || creationOptions.vertexShader || "postprocess",
+            vertexShader: undefined,
+            fragmentShader: creationOptions.fragmentShader || "pass",
+            indexParameters: creationOptions.indexParameters,
+            blockCompilation: creationOptions.blockCompilation || false,
+            shaderLanguage: creationOptions.shaderLanguage || 0 /* ShaderLanguage.GLSL */,
+            onCompiled: creationOptions.onCompiled || undefined,
+            extraInitializations: creationOptions.extraInitializations || undefined,
+            extraInitializationsAsync: creationOptions.extraInitializationsAsync || undefined,
+            useAsPostProcess: creationOptions.useAsPostProcess ?? false,
+        };
+        this.options.uniformNames = this.options.uniforms;
+        this.options.samplerNames = this.options.samplers;
+        this.options.vertexShader = this.options.vertexUrl;
+        if (this.options.useAsPostProcess) {
+            if (this.options.samplers.indexOf("textureSampler") === -1) {
+                this.options.samplers.push("textureSampler");
+            }
+            if (this.options.uniforms.indexOf("scale") === -1) {
+                this.options.uniforms.push("scale");
+            }
+        }
+        if (creationOptions.vertexUrl || creationOptions.vertexShader) {
+            this._shaderPath = {
+                vertexSource: this.options.vertexShader,
+            };
+        }
+        else {
+            if (!this.options.useAsPostProcess) {
+                this.options.uniforms.push("scale");
+                this.onApplyObservable.add(() => {
+                    this.effect.setFloat2("scale", 1, 1);
+                });
+            }
+            this._shaderPath = {
+                vertex: this.options.vertexShader,
+            };
+        }
+        this._shaderPath.fragmentSource = this.options.fragmentShader;
+        this._shaderPath.spectorName = this.options.name;
+        if (this.options.useShaderStore) {
+            this._shaderPath.fragment = this._shaderPath.fragmentSource;
+            if (!this._shaderPath.vertex) {
+                this._shaderPath.vertex = this._shaderPath.vertexSource;
+            }
+            delete this._shaderPath.fragmentSource;
+            delete this._shaderPath.vertexSource;
+        }
+        this.onApplyObservable.add(() => {
+            this.bind();
+        });
+        if (!this.options.useShaderStore) {
+            this._onContextRestoredObserver = this.options.engine.onContextRestoredObservable.add(() => {
+                this.effect._pipelineContext = null; // because _prepareEffect will try to dispose this pipeline before recreating it and that would lead to webgl errors
+                this.effect._prepareEffect();
+            });
+        }
+        this._drawWrapper = new _drawWrapper_js__WEBPACK_IMPORTED_MODULE_4__/* .DrawWrapper */ .E(this.options.engine);
+        this._webGPUReady = this.options.shaderLanguage === 1 /* ShaderLanguage.WGSL */;
+        const defines = Array.isArray(this.options.defines) ? this.options.defines.join("\n") : this.options.defines;
+        this._postConstructor(this.options.blockCompilation, defines, this.options.extraInitializations);
+    }
+    _gatherImports(useWebGPU = false, list) {
+        if (!this.options.useAsPostProcess) {
+            return;
+        }
+        // this._webGPUReady is used to detect when an effect wrapper is intended to be used with WebGPU
+        if (useWebGPU && this._webGPUReady) {
+            list.push(Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 2083))]));
+        }
+        else {
+            list.push(Promise.all([Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 6612))]));
+        }
+    }
+    /** @internal */
+    _postConstructor(blockCompilation, defines = null, extraInitializations, importPromises) {
+        this._importPromises.length = 0;
+        if (importPromises) {
+            this._importPromises.push(...importPromises);
+        }
+        const useWebGPU = this.options.engine.isWebGPU && !EffectWrapper.ForceGLSL;
+        this._gatherImports(useWebGPU, this._importPromises);
+        if (extraInitializations !== undefined) {
+            extraInitializations(useWebGPU, this._importPromises);
+        }
+        if (useWebGPU && this._webGPUReady) {
+            this.options.shaderLanguage = 1 /* ShaderLanguage.WGSL */;
+        }
+        if (!blockCompilation) {
+            this.updateEffect(defines);
+        }
+    }
+    /**
+     * Updates the effect with the current effect wrapper compile time values and recompiles the shader.
+     * @param defines Define statements that should be added at the beginning of the shader. (default: null)
+     * @param uniforms Set of uniform variables that will be passed to the shader. (default: null)
+     * @param samplers Set of Texture2D variables that will be passed to the shader. (default: null)
+     * @param indexParameters The index parameters to be used for babylons include syntax "#include<kernelBlurVaryingDeclaration>[0..varyingCount]". (default: undefined) See usage in babylon.blurPostProcess.ts and kernelBlur.vertex.fx
+     * @param onCompiled Called when the shader has been compiled.
+     * @param onError Called if there is an error when compiling a shader.
+     * @param vertexUrl The url of the vertex shader to be used (default: the one given at construction time)
+     * @param fragmentUrl The url of the fragment shader to be used (default: the one given at construction time)
+     */
+    updateEffect(defines = null, uniforms = null, samplers = null, indexParameters, onCompiled, onError, vertexUrl, fragmentUrl) {
+        const customShaderCodeProcessing = EffectWrapper._GetShaderCodeProcessing(this.name);
+        if (customShaderCodeProcessing?.defineCustomBindings) {
+            const newUniforms = uniforms?.slice() ?? [];
+            newUniforms.push(...this.options.uniforms);
+            const newSamplers = samplers?.slice() ?? [];
+            newSamplers.push(...this.options.samplers);
+            defines = customShaderCodeProcessing.defineCustomBindings(this.name, defines, newUniforms, newSamplers);
+            uniforms = newUniforms;
+            samplers = newSamplers;
+        }
+        this.options.defines = defines || "";
+        const waitImportsLoaded = this._shadersLoaded || this._importPromises.length === 0
+            ? undefined
+            : async () => {
+                await Promise.all(this._importPromises);
+                this._shadersLoaded = true;
+            };
+        let extraInitializationsAsync;
+        if (this.options.extraInitializationsAsync) {
+            extraInitializationsAsync = async () => {
+                waitImportsLoaded?.();
+                await this.options.extraInitializationsAsync;
+            };
+        }
+        else {
+            extraInitializationsAsync = waitImportsLoaded;
+        }
+        if (this.options.useShaderStore) {
+            this._drawWrapper.effect = this.options.engine.createEffect({ vertex: vertexUrl ?? this._shaderPath.vertex, fragment: fragmentUrl ?? this._shaderPath.fragment }, {
+                attributes: this.options.attributeNames,
+                uniformsNames: uniforms || this.options.uniforms,
+                uniformBuffersNames: this.options.uniformBuffers,
+                samplers: samplers || this.options.samplers,
+                defines: defines !== null ? defines : "",
+                fallbacks: null,
+                onCompiled: onCompiled ?? this.options.onCompiled,
+                onError: onError ?? null,
+                indexParameters: indexParameters || this.options.indexParameters,
+                processCodeAfterIncludes: customShaderCodeProcessing?.processCodeAfterIncludes
+                    ? (shaderType, code) => customShaderCodeProcessing.processCodeAfterIncludes(this.name, shaderType, code)
+                    : null,
+                processFinalCode: customShaderCodeProcessing?.processFinalCode
+                    ? (shaderType, code) => customShaderCodeProcessing.processFinalCode(this.name, shaderType, code)
+                    : null,
+                shaderLanguage: this.options.shaderLanguage,
+                extraInitializationsAsync,
+            }, this.options.engine);
+        }
+        else {
+            this._drawWrapper.effect = new _effect_js__WEBPACK_IMPORTED_MODULE_3__/* .Effect */ .M(this._shaderPath, this.options.attributeNames, uniforms || this.options.uniforms, samplers || this.options.samplerNames, this.options.engine, defines, undefined, onCompiled || this.options.onCompiled, undefined, undefined, undefined, this.options.shaderLanguage, extraInitializationsAsync);
+        }
+        this.onEffectCreatedObservable.notifyObservers(this._drawWrapper.effect);
+    }
+    /**
+     * Binds the data to the effect.
+     */
+    bind() {
+        if (this.options.useAsPostProcess) {
+            this.options.engine.setAlphaMode(this.alphaMode);
+            this.drawWrapper.effect.setFloat2("scale", 1, 1);
+        }
+        EffectWrapper._GetShaderCodeProcessing(this.name)?.bindCustomBindings?.(this.name, this._drawWrapper.effect);
+    }
+    /**
+     * Disposes of the effect wrapper
+     * @param _ignored kept for backward compatibility
+     */
+    dispose(_ignored = false) {
+        if (this._onContextRestoredObserver) {
+            this.effect.getEngine().onContextRestoredObservable.remove(this._onContextRestoredObserver);
+            this._onContextRestoredObserver = null;
+        }
+        this.onEffectCreatedObservable.clear();
+        this.effect.dispose();
+    }
+}
+/**
+ * Force code to compile to glsl even on WebGPU engines.
+ * False by default. This is mostly meant for backward compatibility.
+ */
+EffectWrapper.ForceGLSL = false;
+EffectWrapper._CustomShaderCodeProcessing = {};
+//# sourceMappingURL=effectRenderer.js.map
 
 /***/ }),
 
@@ -35255,6 +35852,8 @@ function PrepareDefinesForPrePass(scene, defines, canRenderToMRT) {
         defines.PREPASS = true;
         defines.SCENE_MRT_COUNT = scene.prePassRenderer.mrtCount;
         defines.PREPASS_NORMAL_WORLDSPACE = scene.prePassRenderer.generateNormalsInWorldSpace;
+        defines.PREPASS_COLOR = true;
+        defines.PREPASS_COLOR_INDEX = 0;
         for (let i = 0; i < texturesList.length; i++) {
             const index = scene.prePassRenderer.getIndex(texturesList[i].type);
             if (index !== -1) {
@@ -35368,7 +35967,7 @@ function PrepareUniformsAndSamplersList(uniformsListOrOptions, samplersList, def
 
 /***/ }),
 
-/***/ 9563:
+/***/ 8227:
 /***/ ((__unused_webpack___webpack_module__, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -36981,9 +37580,270 @@ class DetailMapConfiguration extends MaterialPluginBase {
 //# sourceMappingURL=material.detailMapConfiguration.js.map
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/clipPlaneMaterialHelper.js
 var clipPlaneMaterialHelper = __webpack_require__(492);
+;// ./node_modules/@babylonjs/core/Materials/materialHelper.geometryrendering.js
+
+
+/**
+ * Type of clear operation to perform on a geometry texture.
+ */
+var GeometryRenderingTextureClearType;
+(function (GeometryRenderingTextureClearType) {
+    /**
+     * Clear the texture with zero.
+     */
+    GeometryRenderingTextureClearType[GeometryRenderingTextureClearType["Zero"] = 0] = "Zero";
+    /**
+     * Clear the texture with one.
+     */
+    GeometryRenderingTextureClearType[GeometryRenderingTextureClearType["One"] = 1] = "One";
+    /**
+     * Clear the texture with the maximum view Z value.
+     */
+    GeometryRenderingTextureClearType[GeometryRenderingTextureClearType["MaxViewZ"] = 2] = "MaxViewZ";
+})(GeometryRenderingTextureClearType || (GeometryRenderingTextureClearType = {}));
+/**
+ * Helper class to manage geometry rendering.
+ */
+class MaterialHelperGeometryRendering {
+    /**
+     * Creates a new geometry rendering configuration.
+     * @param renderPassId Render pass id the configuration is created for.
+     * @returns The created configuration.
+     */
+    static CreateConfiguration(renderPassId) {
+        MaterialHelperGeometryRendering._Configurations[renderPassId] = {
+            defines: {},
+            previousWorldMatrices: {},
+            previousViewProjection: math_vector/* Matrix */.uq.Zero(),
+            currentViewProjection: math_vector/* Matrix */.uq.Zero(),
+            previousBones: {},
+            lastUpdateFrameId: -1,
+            excludedSkinnedMesh: [],
+        };
+        return MaterialHelperGeometryRendering._Configurations[renderPassId];
+    }
+    /**
+     * Deletes a geometry rendering configuration.
+     * @param renderPassId The render pass id of the configuration to delete.
+     */
+    static DeleteConfiguration(renderPassId) {
+        delete MaterialHelperGeometryRendering._Configurations[renderPassId];
+    }
+    /**
+     * Gets a geometry rendering configuration.
+     * @param renderPassId The render pass id of the configuration to get.
+     * @returns The configuration.
+     */
+    static GetConfiguration(renderPassId) {
+        return MaterialHelperGeometryRendering._Configurations[renderPassId];
+    }
+    /**
+     * Adds uniforms and samplers for geometry rendering.
+     * @param uniforms The array of uniforms to add to.
+     * @param _samplers The array of samplers to add to.
+     */
+    static AddUniformsAndSamplers(uniforms, _samplers) {
+        uniforms.push("previousWorld", "previousViewProjection", "mPreviousBones");
+    }
+    /**
+     * Marks a list of meshes as dirty for geometry rendering.
+     * @param renderPassId The render pass id the meshes are marked as dirty for.
+     * @param meshes The list of meshes to mark as dirty.
+     */
+    static MarkAsDirty(renderPassId, meshes) {
+        for (const mesh of meshes) {
+            if (!mesh.subMeshes) {
+                continue;
+            }
+            for (const subMesh of mesh.subMeshes) {
+                subMesh._removeDrawWrapper(renderPassId);
+            }
+        }
+    }
+    /**
+     * Prepares defines for geometry rendering.
+     * @param renderPassId The render pass id the defines are prepared for.
+     * @param mesh The mesh the defines are prepared for.
+     * @param defines The defines to update according to the geometry rendering configuration.
+     */
+    static PrepareDefines(renderPassId, mesh, defines) {
+        if (!defines._arePrePassDirty) {
+            return;
+        }
+        const configuration = MaterialHelperGeometryRendering._Configurations[renderPassId];
+        if (!configuration) {
+            return;
+        }
+        defines["PREPASS"] = true;
+        defines["PREPASS_COLOR"] = false;
+        defines["PREPASS_COLOR_INDEX"] = -1;
+        let numMRT = 0;
+        for (let i = 0; i < MaterialHelperGeometryRendering.GeometryTextureDescriptions.length; i++) {
+            const geometryTextureDescription = MaterialHelperGeometryRendering.GeometryTextureDescriptions[i];
+            const defineName = geometryTextureDescription.define;
+            const defineIndex = geometryTextureDescription.defineIndex;
+            const index = configuration.defines[defineIndex];
+            if (index !== undefined) {
+                defines[defineName] = true;
+                defines[defineIndex] = index;
+                numMRT++;
+            }
+            else {
+                defines[defineName] = false;
+                delete defines[defineIndex];
+            }
+        }
+        defines["SCENE_MRT_COUNT"] = numMRT;
+        defines["BONES_VELOCITY_ENABLED"] =
+            mesh.useBones && mesh.computeBonesUsingShaders && mesh.skeleton && !mesh.skeleton.isUsingTextureForMatrices && configuration.excludedSkinnedMesh.indexOf(mesh) === -1;
+    }
+    /**
+     * Binds geometry rendering data for a mesh.
+     * @param renderPassId The render pass id the geometry rendering data is bound for.
+     * @param effect The effect to bind the geometry rendering data to.
+     * @param mesh The mesh to bind the geometry rendering data for.
+     * @param world The world matrix of the mesh.
+     */
+    static Bind(renderPassId, effect, mesh, world) {
+        const configuration = MaterialHelperGeometryRendering._Configurations[renderPassId];
+        if (!configuration) {
+            return;
+        }
+        if (configuration.defines["PREPASS_VELOCITY_INDEX"] !== undefined || configuration.defines["PREPASS_VELOCITY_LINEAR_INDEX"] !== undefined) {
+            if (!configuration.previousWorldMatrices[mesh.uniqueId]) {
+                configuration.previousWorldMatrices[mesh.uniqueId] = world.clone();
+            }
+            const scene = mesh.getScene();
+            if (!configuration.previousViewProjection) {
+                configuration.previousViewProjection = scene.getTransformMatrix().clone();
+                configuration.currentViewProjection = scene.getTransformMatrix().clone();
+            }
+            const engine = scene.getEngine();
+            if (configuration.currentViewProjection.updateFlag !== scene.getTransformMatrix().updateFlag) {
+                // First update of the prepass configuration for this rendering pass
+                configuration.lastUpdateFrameId = engine.frameId;
+                configuration.previousViewProjection.copyFrom(configuration.currentViewProjection);
+                configuration.currentViewProjection.copyFrom(scene.getTransformMatrix());
+            }
+            else if (configuration.lastUpdateFrameId !== engine.frameId) {
+                // The scene transformation did not change from the previous frame (so no camera motion), we must update previousViewProjection accordingly
+                configuration.lastUpdateFrameId = engine.frameId;
+                configuration.previousViewProjection.copyFrom(configuration.currentViewProjection);
+            }
+            effect.setMatrix("previousWorld", configuration.previousWorldMatrices[mesh.uniqueId]);
+            effect.setMatrix("previousViewProjection", configuration.previousViewProjection);
+            configuration.previousWorldMatrices[mesh.uniqueId] = world.clone();
+            if (mesh.useBones && mesh.computeBonesUsingShaders && mesh.skeleton) {
+                const skeleton = mesh.skeleton;
+                if (!skeleton.isUsingTextureForMatrices || effect.getUniformIndex("boneTextureWidth") === -1) {
+                    const matrices = skeleton.getTransformMatrices(mesh);
+                    if (matrices) {
+                        if (!configuration.previousBones[mesh.uniqueId]) {
+                            configuration.previousBones[mesh.uniqueId] = matrices.slice();
+                        }
+                        effect.setMatrices("mPreviousBones", configuration.previousBones[mesh.uniqueId]);
+                        configuration.previousBones[mesh.uniqueId].set(matrices);
+                    }
+                }
+            }
+        }
+    }
+}
+/**
+ * Descriptions of the geometry textures.
+ */
+MaterialHelperGeometryRendering.GeometryTextureDescriptions = [
+    {
+        type: 0,
+        name: "Irradiance",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_IRRADIANCE",
+        defineIndex: "PREPASS_IRRADIANCE_INDEX",
+    },
+    {
+        type: 1,
+        name: "WorldPosition",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_POSITION",
+        defineIndex: "PREPASS_POSITION_INDEX",
+    },
+    {
+        type: 2,
+        name: "Velocity",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_VELOCITY",
+        defineIndex: "PREPASS_VELOCITY_INDEX",
+    },
+    {
+        type: 3,
+        name: "Reflectivity",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_REFLECTIVITY",
+        defineIndex: "PREPASS_REFLECTIVITY_INDEX",
+    },
+    {
+        type: 5,
+        name: "ViewDepth",
+        clearType: 2 /* GeometryRenderingTextureClearType.MaxViewZ */,
+        define: "PREPASS_DEPTH",
+        defineIndex: "PREPASS_DEPTH_INDEX",
+    },
+    {
+        type: 6,
+        name: "ViewNormal",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_NORMAL",
+        defineIndex: "PREPASS_NORMAL_INDEX",
+    },
+    {
+        type: 7,
+        name: "AlbedoSqrt",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_ALBEDO_SQRT",
+        defineIndex: "PREPASS_ALBEDO_SQRT_INDEX",
+    },
+    {
+        type: 8,
+        name: "WorldNormal",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_WORLD_NORMAL",
+        defineIndex: "PREPASS_WORLD_NORMAL_INDEX",
+    },
+    {
+        type: 9,
+        name: "LocalPosition",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_LOCAL_POSITION",
+        defineIndex: "PREPASS_LOCAL_POSITION_INDEX",
+    },
+    {
+        type: 10,
+        name: "ScreenDepth",
+        clearType: 1 /* GeometryRenderingTextureClearType.One */,
+        define: "PREPASS_SCREENSPACE_DEPTH",
+        defineIndex: "PREPASS_SCREENSPACE_DEPTH_INDEX",
+    },
+    {
+        type: 11,
+        name: "LinearVelocity",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_VELOCITY_LINEAR",
+        defineIndex: "PREPASS_VELOCITY_LINEAR_INDEX",
+    },
+    {
+        type: 12,
+        name: "Albedo",
+        clearType: 0 /* GeometryRenderingTextureClearType.Zero */,
+        define: "PREPASS_ALBEDO",
+        defineIndex: "PREPASS_ALBEDO_INDEX",
+    },
+];
+MaterialHelperGeometryRendering._Configurations = {};
+//# sourceMappingURL=materialHelper.geometryrendering.js.map
 ;// ./node_modules/@babylonjs/core/Materials/standardMaterial.js
 
 /* eslint-disable @typescript-eslint/naming-convention */
+
 
 
 
@@ -37113,8 +37973,12 @@ class StandardMaterialDefines extends MaterialDefines {
         this.ALPHATEST_AFTERALLALPHACOMPUTATIONS = false;
         this.ALPHABLEND = true;
         this.PREPASS = false;
+        this.PREPASS_COLOR = false;
+        this.PREPASS_COLOR_INDEX = -1;
         this.PREPASS_IRRADIANCE = false;
         this.PREPASS_IRRADIANCE_INDEX = -1;
+        this.PREPASS_ALBEDO = false;
+        this.PREPASS_ALBEDO_INDEX = -1;
         this.PREPASS_ALBEDO_SQRT = false;
         this.PREPASS_ALBEDO_SQRT_INDEX = -1;
         this.PREPASS_DEPTH = false;
@@ -37547,6 +38411,7 @@ class StandardMaterial extends PushMaterial {
         (0,materialHelper_functions/* PrepareDefinesForPrePass */.N4)(scene, defines, this.canRenderToMRT && !oit);
         // Order independant transparency
         (0,materialHelper_functions/* PrepareDefinesForOIT */.Nc)(scene, defines, oit);
+        MaterialHelperGeometryRendering.PrepareDefines(engine.currentRenderPassId, mesh, defines);
         // Textures
         if (defines._areTexturesDirty) {
             this._eventInfo.hasRenderTargetTextures = false;
@@ -37953,6 +38818,7 @@ class StandardMaterial extends PushMaterial {
             this._eventInfo.mesh = mesh;
             this._eventInfo.indexParameters = indexParameters;
             this._callbackPluginEventGeneric(128 /* MaterialPluginEvent.PrepareEffect */, this._eventInfo);
+            MaterialHelperGeometryRendering.AddUniformsAndSamplers(uniforms, samplers);
             PrePassConfiguration.AddUniforms(uniforms);
             PrePassConfiguration.AddSamplers(samplers);
             if (imageProcessingConfiguration/* ImageProcessingConfiguration */.p) {
@@ -38102,6 +38968,7 @@ class StandardMaterial extends PushMaterial {
         // Binding unconditionally
         this._uniformBuffer.bindToEffect(effect, "Material");
         this.prePassConfiguration.bindForSubMesh(this._activeEffect, scene, mesh, world, this.isFrozen);
+        MaterialHelperGeometryRendering.Bind(scene.getEngine().currentRenderPassId, this._activeEffect, mesh, world);
         this._eventInfo.subMesh = subMesh;
         this._callbackPluginEventHardBindForSubMesh(this._eventInfo);
         // Normal Matrix
@@ -71728,6 +72595,12 @@ class WebRequest {
     static get IsCustomRequestAvailable() {
         return Object.keys(WebRequest.CustomRequestHeaders).length > 0 || WebRequest.CustomRequestModifiers.length > 0;
     }
+    /**
+     * Returns the requested URL once open has been called
+     */
+    get requestURL() {
+        return this._requestURL;
+    }
     _injectCustomRequestHeaders() {
         if (this._shouldSkipRequestModifications(this._requestURL)) {
             return;
@@ -71893,9 +72766,9 @@ WebRequest.SkipRequestModificationForBabylonCDN = true;
 /* harmony import */ var _Misc_decorators_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(9259);
 /* harmony import */ var _Misc_decorators_serialization_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(6877);
 /* harmony import */ var _Misc_typeStore_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(6552);
-/* harmony import */ var _Materials_drawWrapper_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(5476);
-/* harmony import */ var _Engines_abstractEngine_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(6326);
-/* harmony import */ var _Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(1597);
+/* harmony import */ var _Engines_abstractEngine_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(6326);
+/* harmony import */ var _Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(1597);
+/* harmony import */ var _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(4255);
 
 
 
@@ -71908,7 +72781,7 @@ WebRequest.SkipRequestModificationForBabylonCDN = true;
 
 
 
-_Engines_abstractEngine_js__WEBPACK_IMPORTED_MODULE_9__/* .AbstractEngine */ .$.prototype.setTextureFromPostProcess = function (channel, postProcess, name) {
+_Engines_abstractEngine_js__WEBPACK_IMPORTED_MODULE_8__/* .AbstractEngine */ .$.prototype.setTextureFromPostProcess = function (channel, postProcess, name) {
     let postProcessInput = null;
     if (postProcess) {
         if (postProcess._forcedOutputTexture) {
@@ -71920,7 +72793,7 @@ _Engines_abstractEngine_js__WEBPACK_IMPORTED_MODULE_9__/* .AbstractEngine */ .$.
     }
     this._bindTexture(channel, postProcessInput?.texture ?? null, name);
 };
-_Engines_abstractEngine_js__WEBPACK_IMPORTED_MODULE_9__/* .AbstractEngine */ .$.prototype.setTextureFromPostProcessOutput = function (channel, postProcess, name) {
+_Engines_abstractEngine_js__WEBPACK_IMPORTED_MODULE_8__/* .AbstractEngine */ .$.prototype.setTextureFromPostProcessOutput = function (channel, postProcess, name) {
     this._bindTexture(channel, postProcess?._outputTexture?.texture ?? null, name);
 };
 /**
@@ -71946,19 +72819,38 @@ _Materials_effect_js__WEBPACK_IMPORTED_MODULE_4__/* .Effect */ .M.prototype.setT
  */
 class PostProcess {
     /**
+     * Force all the postprocesses to compile to glsl even on WebGPU engines.
+     * False by default. This is mostly meant for backward compatibility.
+     */
+    static get ForceGLSL() {
+        return _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_10__/* .EffectWrapper */ .$.ForceGLSL;
+    }
+    static set ForceGLSL(force) {
+        _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_10__/* .EffectWrapper */ .$.ForceGLSL = force;
+    }
+    /**
      * Registers a shader code processing with a post process name.
      * @param postProcessName name of the post process. Use null for the fallback shader code processing. This is the shader code processing that will be used in case no specific shader code processing has been associated to a post process name
      * @param customShaderCodeProcessing shader code processing to associate to the post process name
      */
     static RegisterShaderCodeProcessing(postProcessName, customShaderCodeProcessing) {
-        if (!customShaderCodeProcessing) {
-            delete PostProcess._CustomShaderCodeProcessing[postProcessName ?? ""];
-            return;
-        }
-        PostProcess._CustomShaderCodeProcessing[postProcessName ?? ""] = customShaderCodeProcessing;
+        _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_10__/* .EffectWrapper */ .$.RegisterShaderCodeProcessing(postProcessName, customShaderCodeProcessing);
     }
-    static _GetShaderCodeProcessing(postProcessName) {
-        return PostProcess._CustomShaderCodeProcessing[postProcessName] ?? PostProcess._CustomShaderCodeProcessing[""];
+    /** Name of the PostProcess. */
+    get name() {
+        return this._effectWrapper.name;
+    }
+    set name(value) {
+        this._effectWrapper.name = value;
+    }
+    /**
+     * Type of alpha mode to use when performing the post process (default: Engine.ALPHA_DISABLE)
+     */
+    get alphaMode() {
+        return this._effectWrapper.alphaMode;
+    }
+    set alphaMode(value) {
+        this._effectWrapper.alphaMode = value;
     }
     /**
      * Number of sample textures (default: 1)
@@ -72104,10 +72996,6 @@ class PostProcess {
          */
         this.forceAutoClearInAlphaMode = false;
         /**
-         * Type of alpha mode to use when performing the post process (default: Engine.ALPHA_DISABLE)
-         */
-        this.alphaMode = 0;
-        /**
          * Animations to be used for the post processing
          */
         this.animations = [];
@@ -72140,7 +73028,6 @@ class PostProcess {
          * Modify the scale of the post process to be the same as the viewport (default: false)
          */
         this.adaptScaleToCurrentViewport = false;
-        this._shadersLoaded = false;
         this._webGPUReady = false;
         this._reusable = false;
         this._renderId = 0;
@@ -72167,11 +73054,6 @@ class PostProcess {
         this._currentRenderTextureInd = 0;
         this._scaleRatio = new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_3__/* .Vector2 */ .I9(1, 1);
         this._texelSize = _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_3__/* .Vector2 */ .I9.Zero();
-        /**
-         * Executed when the effect was created
-         * @returns effect that was created for this post process
-         */
-        this.onEffectCreatedObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_2__/* .Observable */ .cP(undefined, true);
         // Events
         /**
          * An event triggered when the postprocess is activated.
@@ -72193,10 +73075,9 @@ class PostProcess {
          * An event triggered after rendering the postprocess
          */
         this.onAfterRenderObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_2__/* .Observable */ .cP();
-        this._importPromises = [];
-        this.name = name;
         let size = 1;
         let uniformBuffers = null;
+        let effectWrapper;
         if (parameters && !Array.isArray(parameters)) {
             const options = parameters;
             parameters = options.uniforms ?? null;
@@ -72206,7 +73087,7 @@ class PostProcess {
             samplingMode = options.samplingMode ?? 1;
             engine = options.engine;
             reusable = options.reusable;
-            defines = options.defines ?? null;
+            defines = Array.isArray(options.defines) ? options.defines.join("\n") : (options.defines ?? null);
             textureType = options.textureType ?? 0;
             vertexUrl = options.vertexUrl ?? "postprocess";
             indexParameters = options.indexParameters;
@@ -72215,6 +73096,7 @@ class PostProcess {
             shaderLanguage = options.shaderLanguage ?? 0 /* ShaderLanguage.GLSL */;
             uniformBuffers = options.uniformBuffers ?? null;
             extraInitializations = options.extraInitializations;
+            effectWrapper = options.effectWrapper;
         }
         else if (_size) {
             if (typeof _size === "number") {
@@ -72224,6 +73106,27 @@ class PostProcess {
                 size = { width: _size.width, height: _size.height };
             }
         }
+        const useExistingThinPostProcess = !!effectWrapper;
+        this._effectWrapper =
+            effectWrapper ??
+                new _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_10__/* .EffectWrapper */ .$({
+                    name,
+                    useShaderStore: true,
+                    useAsPostProcess: true,
+                    fragmentShader: fragmentUrl,
+                    engine: engine || camera?.getScene().getEngine(),
+                    uniforms: parameters,
+                    samplers,
+                    uniformBuffers,
+                    defines,
+                    vertexUrl,
+                    indexParameters,
+                    blockCompilation,
+                    shaderLanguage,
+                    extraInitializations,
+                });
+        this.name = name;
+        this.onEffectCreatedObservable = this._effectWrapper.onEffectCreatedObservable;
         if (camera != null) {
             this._camera = camera;
             this._scene = camera.getScene();
@@ -72243,39 +73146,32 @@ class PostProcess {
         this._textureFormat = textureFormat;
         this._shaderLanguage = shaderLanguage || 0 /* ShaderLanguage.GLSL */;
         this._samplers = samplers || [];
-        this._samplers.push("textureSampler");
+        if (this._samplers.indexOf("textureSampler") === -1) {
+            this._samplers.push("textureSampler");
+        }
         this._fragmentUrl = fragmentUrl;
         this._vertexUrl = vertexUrl;
         this._parameters = parameters || [];
-        this._parameters.push("scale");
+        if (this._parameters.indexOf("scale") === -1) {
+            this._parameters.push("scale");
+        }
         this._uniformBuffers = uniformBuffers || [];
         this._indexParameters = indexParameters;
-        this._drawWrapper = new _Materials_drawWrapper_js__WEBPACK_IMPORTED_MODULE_8__/* .DrawWrapper */ .E(this._engine);
-        this._webGPUReady = this._shaderLanguage === 1 /* ShaderLanguage.WGSL */;
-        this._postConstructor(blockCompilation, defines, extraInitializations);
+        if (!useExistingThinPostProcess) {
+            this._webGPUReady = this._shaderLanguage === 1 /* ShaderLanguage.WGSL */;
+            const importPromises = [];
+            this._gatherImports(this._engine.isWebGPU && !PostProcess.ForceGLSL, importPromises);
+            this._effectWrapper._webGPUReady = this._webGPUReady;
+            this._effectWrapper._postConstructor(blockCompilation, defines, extraInitializations, importPromises);
+        }
     }
-    /** @internal */
     _gatherImports(useWebGPU = false, list) {
         // this._webGPUReady is used to detect when a postprocess is intended to be used with WebGPU
         if (useWebGPU && this._webGPUReady) {
             list.push(Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 2083))]));
         }
         else {
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 6612))]));
-        }
-    }
-    _postConstructor(blockCompilation, defines = null, extraInitializations) {
-        const engine = this.getEngine();
-        const useWebGPU = engine.isWebGPU && !PostProcess.ForceGLSL;
-        this._gatherImports(useWebGPU, this._importPromises);
-        if (extraInitializations) {
-            extraInitializations(useWebGPU, this._importPromises);
-        }
-        if (useWebGPU && this._webGPUReady) {
-            this._shaderLanguage = 1 /* ShaderLanguage.WGSL */;
-        }
-        if (!blockCompilation) {
-            this.updateEffect(defines);
+            list.push(Promise.all([Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 6612))]));
         }
     }
     /**
@@ -72294,10 +73190,10 @@ class PostProcess {
     }
     /**
      * The effect that is created when initializing the post process.
-     * @returns The created effect corresponding the postprocess.
+     * @returns The created effect corresponding to the postprocess.
      */
     getEffect() {
-        return this._drawWrapper.effect;
+        return this._effectWrapper.drawWrapper.effect;
     }
     /**
      * To avoid multiple redundant textures for multiple post process, the output the output texture for this post process can be shared with another.
@@ -72331,42 +73227,8 @@ class PostProcess {
      * @param fragmentUrl The url of the fragment shader to be used (default: the one given at construction time)
      */
     updateEffect(defines = null, uniforms = null, samplers = null, indexParameters, onCompiled, onError, vertexUrl, fragmentUrl) {
-        const customShaderCodeProcessing = PostProcess._GetShaderCodeProcessing(this.name);
-        if (customShaderCodeProcessing?.defineCustomBindings) {
-            const newUniforms = uniforms?.slice() ?? [];
-            newUniforms.push(...this._parameters);
-            const newSamplers = samplers?.slice() ?? [];
-            newSamplers.push(...this._samplers);
-            defines = customShaderCodeProcessing.defineCustomBindings(this.name, defines, newUniforms, newSamplers);
-            uniforms = newUniforms;
-            samplers = newSamplers;
-        }
-        this._postProcessDefines = defines;
-        this._drawWrapper.effect = this._engine.createEffect({ vertex: vertexUrl ?? this._vertexUrl, fragment: fragmentUrl ?? this._fragmentUrl }, {
-            attributes: ["position"],
-            uniformsNames: uniforms || this._parameters,
-            uniformBuffersNames: this._uniformBuffers,
-            samplers: samplers || this._samplers,
-            defines: defines !== null ? defines : "",
-            fallbacks: null,
-            onCompiled: onCompiled ?? null,
-            onError: onError ?? null,
-            indexParameters: indexParameters || this._indexParameters,
-            processCodeAfterIncludes: customShaderCodeProcessing?.processCodeAfterIncludes
-                ? (shaderType, code) => customShaderCodeProcessing.processCodeAfterIncludes(this.name, shaderType, code)
-                : null,
-            processFinalCode: customShaderCodeProcessing?.processFinalCode
-                ? (shaderType, code) => customShaderCodeProcessing.processFinalCode(this.name, shaderType, code)
-                : null,
-            shaderLanguage: this._shaderLanguage,
-            extraInitializationsAsync: this._shadersLoaded
-                ? undefined
-                : async () => {
-                    await Promise.all(this._importPromises);
-                    this._shadersLoaded = true;
-                },
-        }, this._engine);
-        this.onEffectCreatedObservable.notifyObservers(this._drawWrapper.effect);
+        this._effectWrapper.updateEffect(defines, uniforms, samplers, indexParameters, onCompiled, onError, vertexUrl, fragmentUrl);
+        this._postProcessDefines = Array.isArray(this._effectWrapper.options.defines) ? this._effectWrapper.options.defines.join("\n") : this._effectWrapper.options.defines;
     }
     /**
      * The post process is reusable if it can be used multiple times within one frame.
@@ -72508,10 +73370,10 @@ class PostProcess {
             }
             if (needMipMaps || this.alwaysForcePOT) {
                 if (!this._options.width) {
-                    desiredWidth = engine.needPOTTextures ? (0,_Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_10__/* .GetExponentOfTwo */ .R)(desiredWidth, maxSize, this.scaleMode) : desiredWidth;
+                    desiredWidth = engine.needPOTTextures ? (0,_Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_9__/* .GetExponentOfTwo */ .R)(desiredWidth, maxSize, this.scaleMode) : desiredWidth;
                 }
                 if (!this._options.height) {
-                    desiredHeight = engine.needPOTTextures ? (0,_Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_10__/* .GetExponentOfTwo */ .R)(desiredHeight, maxSize, this.scaleMode) : desiredHeight;
+                    desiredHeight = engine.needPOTTextures ? (0,_Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_9__/* .GetExponentOfTwo */ .R)(desiredHeight, maxSize, this.scaleMode) : desiredHeight;
                 }
             }
             if (this.width !== desiredWidth || this.height !== desiredHeight || !(target = this._getTarget())) {
@@ -72552,7 +73414,7 @@ class PostProcess {
      * If the post process is supported.
      */
     get isSupported() {
-        return this._drawWrapper.effect.isSupported;
+        return this._effectWrapper.drawWrapper.effect.isSupported;
     }
     /**
      * The aspect ratio of the output texture.
@@ -72571,7 +73433,7 @@ class PostProcess {
      * @returns true if the post-process is ready (shader is compiled)
      */
     isReady() {
-        return this._drawWrapper.effect?.isReady() ?? false;
+        return this._effectWrapper.isReady();
     }
     /**
      * Binds all textures and uniforms to the shader, this will be run on every pass.
@@ -72579,16 +73441,15 @@ class PostProcess {
      */
     apply() {
         // Check
-        if (!this._drawWrapper.effect?.isReady()) {
+        if (!this._effectWrapper.isReady()) {
             return null;
         }
         // States
-        this._engine.enableEffect(this._drawWrapper);
+        this._engine.enableEffect(this._effectWrapper.drawWrapper);
         this._engine.setState(false);
         this._engine.setDepthBuffer(false);
         this._engine.setDepthWrite(false);
         // Alpha
-        this._engine.setAlphaMode(this.alphaMode);
         if (this.alphaConstants) {
             this.getEngine().setAlphaConstants(this.alphaConstants.r, this.alphaConstants.g, this.alphaConstants.b, this.alphaConstants.a);
         }
@@ -72604,13 +73465,13 @@ class PostProcess {
             source = this.inputTexture;
         }
         if (!this.externalTextureSamplerBinding) {
-            this._drawWrapper.effect._bindTexture("textureSampler", source?.texture);
+            this._effectWrapper.drawWrapper.effect._bindTexture("textureSampler", source?.texture);
         }
         // Parameters
-        this._drawWrapper.effect.setVector2("scale", this._scaleRatio);
-        this.onApplyObservable.notifyObservers(this._drawWrapper.effect);
-        PostProcess._GetShaderCodeProcessing(this.name)?.bindCustomBindings?.(this.name, this._drawWrapper.effect);
-        return this._drawWrapper.effect;
+        this._effectWrapper.drawWrapper.effect.setVector2("scale", this._scaleRatio);
+        this.onApplyObservable.notifyObservers(this._effectWrapper.drawWrapper.effect);
+        this._effectWrapper.bind();
+        return this._effectWrapper.drawWrapper.effect;
     }
     _disposeTextures() {
         if (this._shareOutputWithPostProcess || this._forcedOutputTexture) {
@@ -72696,6 +73557,7 @@ class PostProcess {
         serializationObject.fragmentUrl = this._fragmentUrl;
         serializationObject.parameters = this._parameters;
         serializationObject.samplers = this._samplers;
+        serializationObject.uniformBuffers = this._uniformBuffers;
         serializationObject.options = this._options;
         serializationObject.defines = this._postProcessDefines;
         serializationObject.textureFormat = this._textureFormat;
@@ -72747,18 +73609,12 @@ class PostProcess {
         }, parsedPostProcess, scene, rootUrl);
     }
 }
-/**
- * Force all the postprocesses to compile to glsl even on WebGPU engines.
- * False by default. This is mostly meant for backward compatibility.
- */
-PostProcess.ForceGLSL = false;
-PostProcess._CustomShaderCodeProcessing = {};
 (0,_tslib_es6_js__WEBPACK_IMPORTED_MODULE_0__/* .__decorate */ .Cg)([
     (0,_Misc_decorators_js__WEBPACK_IMPORTED_MODULE_5__/* .serialize */ .lK)()
 ], PostProcess.prototype, "uniqueId", void 0);
 (0,_tslib_es6_js__WEBPACK_IMPORTED_MODULE_0__/* .__decorate */ .Cg)([
     (0,_Misc_decorators_js__WEBPACK_IMPORTED_MODULE_5__/* .serialize */ .lK)()
-], PostProcess.prototype, "name", void 0);
+], PostProcess.prototype, "name", null);
 (0,_tslib_es6_js__WEBPACK_IMPORTED_MODULE_0__/* .__decorate */ .Cg)([
     (0,_Misc_decorators_js__WEBPACK_IMPORTED_MODULE_5__/* .serialize */ .lK)()
 ], PostProcess.prototype, "width", void 0);
@@ -72779,7 +73635,7 @@ PostProcess._CustomShaderCodeProcessing = {};
 ], PostProcess.prototype, "forceAutoClearInAlphaMode", void 0);
 (0,_tslib_es6_js__WEBPACK_IMPORTED_MODULE_0__/* .__decorate */ .Cg)([
     (0,_Misc_decorators_js__WEBPACK_IMPORTED_MODULE_5__/* .serialize */ .lK)()
-], PostProcess.prototype, "alphaMode", void 0);
+], PostProcess.prototype, "alphaMode", null);
 (0,_tslib_es6_js__WEBPACK_IMPORTED_MODULE_0__/* .__decorate */ .Cg)([
     (0,_Misc_decorators_js__WEBPACK_IMPORTED_MODULE_5__/* .serialize */ .lK)()
 ], PostProcess.prototype, "alphaConstants", void 0);
@@ -74047,8 +74903,7 @@ attribute vec4 instanceColor;
 #if defined(THIN_INSTANCES) && !defined(WORLD_UBO)
 uniform mat4 world;
 #endif
-#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 attribute vec4 previousWorld0;attribute vec4 previousWorld1;attribute vec4 previousWorld2;attribute vec4 previousWorld3;
 #ifdef THIN_INSTANCES
 uniform mat4 previousWorld;
@@ -74058,8 +74913,7 @@ uniform mat4 previousWorld;
 #if !defined(WORLD_UBO)
 uniform mat4 world;
 #endif
-#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 uniform mat4 previousWorld;
 #endif
 #endif
@@ -74082,22 +74936,19 @@ const instancesDeclaration = { name, shader };
 const name = "instancesVertex";
 const shader = `#ifdef INSTANCES
 mat4 finalWorld=mat4(world0,world1,world2,world3);
-#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 mat4 finalPreviousWorld=mat4(previousWorld0,previousWorld1,
 previousWorld2,previousWorld3);
 #endif
 #ifdef THIN_INSTANCES
 finalWorld=world*finalWorld;
-#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 finalPreviousWorld=previousWorld*finalPreviousWorld;
 #endif
 #endif
 #else
 mat4 finalWorld=world;
-#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
 mat4 finalPreviousWorld=previousWorld;
 #endif
 #endif
@@ -74472,6 +75323,32 @@ shaderStore/* ShaderStore */.l.ShadersStore[depth_vertex_name] = depth_vertex_sh
 /** @internal */
 const depthVertexShader = { name: depth_vertex_name, shader: depth_vertex_shader };
 //# sourceMappingURL=depth.vertex.js.map
+
+/***/ }),
+
+/***/ 6612:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   postprocessVertexShader: () => (/* binding */ postprocessVertexShader)
+/* harmony export */ });
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "postprocessVertexShader";
+const shader = `attribute vec2 position;uniform vec2 scale;varying vec2 vUV;const vec2 madd=vec2(0.5,0.5);
+#define CUSTOM_VERTEX_DEFINITIONS
+void main(void) {
+#define CUSTOM_VERTEX_MAIN_BEGIN
+vUV=(position*madd+madd)*scale;gl_Position=vec4(position,0.0,1.0);
+#define CUSTOM_VERTEX_MAIN_END
+}`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.ShadersStore[name] = shader;
+/** @internal */
+const postprocessVertexShader = { name, shader };
+//# sourceMappingURL=postprocess.vertex.js.map
 
 /***/ }),
 
@@ -77240,7 +78117,9 @@ class InputManager {
         this._meshPickProceed = false;
         this._currentPickResult = null;
         this._previousPickResult = null;
-        this._totalPointersPressed = 0;
+        this._activePointerIds = new Array();
+        /** Tracks the count of used slots in _activePointerIds for perf */
+        this._activePointerIdsCount = 0;
         this._doubleClickOccured = false;
         this._isSwiping = false;
         this._swipeButtonPressed = -1;
@@ -77481,7 +78360,7 @@ class InputManager {
                             mesh.actionManager.hasSpecificTrigger(8) &&
                             mesh === this._pickedDownMesh)), false, scene.cameraToUseForPointers);
                         if (pickResult?.pickedMesh && actionManager) {
-                            if (this._totalPointersPressed !== 0 && Date.now() - this._startingPointerTime > InputManager.LongPressDelay && !this._isPointerSwiping()) {
+                            if (this._activePointerIdsCount !== 0 && Date.now() - this._startingPointerTime > InputManager.LongPressDelay && !this._isPointerSwiping()) {
                                 this._startingPointerTime = 0;
                                 actionManager.processTrigger(8, ActionEvent.CreateNew(pickResult.pickedMesh, evt));
                             }
@@ -77815,7 +78694,14 @@ class InputManager {
             this._processPointerMove(pickResult, evt);
         };
         this._onPointerDown = (evt) => {
-            this._totalPointersPressed++;
+            const freeIndex = this._activePointerIds.indexOf(-1);
+            if (freeIndex === -1) {
+                this._activePointerIds.push(evt.pointerId);
+            }
+            else {
+                this._activePointerIds[freeIndex] = evt.pointerId;
+            }
+            this._activePointerIdsCount++;
             this._pickedDownMesh = null;
             this._meshPickProceed = false;
             // If ExclusiveDoubleClickMode is true, we need to resolve any pending delayed clicks
@@ -77885,11 +78771,14 @@ class InputManager {
             this._processPointerDown(pickResult, evt);
         };
         this._onPointerUp = (evt) => {
-            if (this._totalPointersPressed === 0) {
+            const pointerIdIndex = this._activePointerIds.indexOf(evt.pointerId);
+            if (pointerIdIndex === -1) {
                 // We are attaching the pointer up to windows because of a bug in FF
-                return; // So we need to test it the pointer down was pressed before.
+                // If this pointerId is not paired with an _onPointerDown call, ignore it
+                return;
             }
-            this._totalPointersPressed--;
+            this._activePointerIds[pointerIdIndex] = -1;
+            this._activePointerIdsCount--;
             this._pickedUpMesh = null;
             this._meshPickProceed = false;
             this._updatePointerPosition(evt);
@@ -78035,13 +78924,13 @@ class InputManager {
                     if (eventData.inputIndex === PointerInput.LeftClick) {
                         if (attachDown && deviceSource.getInput(eventData.inputIndex) === 1) {
                             this._onPointerDown(eventData);
-                            if (this._totalPointersPressed > 1) {
+                            if (this._activePointerIdsCount > 1) {
                                 this._isMultiTouchGesture = true;
                             }
                         }
                         else if (attachUp && deviceSource.getInput(eventData.inputIndex) === 0) {
                             this._onPointerUp(eventData);
-                            if (this._totalPointersPressed === 0) {
+                            if (this._activePointerIdsCount === 0) {
                                 this._isMultiTouchGesture = false;
                             }
                         }
@@ -78281,6 +79170,18 @@ class Scene {
      */
     static CollisionCoordinatorFactory() {
         throw (0,devTools/* _WarnImport */.n)("DefaultCollisionCoordinator");
+    }
+    /**
+     * Defines the color used to clear the render buffer (Default is (0.2, 0.2, 0.3, 1.0))
+     */
+    get clearColor() {
+        return this._clearColor;
+    }
+    set clearColor(value) {
+        if (value !== this._clearColor) {
+            this._clearColor = value;
+            this.onClearColorChangedObservable.notifyObservers(this._clearColor);
+        }
     }
     /**
      * Default image processing configuration used either in the rendering
@@ -78753,6 +79654,26 @@ class Scene {
         return this._texturesEnabled;
     }
     /**
+     * Gets or sets the frame graph used to render the scene. If set, the scene will use the frame graph to render the scene instead of the default render loop.
+     */
+    get frameGraph() {
+        return this._frameGraph;
+    }
+    set frameGraph(value) {
+        if (this._frameGraph) {
+            this._frameGraph = value;
+            if (!value) {
+                this.customRenderFunction = this._currentCustomRenderFunction;
+            }
+            return;
+        }
+        this._frameGraph = value;
+        if (value) {
+            this._currentCustomRenderFunction = this.customRenderFunction;
+            this.customRenderFunction = this._renderWithFrameGraph;
+        }
+    }
+    /**
      * Gets or sets a boolean indicating if skeletons are enabled on this scene
      */
     set skeletonsEnabled(value) {
@@ -78848,10 +79769,11 @@ class Scene {
          * Gets or sets a boolean that indicates if the scene must clear the depth and stencil buffers before rendering a frame
          */
         this.autoClearDepthAndStencil = true;
+        this._clearColor = new math_color/* Color4 */.ov(0.2, 0.2, 0.3, 1.0);
         /**
-         * Defines the color used to clear the render buffer (Default is (0.2, 0.2, 0.3, 1.0))
+         * Observable triggered when the performance priority is changed
          */
-        this.clearColor = new math_color/* Color4 */.ov(0.2, 0.2, 0.3, 1.0);
+        this.onClearColorChangedObservable = new observable/* Observable */.cP();
         /**
          * Defines the color used to simulate the ambient color (Default is (0, 0, 0))
          */
@@ -79284,6 +80206,7 @@ class Scene {
         this._unObserveActiveCameras = null;
         // Textures
         this._texturesEnabled = true;
+        this._frameGraph = null;
         // Physics
         /**
          * Gets or sets a boolean indicating if physic engines are enabled on this scene
@@ -81659,16 +82582,23 @@ class Scene {
             this.onAfterParticlesRenderingObservable.notifyObservers(this);
         }
     }
-    _activeMesh(sourceMesh, mesh) {
-        if (this._skeletonsEnabled && mesh.skeleton !== null && mesh.skeleton !== undefined) {
-            if (this._activeSkeletons.pushNoDuplicate(mesh.skeleton)) {
-                mesh.skeleton.prepare();
-                this._activeBones.addCount(mesh.skeleton.bones.length, false);
-            }
-            if (!mesh.computeBonesUsingShaders) {
-                this._softwareSkinnedMeshes.pushNoDuplicate(mesh);
+    /** @internal */
+    _prepareSkeleton(mesh) {
+        if (!this._skeletonsEnabled || !mesh.skeleton) {
+            return;
+        }
+        if (this._activeSkeletons.pushNoDuplicate(mesh.skeleton)) {
+            mesh.skeleton.prepare();
+            this._activeBones.addCount(mesh.skeleton.bones.length, false);
+        }
+        if (!mesh.computeBonesUsingShaders) {
+            if (this._softwareSkinnedMeshes.pushNoDuplicate(mesh) && this.frameGraph) {
+                mesh.applySkeleton(mesh.skeleton);
             }
         }
+    }
+    _activeMesh(sourceMesh, mesh) {
+        this._prepareSkeleton(mesh);
         let forcePush = sourceMesh.hasInstances || sourceMesh.isAnInstance || this.dispatchAllSubMeshesOfActiveMeshes || this._skipFrustumClipping || mesh.alwaysSelectAsActiveMesh;
         if (mesh && mesh.subMeshes && mesh.subMeshes.length > 0) {
             const subMeshes = this.getActiveSubMeshCandidates(mesh);
@@ -81726,7 +82656,7 @@ class Scene {
             }
             else if (!rtt.skipInitialClear && !camera.isRightCamera) {
                 if (this.autoClear) {
-                    this._engine.clear(rtt.clearColor || this.clearColor, !rtt._cleared, true, true);
+                    this._engine.clear(rtt.clearColor || this._clearColor, !rtt._cleared, true, true);
                 }
                 rtt._cleared = true;
             }
@@ -81976,7 +82906,7 @@ class Scene {
     }
     _clear() {
         if (this.autoClearDepthAndStencil || this.autoClear) {
-            this._engine.clear(this.clearColor, this.autoClear || this.forceWireframe || this.forcePointsCloud, this.autoClearDepthAndStencil, this.autoClearDepthAndStencil);
+            this._engine.clear(this._clearColor, this.autoClear || this.forceWireframe || this.forcePointsCloud, this.autoClearDepthAndStencil, this.autoClearDepthAndStencil);
         }
     }
     _checkCameraRenderTarget(camera) {
@@ -82003,6 +82933,61 @@ class Scene {
         for (const mesh of this.meshes) {
             mesh.resetDrawCache(passId);
         }
+    }
+    _renderWithFrameGraph(updateCameras = true, ignoreAnimations = false) {
+        this.activeCamera = null;
+        this._activeParticleSystems.reset();
+        this._activeSkeletons.reset();
+        // Update Cameras
+        if (updateCameras) {
+            for (const camera of this.cameras) {
+                camera.update();
+                if (camera.cameraRigMode !== 0) {
+                    // rig cameras
+                    for (let index = 0; index < camera._rigCameras.length; index++) {
+                        camera._rigCameras[index].update();
+                    }
+                }
+            }
+        }
+        // We must keep these steps because the procedural texture component relies on them.
+        // TODO: move the procedural texture component to the frame graph.
+        for (const step of this._beforeClearStage) {
+            step.action();
+        }
+        // Process meshes
+        const meshes = this.getActiveMeshCandidates();
+        const len = meshes.length;
+        for (let i = 0; i < len; i++) {
+            const mesh = meshes.data[i];
+            if (mesh.isBlocked) {
+                continue;
+            }
+            this._totalVertices.addCount(mesh.getTotalVertices(), false);
+            if (!mesh.isReady() || !mesh.isEnabled() || mesh.scaling.hasAZeroComponent) {
+                continue;
+            }
+            mesh.computeWorldMatrix();
+            if (mesh.actionManager && mesh.actionManager.hasSpecificTriggers2(12, 13)) {
+                this._meshesForIntersections.pushNoDuplicate(mesh);
+            }
+        }
+        // Animate Particle systems
+        if (this.particlesEnabled) {
+            for (let particleIndex = 0; particleIndex < this.particleSystems.length; particleIndex++) {
+                const particleSystem = this.particleSystems[particleIndex];
+                if (!particleSystem.isStarted() || !particleSystem.emitter) {
+                    continue;
+                }
+                const emitter = particleSystem.emitter;
+                if (!emitter.position || emitter.isEnabled()) {
+                    this._activeParticleSystems.push(particleSystem);
+                    particleSystem.animate();
+                }
+            }
+        }
+        // Render the graph
+        this.frameGraph?.execute();
     }
     /**
      * Render the scene
@@ -82073,7 +83058,7 @@ class Scene {
         if (this.customRenderFunction) {
             this._renderId++;
             this._engine.currentRenderPassId = 0;
-            this.customRenderFunction();
+            this.customRenderFunction(updateCameras, ignoreAnimations);
         }
         else {
             const engine = this.getEngine();
@@ -82359,6 +83344,7 @@ class Scene {
         this.onKeyboardObservable.clear();
         this.onActiveCameraChanged.clear();
         this.onScenePerformancePriorityChangedObservable.clear();
+        this.onClearColorChangedObservable.clear();
         this._isDisposed = true;
     }
     _disposeList(items, callback) {
@@ -83072,7 +84058,6 @@ SceneComponentConstants.STEP_AFTERRENDERINGMESH_OUTLINE = 1;
 SceneComponentConstants.STEP_AFTERRENDERINGGROUPDRAW_EFFECTLAYER_DRAW = 0;
 SceneComponentConstants.STEP_AFTERRENDERINGGROUPDRAW_BOUNDINGBOXRENDERER = 1;
 SceneComponentConstants.STEP_BEFORECAMERAUPDATE_SIMPLIFICATIONQUEUE = 0;
-SceneComponentConstants.STEP_BEFORECAMERAUPDATE_GAMEPAD = 1;
 SceneComponentConstants.STEP_BEFORECLEAR_PROCEDURALTEXTURE = 0;
 SceneComponentConstants.STEP_BEFORECLEAR_PREPASS = 1;
 SceneComponentConstants.STEP_BEFORERENDERTARGETCLEAR_PREPASS = 0;

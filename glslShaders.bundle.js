@@ -2095,53 +2095,45 @@ color.rgb*=color.a;
 #endif
 #define CUSTOM_FRAGMENT_BEFORE_FRAGCOLOR
 #ifdef PREPASS
-float writeGeometryInfo=color.a>0.4 ? 1.0 : 0.0;gl_FragData[0]=color; 
+float writeGeometryInfo=color.a>0.4 ? 1.0 : 0.0;
+#ifdef PREPASS_COLOR
+gl_FragData[PREPASS_COLOR_INDEX]=color; 
+#endif
 #ifdef PREPASS_POSITION
 gl_FragData[PREPASS_POSITION_INDEX]=vec4(vPositionW,writeGeometryInfo);
 #endif
 #ifdef PREPASS_LOCAL_POSITION
-gl_FragData[PREPASS_LOCAL_POSITION_INDEX] =
-vec4(vPosition,writeGeometryInfo);
+gl_FragData[PREPASS_LOCAL_POSITION_INDEX]=vec4(vPosition,writeGeometryInfo);
 #endif
 #if defined(PREPASS_VELOCITY)
-vec2 a=(vCurrentPosition.xy/vCurrentPosition.w)*0.5+0.5;vec2 b=(vPreviousPosition.xy/vPreviousPosition.w)*0.5+0.5;vec2 velocity=abs(a-b);velocity=vec2(pow(velocity.x,1.0/3.0),pow(velocity.y,1.0/3.0)) *
-sign(a-b)*0.5 +
-0.5;gl_FragData[PREPASS_VELOCITY_INDEX] =
-vec4(velocity,0.0,writeGeometryInfo);
+vec2 a=(vCurrentPosition.xy/vCurrentPosition.w)*0.5+0.5;vec2 b=(vPreviousPosition.xy/vPreviousPosition.w)*0.5+0.5;vec2 velocity=abs(a-b);velocity=vec2(pow(velocity.x,1.0/3.0),pow(velocity.y,1.0/3.0))*sign(a-b)*0.5+0.5;gl_FragData[PREPASS_VELOCITY_INDEX]=vec4(velocity,0.0,writeGeometryInfo);
 #elif defined(PREPASS_VELOCITY_LINEAR)
-vec2 velocity=vec2(0.5)*((vPreviousPosition.xy/vPreviousPosition.w) -
-(vCurrentPosition.xy/vCurrentPosition.w));gl_FragData[PREPASS_VELOCITY_LINEAR_INDEX] =
-vec4(velocity,0.0,writeGeometryInfo);
+vec2 velocity=vec2(0.5)*((vPreviousPosition.xy/vPreviousPosition.w)-(vCurrentPosition.xy/vCurrentPosition.w));gl_FragData[PREPASS_VELOCITY_LINEAR_INDEX]=vec4(velocity,0.0,writeGeometryInfo);
 #endif
 #ifdef PREPASS_IRRADIANCE
-gl_FragData[PREPASS_IRRADIANCE_INDEX] =
-vec4(0.0,0.0,0.0,
-writeGeometryInfo); 
+gl_FragData[PREPASS_IRRADIANCE_INDEX]=vec4(0.0,0.0,0.0,writeGeometryInfo); 
 #endif
 #ifdef PREPASS_DEPTH
-gl_FragData[PREPASS_DEPTH_INDEX] =
-vec4(vViewPos.z,0.0,0.0,writeGeometryInfo); 
+gl_FragData[PREPASS_DEPTH_INDEX]=vec4(vViewPos.z,0.0,0.0,writeGeometryInfo); 
 #endif
 #ifdef PREPASS_SCREENSPACE_DEPTH
-gl_FragData[PREPASS_SCREENSPACE_DEPTH_INDEX] =
-vec4(gl_FragCoord.z,0.0,0.0,writeGeometryInfo);
+gl_FragData[PREPASS_SCREENSPACE_DEPTH_INDEX]=vec4(gl_FragCoord.z,0.0,0.0,writeGeometryInfo);
 #endif
 #ifdef PREPASS_NORMAL
 #ifdef PREPASS_NORMAL_WORLDSPACE
-gl_FragData[PREPASS_NORMAL_INDEX] =
-vec4(normalW,writeGeometryInfo); 
+gl_FragData[PREPASS_NORMAL_INDEX]=vec4(normalW,writeGeometryInfo);
 #else
-gl_FragData[PREPASS_NORMAL_INDEX] =
-vec4(normalize((view*vec4(normalW,0.0)).rgb),
-writeGeometryInfo); 
+gl_FragData[PREPASS_NORMAL_INDEX]=vec4(normalize((view*vec4(normalW,0.0)).rgb),writeGeometryInfo);
 #endif
 #endif
 #ifdef PREPASS_WORLD_NORMAL
-gl_FragData[PREPASS_WORLD_NORMAL_INDEX] =
-vec4(normalW*0.5+0.5,writeGeometryInfo); 
+gl_FragData[PREPASS_WORLD_NORMAL_INDEX]=vec4(normalW*0.5+0.5,writeGeometryInfo);
+#endif
+#ifdef PREPASS_ALBEDO
+gl_FragData[PREPASS_ALBEDO_INDEX]=vec4(baseColor.rgb,writeGeometryInfo);
 #endif
 #ifdef PREPASS_ALBEDO_SQRT
-gl_FragData[PREPASS_ALBEDO_SQRT_INDEX]=vec4(0.0,0.0,0.0,writeGeometryInfo); 
+gl_FragData[PREPASS_ALBEDO_SQRT_INDEX]=vec4(sqrt(baseColor.rgb),writeGeometryInfo);
 #endif
 #ifdef PREPASS_REFLECTIVITY
 #if defined(SPECULAR)
@@ -2422,8 +2414,7 @@ vViewPos=(view*worldPos).rgb;
 #ifdef PREPASS_LOCAL_POSITION
 vPosition=positionUpdated.xyz;
 #endif
-#if defined(PREPASS_VELOCITY) && defined(BONES_VELOCITY_ENABLED) || \
-defined(PREPASS_VELOCITY_LINEAR)
+#if (defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR)) && defined(BONES_VELOCITY_ENABLED)
 vCurrentPosition=viewProjection*worldPos;
 #if NUM_BONE_INFLUENCERS>0
 mat4 previousInfluence;previousInfluence=mPreviousBones[int(matricesIndices[0])]*matricesWeights[0];
@@ -2716,12 +2707,8 @@ vPositionUVW=positionUpdated;
 #define CUSTOM_VERTEX_UPDATE_POSITION
 #define CUSTOM_VERTEX_UPDATE_NORMAL
 #include<instancesVertex>
-#if defined(PREPASS) && \
-(defined(PREPASS_VELOCITY) && !defined(BONES_VELOCITY_ENABLED) || \
-defined(PREPASS_VELOCITY_LINEAR))
-vCurrentPosition =
-viewProjection*finalWorld*vec4(positionUpdated,1.0);vPreviousPosition=previousViewProjection*finalPreviousWorld *
-vec4(positionUpdated,1.0);
+#if defined(PREPASS) && ((defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR)) && !defined(BONES_VELOCITY_ENABLED)
+vCurrentPosition=viewProjection*finalWorld*vec4(positionUpdated,1.0);vPreviousPosition=previousViewProjection*finalPreviousWorld*vec4(positionUpdated,1.0);
 #endif
 #include<bonesVertex>
 #include<bakedVertexAnimation>
@@ -2744,7 +2731,9 @@ if (gl_ViewID_OVR==0u) {gl_Position=viewProjection*worldPos;} else {gl_Position=
 gl_Position=viewProjection*worldPos;
 #endif
 vPositionW=vec3(worldPos);
+#ifdef PREPASS
 #include<prePassVertex>
+#endif
 #if defined(REFLECTIONMAP_EQUIRECTANGULAR_FIXED) || defined(REFLECTIONMAP_MIRROREDEQUIRECTANGULAR_FIXED)
 vDirectionW=normalize(vec3(finalWorld*vec4(positionUpdated,0.0)));
 #endif
@@ -3095,32 +3084,6 @@ _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.Shader
 /** @internal */
 const passCubePixelShader = { name, shader };
 //# sourceMappingURL=passCube.fragment.js.map
-
-/***/ }),
-
-/***/ 6612:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   postprocessVertexShader: () => (/* binding */ postprocessVertexShader)
-/* harmony export */ });
-/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
-// Do not edit.
-
-const name = "postprocessVertexShader";
-const shader = `attribute vec2 position;uniform vec2 scale;varying vec2 vUV;const vec2 madd=vec2(0.5,0.5);
-#define CUSTOM_VERTEX_DEFINITIONS
-void main(void) {
-#define CUSTOM_VERTEX_MAIN_BEGIN
-vUV=(position*madd+madd)*scale;gl_Position=vec4(position,0.0,1.0);
-#define CUSTOM_VERTEX_MAIN_END
-}`;
-// Sideeffect
-_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.ShadersStore[name] = shader;
-/** @internal */
-const postprocessVertexShader = { name, shader };
-//# sourceMappingURL=postprocess.vertex.js.map
 
 /***/ }),
 

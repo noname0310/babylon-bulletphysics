@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[834,999],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[834,928],{
 
 /***/ 5834:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
@@ -180,8 +180,8 @@ Object.defineProperty(baseTexture/* BaseTexture */.t.prototype, "sphericalPolyno
     configurable: true,
 });
 //# sourceMappingURL=baseTexture.polynomial.js.map
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/dumpTools.js + 1 modules
-var dumpTools = __webpack_require__(5999);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/dumpTools.js
+var dumpTools = __webpack_require__(9928);
 ;// ./node_modules/@babylonjs/core/Misc/environmentTextureTools.js
 
 
@@ -841,250 +841,21 @@ class _ENVTextureLoader {
 
 /***/ }),
 
-/***/ 5999:
+/***/ 9928:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-// ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
-
-// EXPORTS
-__webpack_require__.d(__webpack_exports__, {
-  Dispose: () => (/* binding */ Dispose),
-  DumpData: () => (/* binding */ DumpData),
-  DumpDataAsync: () => (/* binding */ DumpDataAsync),
-  DumpFramebuffer: () => (/* binding */ DumpFramebuffer),
-  DumpTools: () => (/* binding */ DumpTools)
-});
-
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Buffers/buffer.js
-var buffer = __webpack_require__(5616);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.viewport.js
-var math_viewport = __webpack_require__(4494);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/observable.js
-var observable = __webpack_require__(9848);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/effect.js
-var effect = __webpack_require__(4420);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/drawWrapper.js
-var drawWrapper = __webpack_require__(5476);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/postprocess.vertex.js
-var postprocess_vertex = __webpack_require__(6612);
-;// ./node_modules/@babylonjs/core/Materials/effectRenderer.js
-
-
-
-
-
-
-// Prevents ES6 issue if not imported.
-
-// Fullscreen quad buffers by default.
-const defaultOptions = {
-    positions: [1, 1, -1, 1, -1, -1, 1, -1],
-    indices: [0, 1, 2, 0, 2, 3],
-};
-/**
- * Helper class to render one or more effects.
- * You can access the previous rendering in your shader by declaring a sampler named textureSampler
- */
-class EffectRenderer {
-    /**
-     * Creates an effect renderer
-     * @param engine the engine to use for rendering
-     * @param options defines the options of the effect renderer
-     */
-    constructor(engine, options = defaultOptions) {
-        this._fullscreenViewport = new math_viewport/* Viewport */.L(0, 0, 1, 1);
-        const positions = options.positions ?? defaultOptions.positions;
-        const indices = options.indices ?? defaultOptions.indices;
-        this.engine = engine;
-        this._vertexBuffers = {
-            [buffer/* VertexBuffer */.R.PositionKind]: new buffer/* VertexBuffer */.R(engine, positions, buffer/* VertexBuffer */.R.PositionKind, false, false, 2),
-        };
-        this._indexBuffer = engine.createIndexBuffer(indices);
-        this._onContextRestoredObserver = engine.onContextRestoredObservable.add(() => {
-            this._indexBuffer = engine.createIndexBuffer(indices);
-            for (const key in this._vertexBuffers) {
-                const vertexBuffer = this._vertexBuffers[key];
-                vertexBuffer._rebuild();
-            }
-        });
-    }
-    /**
-     * Sets the current viewport in normalized coordinates 0-1
-     * @param viewport Defines the viewport to set (defaults to 0 0 1 1)
-     */
-    setViewport(viewport = this._fullscreenViewport) {
-        this.engine.setViewport(viewport);
-    }
-    /**
-     * Binds the embedded attributes buffer to the effect.
-     * @param effect Defines the effect to bind the attributes for
-     */
-    bindBuffers(effect) {
-        this.engine.bindBuffers(this._vertexBuffers, this._indexBuffer, effect);
-    }
-    /**
-     * Sets the current effect wrapper to use during draw.
-     * The effect needs to be ready before calling this api.
-     * This also sets the default full screen position attribute.
-     * @param effectWrapper Defines the effect to draw with
-     */
-    applyEffectWrapper(effectWrapper) {
-        this.engine.setState(true);
-        this.engine.depthCullingState.depthTest = false;
-        this.engine.stencilState.stencilTest = false;
-        this.engine.enableEffect(effectWrapper._drawWrapper);
-        this.bindBuffers(effectWrapper.effect);
-        effectWrapper.onApplyObservable.notifyObservers({});
-    }
-    /**
-     * Saves engine states
-     */
-    saveStates() {
-        this._savedStateDepthTest = this.engine.depthCullingState.depthTest;
-        this._savedStateStencilTest = this.engine.stencilState.stencilTest;
-    }
-    /**
-     * Restores engine states
-     */
-    restoreStates() {
-        this.engine.depthCullingState.depthTest = this._savedStateDepthTest;
-        this.engine.stencilState.stencilTest = this._savedStateStencilTest;
-    }
-    /**
-     * Draws a full screen quad.
-     */
-    draw() {
-        this.engine.drawElementsType(0, 0, 6);
-    }
-    _isRenderTargetTexture(texture) {
-        return texture.renderTarget !== undefined;
-    }
-    /**
-     * renders one or more effects to a specified texture
-     * @param effectWrapper the effect to renderer
-     * @param outputTexture texture to draw to, if null it will render to the screen.
-     */
-    render(effectWrapper, outputTexture = null) {
-        // Ensure effect is ready
-        if (!effectWrapper.effect.isReady()) {
-            return;
-        }
-        this.saveStates();
-        // Reset state
-        this.setViewport();
-        const out = outputTexture === null ? null : this._isRenderTargetTexture(outputTexture) ? outputTexture.renderTarget : outputTexture;
-        if (out) {
-            this.engine.bindFramebuffer(out);
-        }
-        this.applyEffectWrapper(effectWrapper);
-        this.draw();
-        if (out) {
-            this.engine.unBindFramebuffer(out);
-        }
-        this.restoreStates();
-    }
-    /**
-     * Disposes of the effect renderer
-     */
-    dispose() {
-        const vertexBuffer = this._vertexBuffers[buffer/* VertexBuffer */.R.PositionKind];
-        if (vertexBuffer) {
-            vertexBuffer.dispose();
-            delete this._vertexBuffers[buffer/* VertexBuffer */.R.PositionKind];
-        }
-        if (this._indexBuffer) {
-            this.engine._releaseBuffer(this._indexBuffer);
-        }
-        if (this._onContextRestoredObserver) {
-            this.engine.onContextRestoredObservable.remove(this._onContextRestoredObserver);
-            this._onContextRestoredObserver = null;
-        }
-    }
-}
-/**
- * Wraps an effect to be used for rendering
- */
-class EffectWrapper {
-    /**
-     * The underlying effect
-     */
-    get effect() {
-        return this._drawWrapper.effect;
-    }
-    set effect(effect) {
-        this._drawWrapper.effect = effect;
-    }
-    /**
-     * Creates an effect to be renderer
-     * @param creationOptions options to create the effect
-     */
-    constructor(creationOptions) {
-        /**
-         * Event that is fired right before the effect is drawn (should be used to update uniforms)
-         */
-        this.onApplyObservable = new observable/* Observable */.cP();
-        let shaderPath;
-        const uniformNames = creationOptions.uniformNames || [];
-        if (creationOptions.vertexShader) {
-            shaderPath = {
-                fragmentSource: creationOptions.fragmentShader,
-                vertexSource: creationOptions.vertexShader,
-                spectorName: creationOptions.name || "effectWrapper",
-            };
-        }
-        else {
-            // Default scale to use in post process vertex shader.
-            uniformNames.push("scale");
-            shaderPath = {
-                fragmentSource: creationOptions.fragmentShader,
-                vertex: "postprocess",
-                spectorName: creationOptions.name || "effectWrapper",
-            };
-            // Sets the default scale to identity for the post process vertex shader.
-            this.onApplyObservable.add(() => {
-                this.effect.setFloat2("scale", 1, 1);
-            });
-        }
-        const defines = creationOptions.defines ? creationOptions.defines.join("\n") : "";
-        this._drawWrapper = new drawWrapper/* DrawWrapper */.E(creationOptions.engine);
-        if (creationOptions.useShaderStore) {
-            shaderPath.fragment = shaderPath.fragmentSource;
-            if (!shaderPath.vertex) {
-                shaderPath.vertex = shaderPath.vertexSource;
-            }
-            delete shaderPath.fragmentSource;
-            delete shaderPath.vertexSource;
-            this.effect = creationOptions.engine.createEffect(shaderPath, creationOptions.attributeNames || ["position"], uniformNames, creationOptions.samplerNames, defines, undefined, creationOptions.onCompiled, undefined, undefined, creationOptions.shaderLanguage, creationOptions.extraInitializationsAsync);
-        }
-        else {
-            this.effect = new effect/* Effect */.M(shaderPath, creationOptions.attributeNames || ["position"], uniformNames, creationOptions.samplerNames, creationOptions.engine, defines, undefined, creationOptions.onCompiled, undefined, undefined, undefined, creationOptions.shaderLanguage, creationOptions.extraInitializationsAsync);
-            this._onContextRestoredObserver = creationOptions.engine.onContextRestoredObservable.add(() => {
-                this.effect._pipelineContext = null; // because _prepareEffect will try to dispose this pipeline before recreating it and that would lead to webgl errors
-                this.effect._prepareEffect();
-            });
-        }
-    }
-    /**
-     * Disposes of the effect wrapper
-     * @param _ignored kept for backward compatibility
-     */
-    dispose(_ignored = false) {
-        if (this._onContextRestoredObserver) {
-            this.effect.getEngine().onContextRestoredObservable.remove(this._onContextRestoredObserver);
-            this._onContextRestoredObserver = null;
-        }
-        this.effect.dispose();
-    }
-}
-//# sourceMappingURL=effectRenderer.js.map
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/tools.js
-var tools = __webpack_require__(998);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.scalar.functions.js
-var math_scalar_functions = __webpack_require__(4867);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Engines/engineStore.js
-var engineStore = __webpack_require__(6315);
-;// ./node_modules/@babylonjs/core/Misc/dumpTools.js
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Dispose: () => (/* binding */ Dispose),
+/* harmony export */   DumpData: () => (/* binding */ DumpData),
+/* harmony export */   DumpDataAsync: () => (/* binding */ DumpDataAsync),
+/* harmony export */   DumpFramebuffer: () => (/* binding */ DumpFramebuffer),
+/* harmony export */   DumpTools: () => (/* binding */ DumpTools)
+/* harmony export */ });
+/* harmony import */ var _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4255);
+/* harmony import */ var _tools_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(998);
+/* harmony import */ var _Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4867);
+/* harmony import */ var _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(6315);
 
 
 
@@ -1118,24 +889,24 @@ async function _CreateDumpRenderer() {
                     engine = new thinEngineClass(canvas, false, options);
                 }
                 // remove this engine from the list of instances to avoid using it for other purposes
-                engineStore/* EngineStore */.q.Instances.pop();
+                _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_3__/* .EngineStore */ .q.Instances.pop();
                 // However, make sure to dispose it when no other engines are left
-                engineStore/* EngineStore */.q.OnEnginesDisposedObservable.add((e) => {
+                _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_3__/* .EngineStore */ .q.OnEnginesDisposedObservable.add((e) => {
                     // guaranteed to run when no other instances are left
                     // only dispose if it's not the current engine
-                    if (engine && e !== engine && !engine.isDisposed && engineStore/* EngineStore */.q.Instances.length === 0) {
+                    if (engine && e !== engine && !engine.isDisposed && _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_3__/* .EngineStore */ .q.Instances.length === 0) {
                         // Dump the engine and the associated resources
                         Dispose();
                     }
                 });
                 engine.getCaps().parallelShaderCompile = undefined;
-                const renderer = new EffectRenderer(engine);
+                const renderer = new _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_0__/* .EffectRenderer */ .J(engine);
                 __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 9820)).then(({ passPixelShader }) => {
                     if (!engine) {
                         reject("Engine is not defined");
                         return;
                     }
-                    const wrapper = new EffectWrapper({
+                    const wrapper = new _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_0__/* .EffectWrapper */ .$({
                         engine,
                         name: passPixelShader.name,
                         fragmentShader: passPixelShader.shader,
@@ -1210,7 +981,7 @@ function DumpData(width, height, data, successCallback, mimeType = "image/png", 
             let n = data.length;
             while (n--) {
                 const v = data[n];
-                data2[n] = Math.round((0,math_scalar_functions/* Clamp */.OQ)(v) * 255);
+                data2[n] = Math.round((0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_2__/* .Clamp */ .OQ)(v) * 255);
             }
             data = data2;
         }
@@ -1221,7 +992,7 @@ function DumpData(width, height, data, successCallback, mimeType = "image/png", 
         renderer.wrapper.effect._bindTexture("textureSampler", texture);
         renderer.renderer.draw();
         if (toArrayBuffer) {
-            tools/* Tools */.S0.ToBlob(renderer.canvas, (blob) => {
+            _tools_js__WEBPACK_IMPORTED_MODULE_1__/* .Tools */ .S0.ToBlob(renderer.canvas, (blob) => {
                 const fileReader = new FileReader();
                 fileReader.onload = (event) => {
                     const arrayBuffer = event.target.result;
@@ -1233,7 +1004,7 @@ function DumpData(width, height, data, successCallback, mimeType = "image/png", 
             }, mimeType, quality);
         }
         else {
-            tools/* Tools */.S0.EncodeScreenshotCanvasData(renderer.canvas, successCallback, mimeType, fileName, quality);
+            _tools_js__WEBPACK_IMPORTED_MODULE_1__/* .Tools */ .S0.EncodeScreenshotCanvasData(renderer.canvas, successCallback, mimeType, fileName, quality);
         }
         texture.dispose();
     });
@@ -1280,9 +1051,9 @@ const DumpTools = {
  */
 const initSideEffects = () => {
     // References the dependencies.
-    tools/* Tools */.S0.DumpData = DumpData;
-    tools/* Tools */.S0.DumpDataAsync = DumpDataAsync;
-    tools/* Tools */.S0.DumpFramebuffer = DumpFramebuffer;
+    _tools_js__WEBPACK_IMPORTED_MODULE_1__/* .Tools */ .S0.DumpData = DumpData;
+    _tools_js__WEBPACK_IMPORTED_MODULE_1__/* .Tools */ .S0.DumpDataAsync = DumpDataAsync;
+    _tools_js__WEBPACK_IMPORTED_MODULE_1__/* .Tools */ .S0.DumpFramebuffer = DumpFramebuffer;
 };
 initSideEffects();
 //# sourceMappingURL=dumpTools.js.map
