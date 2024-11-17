@@ -1,3 +1,5 @@
+#![feature(c_variadic)]
+
 mod bind;
 mod runtime;
 mod stdlib;

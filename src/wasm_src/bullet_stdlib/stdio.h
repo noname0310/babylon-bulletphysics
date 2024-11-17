@@ -1,9 +1,7 @@
 #pragma once
 
-extern "C" {
-    void bw_error(char const* message);
-}
+int printf(const char* fmt, ...);
 
-void printf(const char* fmt, ...);
-
+#ifdef BT_DEBUG
 void __debugbreak();
+#endif
