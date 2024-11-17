@@ -253,7 +253,7 @@ async function getBulletWasmInstance(instanceType, threadCount = navigator.hardw
     let resolvePromise = null;
     wasmInstanceMap.set(wasmBindgen, new Promise(resolve => resolvePromise = resolve));
     const bulletWasmInstance = { ...wasmBindgen };
-    const initOutput = await bulletWasmInstance.default();
+    const initOutput = await bulletWasmInstance.default({});
     bulletWasmInstance.init();
     const memory = initOutput.memory;
     function createTypedArray(typedArrayConstructor, byteOffset, length) {
