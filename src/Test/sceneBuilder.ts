@@ -15,6 +15,7 @@ import { Scene } from "@babylonjs/core/scene";
 
 // import { Inspector } from "@babylonjs/inspector";
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
+import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { MotionType } from "@/Runtime/motionType";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
@@ -88,7 +89,7 @@ export class SceneBuilder implements ISceneBuilder {
             world.addRigidBody(groundRigidBody);
         }
 
-        const rbCount = 1024;
+        const rbCount = 512 * 2;
 
         const baseBox = CreateBox("box", { size: 2 }, scene);
         shadowGenerator.addShadowCaster(baseBox);
@@ -110,6 +111,24 @@ export class SceneBuilder implements ISceneBuilder {
         const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
         world.addRigidBodyBundle(boxRigidBodyBundle);
 
+        for (let i = 0; i < rbCount; i += 2) {
+            const indices = [i, i + 1] as const;
+            const constraint = new Generic6DofSpringConstraint(wasmInstance, boxRigidBodyBundle, indices, Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
+            constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
+            constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
+            constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));
+            constraint.setAngularUpperLimit(new Vector3(0, 0, 0));
+            for (let i = 0; i < 6; ++i) {
+                constraint.enableSpring(i, true);
+                constraint.setStiffness(i, 100);
+                constraint.setDamping(i, 1);
+            }
+            world.addConstraint(constraint, false);
+        }
+
+        world.stepSimulation(1 / 60, 10, 1 / 60);
+        world.stepSimulation(1 / 60, 10, 1 / 60);
+        world.stepSimulation(1 / 60, 10, 1 / 60);
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
 

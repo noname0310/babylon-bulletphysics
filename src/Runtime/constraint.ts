@@ -104,6 +104,8 @@ export abstract class Constraint {
     }
 }
 
+const matrixBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
+
 export class Generic6DofConstraint extends Constraint {
     public constructor(
         wasmInstance: BulletWasmInstance,
@@ -131,12 +133,12 @@ export class Generic6DofConstraint extends Constraint {
         frameB: Matrix,
         useLinearReferenceFrameA: boolean
     ) {
-        const frameABufferPtr = wasmInstance.allocateBuffer(16);
-        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, 16);
+        const frameABufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
+        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
         frameA.copyToArray(frameABuffer.array);
 
-        const frameBBufferPtr = wasmInstance.allocateBuffer(16);
-        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, 16);
+        const frameBBufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
+        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
         frameB.copyToArray(frameBBuffer.array);
 
         const isBundleParam = Array.isArray(bodyBOrIndices);
@@ -158,8 +160,8 @@ export class Generic6DofConstraint extends Constraint {
                 useLinearReferenceFrameA
             );
 
-        wasmInstance.deallocateBuffer(frameABufferPtr, 16);
-        wasmInstance.deallocateBuffer(frameBBufferPtr, 16);
+        wasmInstance.deallocateBuffer(frameABufferPtr, matrixBufferSize);
+        wasmInstance.deallocateBuffer(frameBBufferPtr, matrixBufferSize);
 
         const bodyReference = isBundleParam
             ? (bodyAOrBundle as RigidBodyBundle)
@@ -212,12 +214,12 @@ export class Generic6DofSpringConstraint extends Constraint {
         frameB: Matrix,
         useLinearReferenceFrameA: boolean
     ) {
-        const frameABufferPtr = wasmInstance.allocateBuffer(16);
-        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, 16);
+        const frameABufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
+        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
         frameA.copyToArray(frameABuffer.array);
 
-        const frameBBufferPtr = wasmInstance.allocateBuffer(16);
-        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, 16);
+        const frameBBufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
+        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
         frameB.copyToArray(frameBBuffer.array);
 
         const isBundleParam = Array.isArray(bodyBOrIndices);
@@ -239,8 +241,8 @@ export class Generic6DofSpringConstraint extends Constraint {
                 useLinearReferenceFrameA
             );
 
-        wasmInstance.deallocateBuffer(frameABufferPtr, 16);
-        wasmInstance.deallocateBuffer(frameBBufferPtr, 16);
+        wasmInstance.deallocateBuffer(frameABufferPtr, matrixBufferSize);
+        wasmInstance.deallocateBuffer(frameBBufferPtr, matrixBufferSize);
 
         const bodyReference = isBundleParam
             ? (bodyAOrBundle as RigidBodyBundle)
