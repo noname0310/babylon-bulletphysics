@@ -1,18 +1,19 @@
 #pragma once
 
 #include "btBulletDynamicsMinimal.h"
+#include "bwRigidBody.h"
 
 // Generic 6 DOF ctor and dtor
 
 extern "C" void* bw_create_generic6dofconstraint(void* bodyA, void* bodyB, float* frameABuffer, float* frameBBuffer, uint8_t useLinearReferenceFrameA)
 {
-    btRigidBody* a = static_cast<btRigidBody*>(bodyA);
-    btRigidBody* b = static_cast<btRigidBody*>(bodyB);
+    bwRigidBody* a = static_cast<bwRigidBody*>(bodyA);
+    bwRigidBody* b = static_cast<bwRigidBody*>(bodyB);
     btTransform frameA;
     frameA.setFromOpenGLMatrix(frameABuffer);
     btTransform frameB;
     frameB.setFromOpenGLMatrix(frameBBuffer);
-    btGeneric6DofConstraint* constraint = new btGeneric6DofConstraint(*a, *b, frameA, frameB, useLinearReferenceFrameA);
+    btGeneric6DofConstraint* constraint = new btGeneric6DofConstraint(*a->getBody(), *b->getBody(), frameA, frameB, useLinearReferenceFrameA);
     return constraint;
 }
 
@@ -52,13 +53,13 @@ extern "C" void bw_generic6dofconstraint_set_angular_upper_limit(void* constrain
 
 extern "C" void* bw_create_generic6dofspringconstraint(void* bodyA, void* bodyB, float* frameABuffer, float* frameBBuffer, uint8_t useLinearReferenceFrameA)
 {
-    btRigidBody* a = static_cast<btRigidBody*>(bodyA);
-    btRigidBody* b = static_cast<btRigidBody*>(bodyB);
+    bwRigidBody* a = static_cast<bwRigidBody*>(bodyA);
+    bwRigidBody* b = static_cast<bwRigidBody*>(bodyB);
     btTransform frameA;
     frameA.setFromOpenGLMatrix(frameABuffer);
     btTransform frameB;
     frameB.setFromOpenGLMatrix(frameBBuffer);
-    btGeneric6DofSpringConstraint* constraint = new btGeneric6DofSpringConstraint(*a, *b, frameA, frameB, useLinearReferenceFrameA);
+    btGeneric6DofSpringConstraint* constraint = new btGeneric6DofSpringConstraint(*a->getBody(), *b->getBody(), frameA, frameB, useLinearReferenceFrameA);
     return constraint;
 }
 
