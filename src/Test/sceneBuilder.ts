@@ -126,9 +126,6 @@ export class SceneBuilder implements ISceneBuilder {
             world.addConstraint(constraint, false);
         }
 
-        world.stepSimulation(1 / 60, 10, 1 / 60);
-        world.stepSimulation(1 / 60, 10, 1 / 60);
-        world.stepSimulation(1 / 60, 10, 1 / 60);
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
 
