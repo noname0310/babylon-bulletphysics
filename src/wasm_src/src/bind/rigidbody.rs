@@ -225,6 +225,16 @@ impl RigidBody {
 
 impl Drop for RigidBody {
     fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("RigidBody already dropped");
+        }
+
         unsafe { bw_destroy_rigidbody(self.ptr) }
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }

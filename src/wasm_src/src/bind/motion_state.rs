@@ -79,7 +79,17 @@ impl MotionState {
 
 impl Drop for MotionState {
     fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("MotionState already dropped");
+        }
+
         unsafe { bw_destroy_motion_state(self.ptr) }
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }
 
@@ -145,6 +155,16 @@ impl MotionStateBundle {
 
 impl Drop for MotionStateBundle {
     fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("MotionStateBundle already dropped");
+        }
+
         unsafe { bw_destroy_motion_state_bundle(self.ptr) }
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }

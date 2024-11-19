@@ -64,7 +64,17 @@ impl Generic6DofConstraint {
 
 impl Drop for Generic6DofConstraint {
     fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("Generic6DofConstraint already dropped");
+        }
+
         unsafe { bw_destroy_generic6dofconstraint(self.ptr) };
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }
 
@@ -117,7 +127,17 @@ impl Generic6DofSpringConstraint {
 
 impl Drop for Generic6DofSpringConstraint {
     fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("Generic6DofSpringConstraint already dropped");
+        }
+
         unsafe { bw_destroy_generic6dofspringconstraint(self.ptr) };
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }
 

@@ -57,6 +57,16 @@ impl PhysicsWorld {
 
 impl Drop for PhysicsWorld {
     fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("PhysicsWorld already dropped");
+        }
+
         unsafe { bw_destroy_world(self.ptr) };
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
     }
 }
