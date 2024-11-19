@@ -5,7 +5,7 @@
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "0633c9fb0cd802614ace.wasm";
+module.exports = __webpack_require__.p + "fb9a6c1026c3113d86b4.wasm";
 
 /***/ }),
 
@@ -76,26 +76,6 @@ async function startWorkers(module, memory, builder) {
 
 let wasm;
 
-const heap = new Array(128).fill(undefined);
-
-heap.push(undefined, null, true, false);
-
-function getObject(idx) { return heap[idx]; }
-
-let heap_next = heap.length;
-
-function dropObject(idx) {
-    if (idx < 132) return;
-    heap[idx] = heap_next;
-    heap_next = idx;
-}
-
-function takeObject(idx) {
-    const ret = getObject(idx);
-    dropObject(idx);
-    return ret;
-}
-
 const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
 
 if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
@@ -114,6 +94,12 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8ArrayMemory0().slice(ptr, ptr + len));
 }
 
+const heap = new Array(128).fill(undefined);
+
+heap.push(undefined, null, true, false);
+
+let heap_next = heap.length;
+
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);
     const idx = heap_next;
@@ -123,6 +109,20 @@ function addHeapObject(obj) {
 
     heap[idx] = obj;
     return idx;
+}
+
+function getObject(idx) { return heap[idx]; }
+
+function dropObject(idx) {
+    if (idx < 132) return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
 }
 
 function _assertBoolean(n) {
@@ -168,168 +168,6 @@ function deallocateBuffer(ptr, size) {
     _assertNum(ptr);
     _assertNum(size);
     wasm.deallocateBuffer(ptr, size);
-}
-
-/**
-* @param {number} body_a
-* @param {number} body_b
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
-    _assertNum(body_a);
-    _assertNum(body_b);
-    _assertNum(frame_a);
-    _assertNum(frame_b);
-    _assertBoolean(use_linear_reference_frame_a);
-    const ret = wasm.createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_bundle
-* @param {number} body_a_index
-* @param {number} body_b_index
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
-    _assertNum(body_bundle);
-    _assertNum(body_a_index);
-    _assertNum(body_b_index);
-    _assertNum(frame_a);
-    _assertNum(frame_b);
-    _assertBoolean(use_linear_reference_frame_a);
-    const ret = wasm.createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_a
-* @param {number} body_b
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
-    _assertNum(body_a);
-    _assertNum(body_b);
-    _assertNum(frame_a);
-    _assertNum(frame_b);
-    _assertBoolean(use_linear_reference_frame_a);
-    const ret = wasm.createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_bundle
-* @param {number} body_a_index
-* @param {number} body_b_index
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
-    _assertNum(body_bundle);
-    _assertNum(body_a_index);
-    _assertNum(body_b_index);
-    _assertNum(frame_a);
-    _assertNum(frame_b);
-    _assertBoolean(use_linear_reference_frame_a);
-    const ret = wasm.createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyConstraint(ptr) {
-    _assertNum(ptr);
-    wasm.destroyConstraint(ptr);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function constraintSetLinearLowerLimit(ptr, x, y, z) {
-    _assertNum(ptr);
-    wasm.constraintSetLinearLowerLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function constraintSetLinearUpperLimit(ptr, x, y, z) {
-    _assertNum(ptr);
-    wasm.constraintSetLinearUpperLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function constraintSetAngularLowerLimit(ptr, x, y, z) {
-    _assertNum(ptr);
-    wasm.constraintSetAngularLowerLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function constraintSetAngularUpperLimit(ptr, x, y, z) {
-    _assertNum(ptr);
-    wasm.constraintSetAngularUpperLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {boolean} on_off
-*/
-function constraintEnableSpring(ptr, index, on_off) {
-    _assertNum(ptr);
-    _assertNum(index);
-    _assertBoolean(on_off);
-    wasm.constraintEnableSpring(ptr, index, on_off);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {number} stiffness
-*/
-function constraintSetStiffness(ptr, index, stiffness) {
-    _assertNum(ptr);
-    _assertNum(index);
-    wasm.constraintSetStiffness(ptr, index, stiffness);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {number} damping
-*/
-function constraintSetDamping(ptr, index, damping) {
-    _assertNum(ptr);
-    _assertNum(index);
-    wasm.constraintSetDamping(ptr, index, damping);
 }
 
 /**
@@ -577,6 +415,168 @@ function destroyShape(ptr) {
     wasm.destroyShape(ptr);
 }
 
+/**
+* @param {number} body_a
+* @param {number} body_b
+* @param {number} frame_a
+* @param {number} frame_b
+* @param {boolean} use_linear_reference_frame_a
+* @returns {number}
+*/
+function createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
+    _assertNum(body_a);
+    _assertNum(body_b);
+    _assertNum(frame_a);
+    _assertNum(frame_b);
+    _assertBoolean(use_linear_reference_frame_a);
+    const ret = wasm.createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} body_bundle
+* @param {number} body_a_index
+* @param {number} body_b_index
+* @param {number} frame_a
+* @param {number} frame_b
+* @param {boolean} use_linear_reference_frame_a
+* @returns {number}
+*/
+function createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
+    _assertNum(body_bundle);
+    _assertNum(body_a_index);
+    _assertNum(body_b_index);
+    _assertNum(frame_a);
+    _assertNum(frame_b);
+    _assertBoolean(use_linear_reference_frame_a);
+    const ret = wasm.createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} body_a
+* @param {number} body_b
+* @param {number} frame_a
+* @param {number} frame_b
+* @param {boolean} use_linear_reference_frame_a
+* @returns {number}
+*/
+function createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
+    _assertNum(body_a);
+    _assertNum(body_b);
+    _assertNum(frame_a);
+    _assertNum(frame_b);
+    _assertBoolean(use_linear_reference_frame_a);
+    const ret = wasm.createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} body_bundle
+* @param {number} body_a_index
+* @param {number} body_b_index
+* @param {number} frame_a
+* @param {number} frame_b
+* @param {boolean} use_linear_reference_frame_a
+* @returns {number}
+*/
+function createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
+    _assertNum(body_bundle);
+    _assertNum(body_a_index);
+    _assertNum(body_b_index);
+    _assertNum(frame_a);
+    _assertNum(frame_b);
+    _assertBoolean(use_linear_reference_frame_a);
+    const ret = wasm.createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyConstraint(ptr) {
+    _assertNum(ptr);
+    wasm.destroyConstraint(ptr);
+}
+
+/**
+* @param {number} ptr
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function constraintSetLinearLowerLimit(ptr, x, y, z) {
+    _assertNum(ptr);
+    wasm.constraintSetLinearLowerLimit(ptr, x, y, z);
+}
+
+/**
+* @param {number} ptr
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function constraintSetLinearUpperLimit(ptr, x, y, z) {
+    _assertNum(ptr);
+    wasm.constraintSetLinearUpperLimit(ptr, x, y, z);
+}
+
+/**
+* @param {number} ptr
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function constraintSetAngularLowerLimit(ptr, x, y, z) {
+    _assertNum(ptr);
+    wasm.constraintSetAngularLowerLimit(ptr, x, y, z);
+}
+
+/**
+* @param {number} ptr
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function constraintSetAngularUpperLimit(ptr, x, y, z) {
+    _assertNum(ptr);
+    wasm.constraintSetAngularUpperLimit(ptr, x, y, z);
+}
+
+/**
+* @param {number} ptr
+* @param {number} index
+* @param {boolean} on_off
+*/
+function constraintEnableSpring(ptr, index, on_off) {
+    _assertNum(ptr);
+    _assertNum(index);
+    _assertBoolean(on_off);
+    wasm.constraintEnableSpring(ptr, index, on_off);
+}
+
+/**
+* @param {number} ptr
+* @param {number} index
+* @param {number} stiffness
+*/
+function constraintSetStiffness(ptr, index, stiffness) {
+    _assertNum(ptr);
+    _assertNum(index);
+    wasm.constraintSetStiffness(ptr, index, stiffness);
+}
+
+/**
+* @param {number} ptr
+* @param {number} index
+* @param {number} damping
+*/
+function constraintSetDamping(ptr, index, damping) {
+    _assertNum(ptr);
+    _assertNum(index);
+    wasm.constraintSetDamping(ptr, index, damping);
+}
+
 function logError(f, args) {
     try {
         return f.apply(this, args);
@@ -804,12 +804,12 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-        takeObject(arg0);
-    };
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
         const ret = getStringFromWasm0(arg0, arg1);
         return addHeapObject(ret);
+    };
+    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+        takeObject(arg0);
     };
     imports.wbg.__wbg_new_abda76e883ba8a5f = function() { return logError(function () {
         const ret = new Error();
