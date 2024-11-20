@@ -5,7 +5,7 @@
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "fb9a6c1026c3113d86b4.wasm";
+module.exports = __webpack_require__.p + "8e8bac428856f463650b.wasm";
 
 /***/ }),
 
@@ -131,43 +131,56 @@ function _assertBoolean(n) {
     }
 }
 /**
+* @param {number} x
+* @param {number} y
+* @param {number} z
+* @returns {number}
 */
-function init() {
-    wasm.init();
+function createBoxShape(x, y, z) {
+    const ret = wasm.createBoxShape(x, y, z);
+    return ret >>> 0;
 }
 
 /**
-* @returns {Runtime}
+* @param {number} radius
+* @returns {number}
 */
-function createBulletRuntime() {
-    const ret = wasm.createBulletRuntime();
-    return Runtime.__wrap(ret);
+function createSphereShape(radius) {
+    const ret = wasm.createSphereShape(radius);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @param {number} height
+* @returns {number}
+*/
+function createCapsuleShape(radius, height) {
+    const ret = wasm.createCapsuleShape(radius, height);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} normal_x
+* @param {number} normal_y
+* @param {number} normal_z
+* @param {number} plane_constant
+* @returns {number}
+*/
+function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
+    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
+    return ret >>> 0;
 }
 
 function _assertNum(n) {
     if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
 }
 /**
-* @param {number} size
-* @returns {number}
-*/
-function allocateBuffer(size) {
-    _assertNum(size);
-    const ret = wasm.allocateBuffer(size);
-    return ret >>> 0;
-}
-
-/**
-* Deallocate a buffer allocated by `allocateBuffer`.
-* # Safety
-* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
 * @param {number} ptr
-* @param {number} size
 */
-function deallocateBuffer(ptr, size) {
+function destroyShape(ptr) {
     _assertNum(ptr);
-    _assertNum(size);
-    wasm.deallocateBuffer(ptr, size);
+    wasm.destroyShape(ptr);
 }
 
 /**
@@ -262,6 +275,43 @@ function rigidBodyBundleRestoreDynamic(ptr, index) {
     _assertNum(ptr);
     _assertNum(index);
     wasm.rigidBodyBundleRestoreDynamic(ptr, index);
+}
+
+/**
+*/
+function init() {
+    wasm.init();
+}
+
+/**
+* @returns {Runtime}
+*/
+function createBulletRuntime() {
+    const ret = wasm.createBulletRuntime();
+    return Runtime.__wrap(ret);
+}
+
+/**
+* @param {number} size
+* @returns {number}
+*/
+function allocateBuffer(size) {
+    _assertNum(size);
+    const ret = wasm.allocateBuffer(size);
+    return ret >>> 0;
+}
+
+/**
+* Deallocate a buffer allocated by `allocateBuffer`.
+* # Safety
+* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
+* @param {number} ptr
+* @param {number} size
+*/
+function deallocateBuffer(ptr, size) {
+    _assertNum(ptr);
+    _assertNum(size);
+    wasm.deallocateBuffer(ptr, size);
 }
 
 /**
@@ -363,56 +413,6 @@ function physicsWorldRemoveConstraint(world, constraint) {
     _assertNum(world);
     _assertNum(constraint);
     wasm.physicsWorldRemoveConstraint(world, constraint);
-}
-
-/**
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @returns {number}
-*/
-function createBoxShape(x, y, z) {
-    const ret = wasm.createBoxShape(x, y, z);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @returns {number}
-*/
-function createSphereShape(radius) {
-    const ret = wasm.createSphereShape(radius);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @param {number} height
-* @returns {number}
-*/
-function createCapsuleShape(radius, height) {
-    const ret = wasm.createCapsuleShape(radius, height);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} normal_x
-* @param {number} normal_y
-* @param {number} normal_z
-* @param {number} plane_constant
-* @returns {number}
-*/
-function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
-    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyShape(ptr) {
-    _assertNum(ptr);
-    wasm.destroyShape(ptr);
 }
 
 /**
