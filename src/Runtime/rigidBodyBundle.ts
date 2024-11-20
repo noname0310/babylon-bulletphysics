@@ -129,7 +129,7 @@ export class RigidBodyBundle {
     }
 
     public setWorldReference(worldReference: Nullable<object>): void {
-        if (this._worldReference !== null) {
+        if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add rigid body bundle to multiple worlds");
         }
         if (this._worldReference === worldReference) {
