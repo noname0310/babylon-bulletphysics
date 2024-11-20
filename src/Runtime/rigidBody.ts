@@ -79,6 +79,8 @@ export class RigidBody {
 
     private readonly _inner: RigidBodyInner;
 
+    private _worldReference: Nullable<object>;
+
     public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfo);
 
     public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfoList, n: number);
@@ -108,6 +110,7 @@ export class RigidBody {
         const motionStatePtr = wasmInstance.rigidBodyGetMotionStatePtr(ptr);
         this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, 80 / Float32Array.BYTES_PER_ELEMENT);
         this._inner = new RigidBodyInner(new WeakRef(wasmInstance), ptr, shape);
+        this._worldReference = null;
 
         let registry = physicsRigidBodyRegistryMap.get(wasmInstance);
         if (registry === undefined) {
@@ -139,6 +142,21 @@ export class RigidBody {
 
     public removeReference(): void {
         this._inner.removeReference();
+    }
+
+    public setWorldReference(worldReference: Nullable<object>): void {
+        if (this._worldReference !== null) {
+            throw new Error("Cannot add rigid body to multiple worlds");
+        }
+        if (this._worldReference === worldReference) {
+            return;
+        }
+        this._worldReference = worldReference;
+        if (this._worldReference !== null) {
+            this._inner.addReference();
+        } else {
+            this._inner.removeReference();
+        }
     }
 
     private _nullCheck(): void {

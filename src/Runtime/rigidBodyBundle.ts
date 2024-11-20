@@ -1,4 +1,5 @@
 import type { Matrix } from "@babylonjs/core/Maths/math.vector";
+import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
@@ -67,6 +68,8 @@ export class RigidBodyBundle {
     private readonly _inner: RigidBodyBundleInner;
     private readonly _count: number;
 
+    private _worldReference: Nullable<object>;
+
     public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfoList) {
         if (info.ptr === 0) {
             throw new Error("Cannot create rigid body bundle with null pointer");
@@ -87,7 +90,7 @@ export class RigidBodyBundle {
         this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * motionStateSize / Float32Array.BYTES_PER_ELEMENT);
         this._inner = new RigidBodyBundleInner(new WeakRef(wasmInstance), ptr, shapeReferences);
         this._count = count;
-
+        this._worldReference = null;
 
         let registry = physicsRigidBodyBundleRegistryMap.get(wasmInstance);
         if (registry === undefined) {
@@ -123,6 +126,21 @@ export class RigidBodyBundle {
 
     public removeReference(): void {
         this._inner.removeReference();
+    }
+
+    public setWorldReference(worldReference: Nullable<object>): void {
+        if (this._worldReference !== null) {
+            throw new Error("Cannot add rigid body bundle to multiple worlds");
+        }
+        if (this._worldReference === worldReference) {
+            return;
+        }
+        this._worldReference = worldReference;
+        if (worldReference !== null) {
+            this._inner.addReference();
+        } else {
+            this._inner.removeReference();
+        }
     }
 
     private _nullCheck(): void {

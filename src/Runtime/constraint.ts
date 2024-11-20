@@ -16,8 +16,8 @@ class ConstraintInner {
         this._ptr = ptr;
         this._bodyReference = bodyReference;
         if (Array.isArray(bodyReference)) {
-            bodyReference[0].addReference();
-            bodyReference[1].addReference();
+            (bodyReference[0] as RigidBody).addReference();
+            (bodyReference[1] as RigidBody).addReference();
         } else {
             (bodyReference as RigidBodyBundle).addReference();
         }
@@ -67,9 +67,12 @@ export abstract class Constraint {
     protected readonly _wasmInstance: BulletWasmInstance;
     protected readonly _inner: ConstraintInner;
 
+    private _worldReference: Nullable<object>;
+
     protected constructor(wasmInstance: BulletWasmInstance, ptr: number, bodyReference: readonly [RigidBody, RigidBody] | RigidBodyBundle) {
         this._wasmInstance = wasmInstance;
         this._inner = new ConstraintInner(new WeakRef(wasmInstance), ptr, bodyReference);
+        this._worldReference = null;
 
         let registry = constraintRegistryMap.get(wasmInstance);
         if (registry === undefined) {
@@ -101,6 +104,21 @@ export abstract class Constraint {
 
     public removeReference(): void {
         this._inner.removeReference();
+    }
+
+    public setWorldReference(worldReference: Nullable<object>): void {
+        if (this._worldReference !== null) {
+            throw new Error("Cannot add constraint to multiple worlds");
+        }
+        if (this._worldReference === worldReference) {
+            return;
+        }
+        this._worldReference = worldReference;
+        if (worldReference !== null) {
+            this._inner.addReference();
+        } else {
+            this._inner.removeReference();
+        }
     }
 }
 

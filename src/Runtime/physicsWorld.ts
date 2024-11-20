@@ -29,17 +29,17 @@ class PhysicsWorldInner {
         this._ptr = 0;
 
         for (const rigidBody of this._rigidBodyReferences) {
-            rigidBody.removeReference();
+            rigidBody.setWorldReference(null);
         }
         this._rigidBodyReferences.clear();
 
         for (const rigidBodyBundle of this._rigidBodyBundleReferences) {
-            rigidBodyBundle.removeReference();
+            rigidBodyBundle.setWorldReference(null);
         }
         this._rigidBodyBundleReferences.clear();
 
         for (const constraint of this._constraintReferences) {
-            constraint.removeReference();
+            constraint.setWorldReference(null);
         }
         this._constraintReferences.clear();
     }
@@ -53,14 +53,14 @@ class PhysicsWorldInner {
             return false;
         }
 
-        rigidBody.addReference();
+        rigidBody.setWorldReference(this);
         this._rigidBodyReferences.add(rigidBody);
         return true;
     }
 
     public removeRigidBodyReference(rigidBody: RigidBody): boolean {
         if (this._rigidBodyReferences.delete(rigidBody)) {
-            rigidBody.removeReference();
+            rigidBody.setWorldReference(null);
             return true;
         }
         return false;
@@ -71,14 +71,14 @@ class PhysicsWorldInner {
             return false;
         }
 
-        rigidBodyBundle.addReference();
+        rigidBodyBundle.setWorldReference(this);
         this._rigidBodyBundleReferences.add(rigidBodyBundle);
         return true;
     }
 
     public removeRigidBodyBundleReference(rigidBodyBundle: RigidBodyBundle): boolean {
         if (this._rigidBodyBundleReferences.delete(rigidBodyBundle)) {
-            rigidBodyBundle.removeReference();
+            rigidBodyBundle.setWorldReference(null);
             return true;
         }
         return false;
@@ -89,14 +89,14 @@ class PhysicsWorldInner {
             return false;
         }
 
-        constraint.addReference();
+        constraint.setWorldReference(this);
         this._constraintReferences.add(constraint);
         return true;
     }
 
     public removeConstraintReference(constraint: Constraint): boolean {
         if (this._constraintReferences.delete(constraint)) {
-            constraint.removeReference();
+            constraint.setWorldReference(null);
             return true;
         }
         return false;

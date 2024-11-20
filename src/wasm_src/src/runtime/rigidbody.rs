@@ -36,7 +36,6 @@ pub(crate) struct RigidBodyConstructionInfo<'a> {
 pub(crate) struct RigidBody {
     inner: bind::rigidbody::RigidBody,
     motion_state: bind::motion_state::MotionState,
-    // shape: &'static bind::collision_shape::CollisionShape,
 }
 
 impl RigidBody {
@@ -45,7 +44,6 @@ impl RigidBody {
     ) -> Self {
         let motion_state = bind::motion_state::MotionState::new(&info.initial_transform);
 
-        // let shape = info.shape;
         let info = bind::rigidbody::RigidBodyConstructionInfo::from_runtime_info(
             info,
             &motion_state
@@ -54,7 +52,6 @@ impl RigidBody {
         Self {
             inner,
             motion_state,
-            // shape,
         }
     }
 
