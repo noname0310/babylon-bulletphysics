@@ -358,7 +358,7 @@ class Constraint {
         this._inner.removeReference();
     }
     setWorldReference(worldReference) {
-        if (this._worldReference !== null) {
+        if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add constraint to multiple worlds");
         }
         if (this._worldReference === worldReference) {
@@ -1798,7 +1798,7 @@ class RigidBody {
         this._inner.removeReference();
     }
     setWorldReference(worldReference) {
-        if (this._worldReference !== null) {
+        if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add rigid body to multiple worlds");
         }
         if (this._worldReference === worldReference) {
@@ -1950,7 +1950,7 @@ class RigidBodyBundle {
         this._inner.removeReference();
     }
     setWorldReference(worldReference) {
-        if (this._worldReference !== null) {
+        if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add rigid body bundle to multiple worlds");
         }
         if (this._worldReference === worldReference) {
