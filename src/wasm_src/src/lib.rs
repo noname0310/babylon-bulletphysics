@@ -46,10 +46,10 @@ pub fn init() {
     web_sys::console::log_1(&format!("world_transform: {:?}", world_transform).into());
 
     let shape = bind::collision_shape::CollisionShape::Box(bind::collision_shape::BoxShape::new(glam::Vec3::new(1.0, 1.0, 1.0)));
-    let shape = Box::new(shape);
+    let mut shape = Box::new(shape);
 
-    let rigidbody_info = runtime::rigidbody::RigidBodyConstructionInfo {
-        shape: &shape,
+    let mut rigidbody_info = runtime::rigidbody::RigidBodyConstructionInfo {
+        shape: &mut shape,
         initial_transform: mat4,
         motion_type: rigidbody::MotionType::Dynamic as u8,
         mass: 1.0,
@@ -66,7 +66,7 @@ pub fn init() {
         disable_deactivation: 0,
     };
 
-    let _rigidbody = runtime::rigidbody::RigidBody::new(&rigidbody_info);
+    let _rigidbody = runtime::rigidbody::RigidBody::new(&mut rigidbody_info);
 }
 
 #[wasm_bindgen(js_name = "createBulletRuntime")]
@@ -88,7 +88,7 @@ pub fn allocate_buffer(size: usize) -> *mut u8 {
 /// # Safety
 /// `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
 #[wasm_bindgen(js_name = "deallocateBuffer")]
-pub fn deallocate_buffer(ptr: *mut u8, size: usize) {
+pub unsafe fn deallocate_buffer(ptr: *mut u8, size: usize) {
     let layout = std::alloc::Layout::from_size_align(size, 16).unwrap();
     unsafe {
         std::alloc::dealloc(ptr, layout);

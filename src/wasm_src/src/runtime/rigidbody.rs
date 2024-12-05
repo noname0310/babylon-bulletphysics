@@ -6,7 +6,7 @@ use crate::bind;
 #[repr(C)]
 pub(crate) struct RigidBodyConstructionInfo<'a> {
     // for shape
-    pub(crate) shape: &'a bind::collision_shape::CollisionShape,
+    pub(crate) shape: &'a mut bind::collision_shape::CollisionShape,
     
     // for motion state
     pub(crate) initial_transform: Mat4,
@@ -36,13 +36,21 @@ pub(crate) struct RigidBodyConstructionInfo<'a> {
 pub(crate) struct RigidBody {
     inner: bind::rigidbody::RigidBody,
     motion_state: bind::motion_state::MotionState,
+    #[cfg(debug_assertions)]
+    ref_count: u32,
+    #[cfg(debug_assertions)]
+    #[allow(dead_code)]
+    shape_handle: bind::collision_shape::CollisionShapeHandle,
 }
 
 impl RigidBody {
     pub(crate) fn new(
-        info: &RigidBodyConstructionInfo
+        info: &mut RigidBodyConstructionInfo
     ) -> Self {
         let motion_state = bind::motion_state::MotionState::new(&info.initial_transform);
+
+        #[cfg(debug_assertions)]
+        let shape_handle = info.shape.create_handle();
 
         let info = bind::rigidbody::RigidBodyConstructionInfo::from_runtime_info(
             info,
@@ -52,6 +60,10 @@ impl RigidBody {
         Self {
             inner,
             motion_state,
+            #[cfg(debug_assertions)]
+            ref_count: 0,
+            #[cfg(debug_assertions)]
+            shape_handle,
         }
     }
 
@@ -76,17 +88,76 @@ impl RigidBody {
     }
 }
 
+#[cfg(debug_assertions)]
+impl Drop for RigidBody {
+    fn drop(&mut self) {
+        if 0 < self.ref_count {
+            panic!("RigidBody still has references");
+        }
+    }
+}
+
+pub(crate) struct RigidBodyHandle {
+    rigidbody: &'static mut RigidBody,
+}
+
+impl RigidBodyHandle {
+    pub(crate) fn new(rigidbody: &mut RigidBody) -> Self {
+        let rigidbody = unsafe {
+            std::mem::transmute::<&mut RigidBody, &'static mut RigidBody>(rigidbody)
+        };
+
+        #[cfg(debug_assertions)]
+        {
+            rigidbody.ref_count += 1;
+        }
+
+        Self {
+            rigidbody,
+        }
+    }
+
+    pub(crate) fn rigidbody(&self) -> &RigidBody {
+        self.rigidbody
+    }
+
+    pub(crate) fn clone(&mut self) -> Self {
+        Self::new(self.rigidbody)
+    }
+}
+
+#[cfg(debug_assertions)]
+impl Drop for RigidBodyHandle {
+    fn drop(&mut self) {
+        self.rigidbody.ref_count -= 1;
+    }
+}
+
 pub(crate) struct RigidBodyBundle {
     bodies: Box<[bind::rigidbody::RigidBody]>,
     motion_state_bundle: bind::motion_state::MotionStateBundle,
+    #[cfg(debug_assertions)]
+    ref_count: u32,
+    #[cfg(debug_assertions)]
+    #[allow(dead_code)]
+    shape_handle_vec: Vec<bind::collision_shape::CollisionShapeHandle>,
 }
 
 impl RigidBodyBundle {
-    pub(crate) fn new(info_list: &[RigidBodyConstructionInfo]) -> Self {
+    pub(crate) fn new(info_list: &mut [RigidBodyConstructionInfo]) -> Self {
         let mut bodies = Vec::with_capacity(info_list.len());
         let mut motion_state_bundle = bind::motion_state::MotionStateBundle::new(info_list.len());
-        for (i, info) in info_list.iter().enumerate() {
+        
+        #[cfg(debug_assertions)]
+        let mut shape_handle_vec = Vec::with_capacity(info_list.len());
+        
+        for (i, info) in info_list.iter_mut().enumerate() {
             motion_state_bundle.set_transform(i, &info.initial_transform);
+
+            #[cfg(debug_assertions)]
+            shape_handle_vec.push(info.shape.create_handle());
+
+
             let info = bind::rigidbody::RigidBodyConstructionInfo::from_runtime_info_raw(
                 info,
                 motion_state_bundle.get_nth_motion_state_ptr(i)
@@ -97,6 +168,10 @@ impl RigidBodyBundle {
         Self {
             bodies: bodies.into_boxed_slice(),
             motion_state_bundle,
+            #[cfg(debug_assertions)]
+            ref_count: 0,
+            #[cfg(debug_assertions)]
+            shape_handle_vec,
         }
     }
 
@@ -121,9 +196,54 @@ impl RigidBodyBundle {
     }
 }
 
+#[cfg(debug_assertions)]
+impl Drop for RigidBodyBundle {
+    fn drop(&mut self) {
+        if 0 < self.ref_count {
+            panic!("RigidBodyBundle still has references");
+        }
+    }
+}
+
+pub(crate) struct RigidBodyBundleHandle {
+    bundle: &'static mut RigidBodyBundle,
+}
+
+impl RigidBodyBundleHandle {
+    pub(crate) fn new(bundle: &mut RigidBodyBundle) -> Self {
+        let bundle = unsafe {
+            std::mem::transmute::<&mut RigidBodyBundle, &'static mut RigidBodyBundle>(bundle)
+        };
+
+        #[cfg(debug_assertions)]
+        {
+            bundle.ref_count += 1;
+        }
+
+        Self {
+            bundle,
+        }
+    }
+
+    pub(crate) fn bundle(&self) -> &RigidBodyBundle {
+        self.bundle
+    }
+
+    pub(crate) fn clone(&mut self) -> Self {
+        Self::new(self.bundle)
+    }
+}
+
+#[cfg(debug_assertions)]
+impl Drop for RigidBodyBundleHandle {
+    fn drop(&mut self) {
+        self.bundle.ref_count -= 1;
+    }
+}
+
 #[wasm_bindgen(js_name = "createRigidBody")]
-pub fn create_rigidbody(info: *const usize) -> *mut usize {
-    let info = unsafe { &*(info as *const RigidBodyConstructionInfo) };
+pub fn create_rigidbody(info: *mut usize) -> *mut usize {
+    let info = unsafe { &mut *(info as *mut RigidBodyConstructionInfo) };
     let rigidbody = RigidBody::new(info);
     let rigidbody = Box::new(rigidbody);
     Box::into_raw(rigidbody) as *mut usize
@@ -155,8 +275,8 @@ pub fn rigidbody_restore_dynamic(ptr: *mut usize) {
 }
 
 #[wasm_bindgen(js_name = "createRigidBodyBundle")]
-pub fn create_rigidbody_bundle(info_list: *const usize, len: usize) -> *mut usize {
-    let info_list = unsafe { std::slice::from_raw_parts(info_list as *const RigidBodyConstructionInfo, len) };
+pub fn create_rigidbody_bundle(info_list: *mut usize, len: usize) -> *mut usize {
+    let info_list = unsafe { std::slice::from_raw_parts_mut(info_list as *mut RigidBodyConstructionInfo, len) };
     let bundle = RigidBodyBundle::new(info_list);
     let bundle = Box::new(bundle);
     Box::into_raw(bundle) as *mut usize
