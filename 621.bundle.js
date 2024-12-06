@@ -10,6 +10,8 @@
 /* harmony export */ });
 /* harmony import */ var _dataBuffer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1504);
 /* harmony import */ var _Misc_logger_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1137);
+/* harmony import */ var _bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(1675);
+
 
 
 
@@ -303,7 +305,7 @@ class VertexBuffer {
         else {
             this.type = type;
         }
-        const typeByteLength = VertexBuffer.GetTypeByteLength(this.type);
+        const typeByteLength = (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .GetTypeByteLength */ .PD)(this.type);
         if (useBytes) {
             this._size = size || (stride ? stride / typeByteLength : VertexBuffer.DeduceStride(kind));
             this.byteStride = stride || this._buffer.byteStride || this._size * typeByteLength;
@@ -367,7 +369,7 @@ class VertexBuffer {
         if (!data) {
             return null;
         }
-        return VertexBuffer.GetFloatData(data, this._size, this.type, this.byteOffset, this.byteStride, this.normalized, totalVertices, forceCopy);
+        return (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .GetFloatData */ .jm)(data, this._size, this.type, this.byteOffset, this.byteStride, this.normalized, totalVertices, forceCopy);
     }
     /**
      * Gets underlying native buffer
@@ -390,7 +392,7 @@ class VertexBuffer {
      * @deprecated Please use byteStride instead.
      */
     getStrideSize() {
-        return this.byteStride / VertexBuffer.GetTypeByteLength(this.type);
+        return this.byteStride / (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .GetTypeByteLength */ .PD)(this.type);
     }
     /**
      * Returns the offset as a multiple of the type byte length.
@@ -398,7 +400,7 @@ class VertexBuffer {
      * @deprecated Please use byteOffset instead.
      */
     getOffset() {
-        return this.byteOffset / VertexBuffer.GetTypeByteLength(this.type);
+        return this.byteOffset / (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .GetTypeByteLength */ .PD)(this.type);
     }
     /**
      * Returns the number of components or the byte size per vertex attribute
@@ -406,7 +408,7 @@ class VertexBuffer {
      * @returns the number of components
      */
     getSize(sizeInBytes = false) {
-        return sizeInBytes ? this._size * VertexBuffer.GetTypeByteLength(this.type) : this._size;
+        return sizeInBytes ? this._size * (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .GetTypeByteLength */ .PD)(this.type) : this._size;
     }
     /**
      * Gets a boolean indicating is the internal buffer of the VertexBuffer is instanced
@@ -466,7 +468,11 @@ class VertexBuffer {
      * @param callback the callback function called for each value
      */
     forEach(count, callback) {
-        VertexBuffer.ForEach(this._buffer.getData(), this.byteOffset, this.byteStride, this._size, this.type, count, this.normalized, callback);
+        (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .EnumerateFloatValues */ .XG)(this._buffer.getData(), this.byteOffset, this.byteStride, this._size, this.type, count, this.normalized, (values, index) => {
+            for (let i = 0; i < this._size; i++) {
+                callback(values[i], index + i);
+            }
+        });
     }
     /** @internal */
     _alignBuffer() { }
@@ -531,22 +537,10 @@ class VertexBuffer {
      * Gets the byte length of the given type.
      * @param type the type
      * @returns the number of bytes
+     * @deprecated Use `getTypeByteLength` from `bufferUtils` instead
      */
     static GetTypeByteLength(type) {
-        switch (type) {
-            case VertexBuffer.BYTE:
-            case VertexBuffer.UNSIGNED_BYTE:
-                return 1;
-            case VertexBuffer.SHORT:
-            case VertexBuffer.UNSIGNED_SHORT:
-                return 2;
-            case VertexBuffer.INT:
-            case VertexBuffer.UNSIGNED_INT:
-            case VertexBuffer.FLOAT:
-                return 4;
-            default:
-                throw new Error(`Invalid type '${type}'`);
-        }
+        return (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .GetTypeByteLength */ .PD)(type);
     }
     /**
      * Enumerates each value of the given parameters as numbers.
@@ -558,75 +552,14 @@ class VertexBuffer {
      * @param count the number of values to enumerate
      * @param normalized whether the data is normalized
      * @param callback the callback function called for each value
+     * @deprecated Use `EnumerateFloatValues` from `bufferUtils` instead
      */
     static ForEach(data, byteOffset, byteStride, componentCount, componentType, count, normalized, callback) {
-        if (data instanceof Array) {
-            let offset = byteOffset / 4;
-            const stride = byteStride / 4;
-            for (let index = 0; index < count; index += componentCount) {
-                for (let componentIndex = 0; componentIndex < componentCount; componentIndex++) {
-                    callback(data[offset + componentIndex], index + componentIndex);
-                }
-                offset += stride;
+        (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .EnumerateFloatValues */ .XG)(data, byteOffset, byteStride, componentCount, componentType, count, normalized, (values, index) => {
+            for (let componentIndex = 0; componentIndex < componentCount; componentIndex++) {
+                callback(values[componentIndex], index + componentIndex);
             }
-        }
-        else {
-            const dataView = data instanceof ArrayBuffer ? new DataView(data) : new DataView(data.buffer, data.byteOffset, data.byteLength);
-            const componentByteLength = VertexBuffer.GetTypeByteLength(componentType);
-            for (let index = 0; index < count; index += componentCount) {
-                let componentByteOffset = byteOffset;
-                for (let componentIndex = 0; componentIndex < componentCount; componentIndex++) {
-                    const value = VertexBuffer._GetFloatValue(dataView, componentType, componentByteOffset, normalized);
-                    callback(value, index + componentIndex);
-                    componentByteOffset += componentByteLength;
-                }
-                byteOffset += byteStride;
-            }
-        }
-    }
-    static _GetFloatValue(dataView, type, byteOffset, normalized) {
-        switch (type) {
-            case VertexBuffer.BYTE: {
-                let value = dataView.getInt8(byteOffset);
-                if (normalized) {
-                    value = Math.max(value / 127, -1);
-                }
-                return value;
-            }
-            case VertexBuffer.UNSIGNED_BYTE: {
-                let value = dataView.getUint8(byteOffset);
-                if (normalized) {
-                    value = value / 255;
-                }
-                return value;
-            }
-            case VertexBuffer.SHORT: {
-                let value = dataView.getInt16(byteOffset, true);
-                if (normalized) {
-                    value = Math.max(value / 32767, -1);
-                }
-                return value;
-            }
-            case VertexBuffer.UNSIGNED_SHORT: {
-                let value = dataView.getUint16(byteOffset, true);
-                if (normalized) {
-                    value = value / 65535;
-                }
-                return value;
-            }
-            case VertexBuffer.INT: {
-                return dataView.getInt32(byteOffset, true);
-            }
-            case VertexBuffer.UNSIGNED_INT: {
-                return dataView.getUint32(byteOffset, true);
-            }
-            case VertexBuffer.FLOAT: {
-                return dataView.getFloat32(byteOffset, true);
-            }
-            default: {
-                throw new Error(`Invalid component type ${type}`);
-            }
-        }
+        });
     }
     /**
      * Gets the given data array as a float array. Float data is constructed if the data array cannot be returned directly.
@@ -639,44 +572,10 @@ class VertexBuffer {
      * @param totalVertices number of vertices in the buffer to take into account
      * @param forceCopy defines a boolean indicating that the returned array must be cloned upon returning it
      * @returns a float array containing vertex data
+     * @deprecated Use `GetFloatData` from `bufferUtils` instead
      */
     static GetFloatData(data, size, type, byteOffset, byteStride, normalized, totalVertices, forceCopy) {
-        const tightlyPackedByteStride = size * VertexBuffer.GetTypeByteLength(type);
-        const count = totalVertices * size;
-        if (type !== VertexBuffer.FLOAT || byteStride !== tightlyPackedByteStride) {
-            const copy = new Float32Array(count);
-            VertexBuffer.ForEach(data, byteOffset, byteStride, size, type, count, normalized, (value, index) => (copy[index] = value));
-            return copy;
-        }
-        if (!(data instanceof Array || data instanceof Float32Array) || byteOffset !== 0 || data.length !== count) {
-            if (data instanceof Array) {
-                const offset = byteOffset / 4;
-                return data.slice(offset, offset + count);
-            }
-            else if (data instanceof ArrayBuffer) {
-                return new Float32Array(data, byteOffset, count);
-            }
-            else {
-                const offset = data.byteOffset + byteOffset;
-                if ((offset & 3) !== 0) {
-                    _Misc_logger_js__WEBPACK_IMPORTED_MODULE_1__/* .Logger */ .V.Warn("Float array must be aligned to 4-bytes border");
-                    forceCopy = true;
-                }
-                if (forceCopy) {
-                    const result = new Uint8Array(count * Float32Array.BYTES_PER_ELEMENT);
-                    const source = new Uint8Array(data.buffer, offset, result.length);
-                    result.set(source);
-                    return new Float32Array(result.buffer);
-                }
-                else {
-                    return new Float32Array(data.buffer, offset, count);
-                }
-            }
-        }
-        if (forceCopy) {
-            return data.slice();
-        }
-        return data;
+        return (0,_bufferUtils_js__WEBPACK_IMPORTED_MODULE_2__/* .GetFloatData */ .jm)(data, size, type, byteOffset, byteStride, normalized, totalVertices, forceCopy);
     }
 }
 VertexBuffer._Counter = 0;
@@ -773,6 +672,276 @@ VertexBuffer.MatricesWeightsExtraKind = `matricesWeightsExtra`;
 
 /***/ }),
 
+/***/ 1675:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   PD: () => (/* binding */ GetTypeByteLength),
+/* harmony export */   XG: () => (/* binding */ EnumerateFloatValues),
+/* harmony export */   gs: () => (/* binding */ CopyFloatData),
+/* harmony export */   jm: () => (/* binding */ GetFloatData)
+/* harmony export */ });
+/* harmony import */ var _Misc_logger_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1137);
+
+
+function GetFloatValue(dataView, type, byteOffset, normalized) {
+    switch (type) {
+        case 5120: {
+            let value = dataView.getInt8(byteOffset);
+            if (normalized) {
+                value = Math.max(value / 127, -1);
+            }
+            return value;
+        }
+        case 5121: {
+            let value = dataView.getUint8(byteOffset);
+            if (normalized) {
+                value = value / 255;
+            }
+            return value;
+        }
+        case 5122: {
+            let value = dataView.getInt16(byteOffset, true);
+            if (normalized) {
+                value = Math.max(value / 32767, -1);
+            }
+            return value;
+        }
+        case 5123: {
+            let value = dataView.getUint16(byteOffset, true);
+            if (normalized) {
+                value = value / 65535;
+            }
+            return value;
+        }
+        case 5124: {
+            return dataView.getInt32(byteOffset, true);
+        }
+        case 5125: {
+            return dataView.getUint32(byteOffset, true);
+        }
+        case 5126: {
+            return dataView.getFloat32(byteOffset, true);
+        }
+        default: {
+            throw new Error(`Invalid component type ${type}`);
+        }
+    }
+}
+function SetFloatValue(dataView, type, byteOffset, normalized, value) {
+    switch (type) {
+        case 5120: {
+            if (normalized) {
+                value = Math.round(value * 127.0);
+            }
+            dataView.setInt8(byteOffset, value);
+            break;
+        }
+        case 5121: {
+            if (normalized) {
+                value = Math.round(value * 255);
+            }
+            dataView.setUint8(byteOffset, value);
+            break;
+        }
+        case 5122: {
+            if (normalized) {
+                value = Math.round(value * 32767);
+            }
+            dataView.setInt16(byteOffset, value, true);
+            break;
+        }
+        case 5123: {
+            if (normalized) {
+                value = Math.round(value * 65535);
+            }
+            dataView.setUint16(byteOffset, value, true);
+            break;
+        }
+        case 5124: {
+            dataView.setInt32(byteOffset, value, true);
+            break;
+        }
+        case 5125: {
+            dataView.setUint32(byteOffset, value, true);
+            break;
+        }
+        case 5126: {
+            dataView.setFloat32(byteOffset, value, true);
+            break;
+        }
+        default: {
+            throw new Error(`Invalid component type ${type}`);
+        }
+    }
+}
+/**
+ * Gets the byte length of the given type.
+ * @param type the type
+ * @returns the number of bytes
+ */
+function GetTypeByteLength(type) {
+    switch (type) {
+        case 5120:
+        case 5121:
+            return 1;
+        case 5122:
+        case 5123:
+            return 2;
+        case 5124:
+        case 5125:
+        case 5126:
+            return 4;
+        default:
+            throw new Error(`Invalid type '${type}'`);
+    }
+}
+/**
+ * Enumerates each value of the data array and calls the given callback.
+ * @param data the data to enumerate
+ * @param byteOffset the byte offset of the data
+ * @param byteStride the byte stride of the data
+ * @param componentCount the number of components per element
+ * @param componentType the type of the component
+ * @param count the number of values to enumerate
+ * @param normalized whether the data is normalized
+ * @param callback the callback function called for each group of component values
+ */
+function EnumerateFloatValues(data, byteOffset, byteStride, componentCount, componentType, count, normalized, callback) {
+    const oldValues = new Array(componentCount);
+    const newValues = new Array(componentCount);
+    if (data instanceof Array) {
+        let offset = byteOffset / 4;
+        const stride = byteStride / 4;
+        for (let index = 0; index < count; index += componentCount) {
+            for (let componentIndex = 0; componentIndex < componentCount; componentIndex++) {
+                oldValues[componentIndex] = newValues[componentIndex] = data[offset + componentIndex];
+            }
+            callback(newValues, index);
+            for (let componentIndex = 0; componentIndex < componentCount; componentIndex++) {
+                if (oldValues[componentIndex] !== newValues[componentIndex]) {
+                    data[offset + componentIndex] = newValues[componentIndex];
+                }
+            }
+            offset += stride;
+        }
+    }
+    else {
+        const dataView = data instanceof ArrayBuffer ? new DataView(data) : new DataView(data.buffer, data.byteOffset, data.byteLength);
+        const componentByteLength = GetTypeByteLength(componentType);
+        for (let index = 0; index < count; index += componentCount) {
+            for (let componentIndex = 0, componentByteOffset = byteOffset; componentIndex < componentCount; componentIndex++, componentByteOffset += componentByteLength) {
+                oldValues[componentIndex] = newValues[componentIndex] = GetFloatValue(dataView, componentType, componentByteOffset, normalized);
+            }
+            callback(newValues, index);
+            for (let componentIndex = 0, componentByteOffset = byteOffset; componentIndex < componentCount; componentIndex++, componentByteOffset += componentByteLength) {
+                if (oldValues[componentIndex] !== newValues[componentIndex]) {
+                    SetFloatValue(dataView, componentType, componentByteOffset, normalized, newValues[componentIndex]);
+                }
+            }
+            byteOffset += byteStride;
+        }
+    }
+}
+/**
+ * Gets the given data array as a float array. Float data is constructed if the data array cannot be returned directly.
+ * @param data the input data array
+ * @param size the number of components
+ * @param type the component type
+ * @param byteOffset the byte offset of the data
+ * @param byteStride the byte stride of the data
+ * @param normalized whether the data is normalized
+ * @param totalVertices number of vertices in the buffer to take into account
+ * @param forceCopy defines a boolean indicating that the returned array must be cloned upon returning it
+ * @returns a float array containing vertex data
+ */
+function GetFloatData(data, size, type, byteOffset, byteStride, normalized, totalVertices, forceCopy) {
+    const tightlyPackedByteStride = size * GetTypeByteLength(type);
+    const count = totalVertices * size;
+    if (type !== 5126 || byteStride !== tightlyPackedByteStride) {
+        const copy = new Float32Array(count);
+        EnumerateFloatValues(data, byteOffset, byteStride, size, type, count, normalized, (values, index) => {
+            for (let i = 0; i < size; i++) {
+                copy[index + i] = values[i];
+            }
+        });
+        return copy;
+    }
+    if (!(data instanceof Array || data instanceof Float32Array) || byteOffset !== 0 || data.length !== count) {
+        if (data instanceof Array) {
+            const offset = byteOffset / 4;
+            return data.slice(offset, offset + count);
+        }
+        else if (data instanceof ArrayBuffer) {
+            return new Float32Array(data, byteOffset, count);
+        }
+        else {
+            const offset = data.byteOffset + byteOffset;
+            if ((offset & 3) !== 0) {
+                _Misc_logger_js__WEBPACK_IMPORTED_MODULE_0__/* .Logger */ .V.Warn("Float array must be aligned to 4-bytes border");
+                forceCopy = true;
+            }
+            if (forceCopy) {
+                return new Float32Array(data.buffer.slice(offset, offset + count * Float32Array.BYTES_PER_ELEMENT));
+            }
+            else {
+                return new Float32Array(data.buffer, offset, count);
+            }
+        }
+    }
+    if (forceCopy) {
+        return data.slice();
+    }
+    return data;
+}
+/**
+ * Copies the given data array to the given float array.
+ * @param input the input data array
+ * @param size the number of components
+ * @param type the component type
+ * @param byteOffset the byte offset of the data
+ * @param byteStride the byte stride of the data
+ * @param normalized whether the data is normalized
+ * @param totalVertices number of vertices in the buffer to take into account
+ * @param output the output float array
+ */
+function CopyFloatData(input, size, type, byteOffset, byteStride, normalized, totalVertices, output) {
+    const tightlyPackedByteStride = size * GetTypeByteLength(type);
+    const count = totalVertices * size;
+    if (output.length !== count) {
+        throw new Error("Output length is not valid");
+    }
+    if (type !== 5126 || byteStride !== tightlyPackedByteStride) {
+        EnumerateFloatValues(input, byteOffset, byteStride, size, type, count, normalized, (values, index) => {
+            for (let i = 0; i < size; i++) {
+                output[index + i] = values[i];
+            }
+        });
+        return;
+    }
+    if (input instanceof Array) {
+        const offset = byteOffset / 4;
+        output.set(input, offset);
+    }
+    else if (input instanceof ArrayBuffer) {
+        const floatData = new Float32Array(input, byteOffset, count);
+        output.set(floatData);
+    }
+    else {
+        const offset = input.byteOffset + byteOffset;
+        if ((offset & 3) !== 0) {
+            _Misc_logger_js__WEBPACK_IMPORTED_MODULE_0__/* .Logger */ .V.Warn("Float array must be aligned to 4-bytes border");
+            output.set(new Float32Array(input.buffer.slice(offset, offset + count * Float32Array.BYTES_PER_ELEMENT)));
+            return;
+        }
+        const floatData = new Float32Array(input.buffer, offset, count);
+        output.set(floatData);
+    }
+}
+//# sourceMappingURL=bufferUtils.js.map
+
+/***/ }),
+
 /***/ 1504:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -832,8 +1001,8 @@ var math_vector = __webpack_require__(9923);
 var math_scalar_functions = __webpack_require__(4867);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/node.js
 var node = __webpack_require__(4870);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/mesh.js + 8 modules
-var mesh = __webpack_require__(9774);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/mesh.js + 7 modules
+var mesh = __webpack_require__(6726);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Events/pointerEvents.js
 var pointerEvents = __webpack_require__(6240);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/precisionDate.js
@@ -5675,6 +5844,7 @@ class ArcRotateCamera extends TargetCamera {
          * Factor for restoring information interpolation. default is 0 = off. Any value \< 0 or \> 1 will disable interpolation.
          */
         this.restoreStateInterpolationFactor = 0;
+        this._currentInterpolationFactor = 0;
         /** @internal */
         this._viewMatrix = new math_vector/* Matrix */.uq();
         /**
@@ -5807,7 +5977,7 @@ class ArcRotateCamera extends TargetCamera {
      */
     _restoreStateValues() {
         if (this.hasStateStored() && this.restoreStateInterpolationFactor > math_constants/* Epsilon */.bH && this.restoreStateInterpolationFactor < 1) {
-            this.interpolateTo(this._storedAlpha, this._storedBeta, this._storedRadius, this._storedTarget, this._storedTargetScreenOffset);
+            this.interpolateTo(this._storedAlpha, this._storedBeta, this._storedRadius, this._storedTarget, this._storedTargetScreenOffset, this.restoreStateInterpolationFactor);
             return true;
         }
         if (!super._restoreStateValues()) {
@@ -5832,14 +6002,24 @@ class ArcRotateCamera extends TargetCamera {
      * @param radius Defines the goal radius.
      * @param target Defines the goal target.
      * @param targetScreenOffset Defines the goal target screen offset.
+     * @param interpolationFactor A value  between 0 and 1 that determines the speed of the interpolation.
      */
-    interpolateTo(alpha = this.alpha, beta = this.beta, radius = this.radius, target = this.target, targetScreenOffset = this.targetScreenOffset) {
+    interpolateTo(alpha = this.alpha, beta = this.beta, radius = this.radius, target = this.target, targetScreenOffset = this.targetScreenOffset, interpolationFactor) {
         this._progressiveRestore = true;
         this.inertialAlphaOffset = 0;
         this.inertialBetaOffset = 0;
         this.inertialRadiusOffset = 0;
         this.inertialPanningX = 0;
         this.inertialPanningY = 0;
+        if (interpolationFactor != null) {
+            this._currentInterpolationFactor = interpolationFactor;
+        }
+        else if (this.restoreStateInterpolationFactor !== 0) {
+            this._currentInterpolationFactor = this.restoreStateInterpolationFactor;
+        }
+        else {
+            this._currentInterpolationFactor = 0.1;
+        }
         alpha = (0,math_scalar_functions/* Clamp */.OQ)(alpha, this.lowerAlphaLimit ?? -Infinity, this.upperAlphaLimit ?? Infinity);
         beta = (0,math_scalar_functions/* Clamp */.OQ)(beta, this.lowerBetaLimit ?? -Infinity, this.upperBetaLimit ?? Infinity);
         radius = (0,math_scalar_functions/* Clamp */.OQ)(radius, this.lowerRadiusLimit ?? -Infinity, this.upperRadiusLimit ?? Infinity);
@@ -5911,7 +6091,7 @@ class ArcRotateCamera extends TargetCamera {
         // progressive restore
         if (this._progressiveRestore) {
             const dt = this._scene.getEngine().getDeltaTime() / 1000;
-            const t = 1 - Math.pow(2, -dt / this.restoreStateInterpolationFactor);
+            const t = 1 - Math.pow(2, -dt / this._currentInterpolationFactor);
             // can't use tmp vector here because of assignment
             this.setTarget(math_vector/* Vector3 */.Pq.Lerp(this.getTarget(), this._goalTarget, t));
             // Using quaternion for smoother interpolation (and no Euler angles modulo)
@@ -10791,7 +10971,7 @@ class AbstractEngine {
         const fromData = url.substr(0, 5) === "data:";
         const fromBlob = url.substr(0, 5) === "blob:";
         const isBase64 = fromData && url.indexOf(";base64,") !== -1;
-        const texture = fallback ? fallback : new internalTexture/* InternalTexture */.h(this, 1 /* InternalTextureSource.Url */);
+        const texture = fallback ? fallback : new internalTexture/* InternalTexture */.hV(this, 1 /* InternalTextureSource.Url */);
         if (texture !== fallback) {
             texture.label = url.substring(0, 60); // default label, can be overriden by the caller
         }
@@ -10983,13 +11163,13 @@ class AbstractEngine {
      */
     // Not mixed with Version for tooling purpose.
     static get NpmPackage() {
-        return "babylonjs@7.34.1";
+        return "babylonjs@7.38.0";
     }
     /**
      * Returns the current version of the framework
      */
     static get Version() {
-        return "7.34.1";
+        return "7.38.0";
     }
     /**
      * Gets the HTML canvas attached with the current webGL context
@@ -11387,7 +11567,7 @@ class AbstractEngine {
      * @param invertY defines if data must be stored with Y axis inverted
      * @param samplingMode defines the required sampling mode (Texture.NEAREST_SAMPLINGMODE by default)
      * @param compression defines the compression used (null by default)
-     * @param type defines the type fo the data (Engine.TEXTURETYPE_UNSIGNED_INT by default)
+     * @param type defines the type fo the data (Engine.TEXTURETYPE_UNSIGNED_BYTE by default)
      * @param creationFlags specific flags to use when creating the texture (1 for storage textures, for eg)
      * @param useSRGBBuffer defines if the texture must be loaded in a sRGB GPU buffer (if supported by the GPU).
      * @returns the raw texture inside an InternalTexture
@@ -11401,7 +11581,7 @@ class AbstractEngine {
      * @param data defines the array of data to use to create each face
      * @param size defines the size of the textures
      * @param format defines the format of the data
-     * @param type defines the type of the data (like Engine.TEXTURETYPE_UNSIGNED_INT)
+     * @param type defines the type of the data (like Engine.TEXTURETYPE_UNSIGNED_BYTE)
      * @param generateMipMaps  defines if the engine should generate the mip levels
      * @param invertY defines if data must be stored with Y axis inverted
      * @param samplingMode defines the required sampling mode (like Texture.NEAREST_SAMPLINGMODE)
@@ -12076,7 +12256,7 @@ thinEngine.ThinEngine.prototype.updateRawTexture = function (texture, data, form
 thinEngine.ThinEngine.prototype.createRawTexture = function (data, width, height, format, generateMipMaps, invertY, samplingMode, compression = null, type = 0, 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 creationFlags = 0, useSRGBBuffer = false) {
-    const texture = new Textures_internalTexture/* InternalTexture */.h(this, 3 /* InternalTextureSource.Raw */);
+    const texture = new Textures_internalTexture/* InternalTexture */.hV(this, 3 /* InternalTextureSource.Raw */);
     texture.baseWidth = width;
     texture.baseHeight = height;
     texture.width = width;
@@ -12106,7 +12286,7 @@ creationFlags = 0, useSRGBBuffer = false) {
 };
 thinEngine.ThinEngine.prototype.createRawCubeTexture = function (data, size, format, type, generateMipMaps, invertY, samplingMode, compression = null) {
     const gl = this._gl;
-    const texture = new Textures_internalTexture/* InternalTexture */.h(this, 8 /* InternalTextureSource.CubeRaw */);
+    const texture = new Textures_internalTexture/* InternalTexture */.hV(this, 8 /* InternalTextureSource.CubeRaw */);
     texture.isCube = true;
     texture.format = format;
     texture.type = type;
@@ -12329,7 +12509,7 @@ function _makeCreateRawTextureFunction(is3D) {
     return function (data, width, height, depth, format, generateMipMaps, invertY, samplingMode, compression = null, textureType = 0) {
         const target = is3D ? this._gl.TEXTURE_3D : this._gl.TEXTURE_2D_ARRAY;
         const source = is3D ? 10 /* InternalTextureSource.Raw3D */ : 11 /* InternalTextureSource.Raw2DArray */;
-        const texture = new Textures_internalTexture/* InternalTexture */.h(this, source);
+        const texture = new Textures_internalTexture/* InternalTexture */.hV(this, source);
         texture.baseWidth = width;
         texture.baseHeight = height;
         texture.baseDepth = depth;
@@ -12524,7 +12704,7 @@ thinEngine.ThinEngine.prototype.updateDynamicVertexBuffer = function (vertexBuff
 
 
 thinEngine.ThinEngine.prototype._createDepthStencilCubeTexture = function (size, options) {
-    const internalTexture = new Textures_internalTexture/* InternalTexture */.h(this, 12 /* InternalTextureSource.DepthStencil */);
+    const internalTexture = new Textures_internalTexture/* InternalTexture */.hV(this, 12 /* InternalTextureSource.DepthStencil */);
     internalTexture.isCube = true;
     if (this.webGLVersion === 1) {
         logger/* Logger */.V.Error("Depth cube texture is not supported by WebGL 1.");
@@ -12631,15 +12811,32 @@ thinEngine.ThinEngine.prototype.generateMipMapsForCubemap = function (texture, u
 //# sourceMappingURL=engine.cubeTexture.js.map
 ;// ./node_modules/@babylonjs/core/Engines/renderTargetWrapper.js
 
+
 /**
  * Wrapper around a render target (either single or multi textures)
  */
 class RenderTargetWrapper {
     /**
-     * Gets the depth/stencil texture (if created by a createDepthStencilTexture() call)
+     * Gets the depth/stencil texture
      */
     get depthStencilTexture() {
         return this._depthStencilTexture;
+    }
+    /**
+     * Sets the depth/stencil texture
+     * @param texture The depth/stencil texture to set
+     * @param disposeExisting True to dispose the existing depth/stencil texture (if any) before replacing it (default: true)
+     */
+    setDepthStencilTexture(texture, disposeExisting = true) {
+        if (disposeExisting && this._depthStencilTexture) {
+            this._depthStencilTexture.dispose();
+        }
+        this._depthStencilTexture = texture;
+        this._generateDepthBuffer = this._generateStencilBuffer = false;
+        if (texture) {
+            this._generateDepthBuffer = true;
+            this._generateStencilBuffer = (0,Textures_internalTexture/* HasStencilAspect */.$l)(texture.format);
+        }
     }
     /**
      * Indicates if the depth/stencil texture has a stencil aspect
@@ -12681,13 +12878,13 @@ class RenderTargetWrapper {
      * Gets the width of the render target wrapper
      */
     get width() {
-        return this._size.width || this._size;
+        return this._size.width ?? this._size;
     }
     /**
      * Gets the height of the render target wrapper
      */
     get height() {
-        return this._size.height || this._size;
+        return this._size.height ?? this._size;
     }
     /**
      * Gets the number of layers of the render target wrapper (only used if is2DArray is true and wrapper is not a multi render target)
@@ -12764,6 +12961,32 @@ class RenderTargetWrapper {
         return result;
     }
     /**
+     * Resolves the MSAA textures into their non-MSAA version.
+     * Note that if samples equals 1 (no MSAA), no resolve is performed.
+     */
+    resolveMSAATextures() {
+        if (this.isMulti) {
+            this._engine.resolveMultiFramebuffer(this);
+        }
+        else {
+            this._engine.resolveFramebuffer(this);
+        }
+    }
+    /**
+     * Generates mipmaps for each texture of the render target
+     */
+    generateMipMaps() {
+        if (this._engine._currentRenderTarget === this) {
+            this._engine.unBindFramebuffer(this, true);
+        }
+        if (this.isMulti) {
+            this._engine.generateMipMapsMultiFramebuffer(this);
+        }
+        else {
+            this._engine.generateMipMapsFramebuffer(this);
+        }
+    }
+    /**
      * Initializes the render target wrapper
      * @param isMulti true if the wrapper is a multi render target
      * @param isCube true if the wrapper should render to a cube texture
@@ -12785,6 +13008,23 @@ class RenderTargetWrapper {
         this._generateDepthBuffer = false;
         /** @internal */
         this._depthStencilTextureWithStencil = false;
+        /**
+         * Sets this property to true to disable the automatic MSAA resolve that happens when the render target wrapper is unbound (default is false)
+         */
+        this.disableAutomaticMSAAResolve = false;
+        /**
+         * Indicates if MSAA color texture(s) should be resolved when a resolve occur (either automatically by the engine or manually by the user) (default is true)
+         * Note that you can trigger a MSAA resolve at any time by calling resolveMSAATextures()
+         */
+        this.resolveMSAAColors = true;
+        /**
+         * Indicates if MSAA depth texture should be resolved when a resolve occur (either automatically by the engine or manually by the user) (default is false)
+         */
+        this.resolveMSAADepth = false;
+        /**
+         * Indicates if MSAA stencil texture should be resolved when a resolve occur (either automatically by the engine or manually by the user) (default is false)
+         */
+        this.resolveMSAAStencil = false;
         this._isMulti = isMulti;
         this._isCube = isCube;
         this._size = size;
@@ -13068,7 +13308,7 @@ class RenderTargetWrapper {
      */
     releaseTextures() {
         if (this._textures) {
-            for (let i = 0; i < this._textures?.length ?? 0; ++i) {
+            for (let i = 0; i < this._textures.length; ++i) {
                 this._textures[i].dispose();
             }
         }
@@ -13091,8 +13331,24 @@ class RenderTargetWrapper {
 ;// ./node_modules/@babylonjs/core/Engines/WebGL/webGLRenderTargetWrapper.js
 
 
+
 /** @internal */
 class WebGLRenderTargetWrapper extends RenderTargetWrapper {
+    setDepthStencilTexture(texture, disposeExisting = true) {
+        super.setDepthStencilTexture(texture, disposeExisting);
+        if (!texture) {
+            return;
+        }
+        const engine = this._engine;
+        const gl = this._context;
+        const hardwareTexture = texture._hardwareTexture;
+        if (hardwareTexture && texture._autoMSAAManagement && this._MSAAFramebuffer) {
+            const currentFB = engine._currentFramebuffer;
+            engine._bindUnboundFramebuffer(this._MSAAFramebuffer);
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, (0,Textures_internalTexture/* HasStencilAspect */.$l)(texture.format) ? gl.DEPTH_STENCIL_ATTACHMENT : gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, hardwareTexture.getMSAARenderBuffer());
+            engine._bindUnboundFramebuffer(currentFB);
+        }
+    }
     constructor(isMulti, isCube, size, engine, context) {
         super(isMulti, isCube, size, engine);
         /**
@@ -13202,36 +13458,43 @@ class WebGLRenderTargetWrapper extends RenderTargetWrapper {
      * @param lodLevel defines the lod level to bind to the frame buffer
      */
     _bindTextureRenderTarget(texture, attachmentIndex = 0, faceIndexOrLayer, lodLevel = 0) {
-        if (!texture._hardwareTexture) {
+        const hardwareTexture = texture._hardwareTexture;
+        if (!hardwareTexture) {
             return;
         }
         const framebuffer = this._framebuffer;
         const engine = this._engine;
         const currentFB = engine._currentFramebuffer;
         engine._bindUnboundFramebuffer(framebuffer);
+        let attachment;
         if (engine.webGLVersion > 1) {
             const gl = this._context;
-            const attachment = gl["COLOR_ATTACHMENT" + attachmentIndex];
+            attachment = gl["COLOR_ATTACHMENT" + attachmentIndex];
             if (texture.is2DArray || texture.is3D) {
                 faceIndexOrLayer = faceIndexOrLayer ?? this.layerIndices?.[attachmentIndex] ?? 0;
-                gl.framebufferTextureLayer(gl.FRAMEBUFFER, attachment, texture._hardwareTexture.underlyingResource, lodLevel, faceIndexOrLayer);
+                gl.framebufferTextureLayer(gl.FRAMEBUFFER, attachment, hardwareTexture.underlyingResource, lodLevel, faceIndexOrLayer);
             }
             else if (texture.isCube) {
                 // if face index is not specified, try to query it from faceIndices
                 // default is face 0
                 faceIndexOrLayer = faceIndexOrLayer ?? this.faceIndices?.[attachmentIndex] ?? 0;
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, gl.TEXTURE_CUBE_MAP_POSITIVE_X + faceIndexOrLayer, texture._hardwareTexture.underlyingResource, lodLevel);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, gl.TEXTURE_CUBE_MAP_POSITIVE_X + faceIndexOrLayer, hardwareTexture.underlyingResource, lodLevel);
             }
             else {
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, gl.TEXTURE_2D, texture._hardwareTexture.underlyingResource, lodLevel);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, gl.TEXTURE_2D, hardwareTexture.underlyingResource, lodLevel);
             }
         }
         else {
             // Default behavior (WebGL)
             const gl = this._context;
-            const attachment = gl["COLOR_ATTACHMENT" + attachmentIndex + "_WEBGL"];
+            attachment = gl["COLOR_ATTACHMENT" + attachmentIndex + "_WEBGL"];
             const target = faceIndexOrLayer !== undefined ? gl.TEXTURE_CUBE_MAP_POSITIVE_X + faceIndexOrLayer : gl.TEXTURE_2D;
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, target, texture._hardwareTexture.underlyingResource, lodLevel);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, attachment, target, hardwareTexture.underlyingResource, lodLevel);
+        }
+        if (texture._autoMSAAManagement && this._MSAAFramebuffer) {
+            const gl = this._context;
+            engine._bindUnboundFramebuffer(this._MSAAFramebuffer);
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, attachment, gl.RENDERBUFFER, hardwareTexture.getMSAARenderBuffer());
         }
         engine._bindUnboundFramebuffer(currentFB);
     }
@@ -13292,6 +13555,13 @@ class WebGLRenderTargetWrapper extends RenderTargetWrapper {
         else if (texture.isCube) {
             this._bindTextureRenderTarget(this.textures[index], index, this.faceIndices[index]);
         }
+    }
+    resolveMSAATextures() {
+        const engine = this._engine;
+        const currentFramebuffer = engine._currentFramebuffer;
+        engine._bindUnboundFramebuffer(this._MSAAFramebuffer);
+        super.resolveMSAATextures();
+        engine._bindUnboundFramebuffer(currentFramebuffer);
     }
     dispose(disposeOnlyFramebuffers = this._disposeOnlyFramebuffers) {
         const gl = this._context;
@@ -13408,7 +13678,7 @@ thinEngine.ThinEngine.prototype._createDepthStencilTexture = function (size, opt
     else if (depth !== 0) {
         target = gl.TEXTURE_3D;
     }
-    const internalTexture = new Textures_internalTexture/* InternalTexture */.h(this, 12 /* InternalTextureSource.DepthStencil */);
+    const internalTexture = new Textures_internalTexture/* InternalTexture */.hV(this, 12 /* InternalTextureSource.DepthStencil */);
     internalTexture.label = options.label;
     if (!this._caps.depthTextureExtension) {
         logger/* Logger */.V.Error("Depth texture is not supported by your browser or hardware.");
@@ -13440,19 +13710,7 @@ thinEngine.ThinEngine.prototype._createDepthStencilTexture = function (size, opt
     const hasStencil = internalTexture.format === 17 ||
         internalTexture.format === 13 ||
         internalTexture.format === 18;
-    let type = gl.UNSIGNED_INT;
-    if (internalTexture.format === 15) {
-        type = gl.UNSIGNED_SHORT;
-    }
-    else if (internalTexture.format === 17 || internalTexture.format === 13) {
-        type = gl.UNSIGNED_INT_24_8;
-    }
-    else if (internalTexture.format === 14) {
-        type = gl.FLOAT;
-    }
-    else if (internalTexture.format === 18) {
-        type = gl.FLOAT_32_UNSIGNED_INT_24_8_REV;
-    }
+    const type = this._getWebGLTextureTypeFromDepthTextureFormat(internalTexture.format);
     const format = hasStencil ? gl.DEPTH_STENCIL : gl.DEPTH_COMPONENT;
     const internalFormat = this._getInternalFormatFromDepthTextureFormat(internalTexture.format, true, hasStencil);
     if (internalTexture.is2DArray) {
@@ -13600,7 +13858,7 @@ thinEngine.ThinEngine.prototype.createRenderTargetCubeTexture = function (size, 
         fullOptions.samplingMode = 1;
     }
     const gl = this._gl;
-    const texture = new Textures_internalTexture/* InternalTexture */.h(this, 5 /* InternalTextureSource.RenderTarget */);
+    const texture = new Textures_internalTexture/* InternalTexture */.hV(this, 5 /* InternalTextureSource.RenderTarget */);
     this._bindTextureDirectly(gl.TEXTURE_CUBE_MAP, texture, true);
     const filters = this._getSamplingParameters(fullOptions.samplingMode, fullOptions.generateMipMaps);
     if (fullOptions.type === 1 && !this._caps.textureFloat) {
@@ -13646,8 +13904,6 @@ thinEngine.ThinEngine.prototype.createRenderTargetCubeTexture = function (size, 
 var sphericalPolynomial = __webpack_require__(4640);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/baseTexture.js + 1 modules
 var baseTexture = __webpack_require__(2667);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/dds.js + 1 modules
-var dds = __webpack_require__(3537);
 ;// ./node_modules/@babylonjs/core/Engines/Extensions/engine.prefilteredCubeTexture.js
 
 
@@ -13655,9 +13911,8 @@ var dds = __webpack_require__(3537);
 
 
 
-
 thinEngine.ThinEngine.prototype.createPrefilteredCubeTexture = function (rootUrl, scene, lodScale, lodOffset, onLoad = null, onError = null, format, forcedExtension = null, createPolynomials = true) {
-    const callback = (loadData) => {
+    const callback = async (loadData) => {
         if (!loadData) {
             if (onLoad) {
                 onLoad(null);
@@ -13685,6 +13940,8 @@ thinEngine.ThinEngine.prototype.createPrefilteredCubeTexture = function (rootUrl
         if (!width) {
             return;
         }
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        const { DDSTools } = await Promise.all(/* import() */[__webpack_require__.e(553), __webpack_require__.e(537)]).then(__webpack_require__.bind(__webpack_require__, 3537));
         const textures = [];
         for (let i = 0; i < mipSlices; i++) {
             //compute LOD from even spacing in smoothness (matching shader calculation)
@@ -13694,7 +13951,7 @@ thinEngine.ThinEngine.prototype.createPrefilteredCubeTexture = function (rootUrl
             const maxLODIndex = Math.log2(width) * lodScale + lodOffset; // roughness = 1
             const lodIndex = minLODIndex + (maxLODIndex - minLODIndex) * roughness;
             const mipmapIndex = Math.round(Math.min(Math.max(lodIndex, 0), maxLODIndex));
-            const glTextureFromLod = new Textures_internalTexture/* InternalTexture */.h(this, 2 /* InternalTextureSource.Temp */);
+            const glTextureFromLod = new Textures_internalTexture/* InternalTexture */.hV(this, 2 /* InternalTextureSource.Temp */);
             glTextureFromLod.type = texture.type;
             glTextureFromLod.format = texture.format;
             glTextureFromLod.width = Math.pow(2, Math.max(Math.log2(width) - mipmapIndex, 0));
@@ -13712,7 +13969,7 @@ thinEngine.ThinEngine.prototype.createPrefilteredCubeTexture = function (rootUrl
                 const info = loadData.info;
                 const data = loadData.data;
                 this._unpackFlipY(info.isCompressed);
-                dds/* DDSTools */.D.UploadDDSLevels(this, glTextureFromLod, data, info, true, 6, mipmapIndex);
+                DDSTools.UploadDDSLevels(this, glTextureFromLod, data, info, true, 6, mipmapIndex);
             }
             else {
                 logger/* Logger */.V.Warn("DDS is the only prefiltered cube map supported so far.");
@@ -14705,10 +14962,6 @@ class Engine extends thinEngine.ThinEngine {
         }
         this._features.supportRenderPasses = true;
         options = this._creationOptions;
-        if (canvasOrContext.getContext) {
-            const canvas = canvasOrContext;
-            this._sharedInit(canvas);
-        }
     }
     _initGLContext() {
         super._initGLContext();
@@ -15120,7 +15373,7 @@ class Engine extends thinEngine.ThinEngine {
      */
     wrapWebGLTexture(texture, hasMipMaps = false, samplingMode = 3, width = 0, height = 0) {
         const hardwareTexture = new webGLHardwareTexture/* WebGLHardwareTexture */.d(texture, this._gl);
-        const internalTexture = new Textures_internalTexture/* InternalTexture */.h(this, 0 /* InternalTextureSource.Unknown */, true);
+        const internalTexture = new Textures_internalTexture/* InternalTexture */.hV(this, 0 /* InternalTextureSource.Unknown */, true);
         internalTexture._hardwareTexture = hardwareTexture;
         internalTexture.baseWidth = width;
         internalTexture.baseHeight = height;
@@ -15356,6 +15609,22 @@ Engine.TEXTUREFORMAT_RGBA = 5;
 Engine.TEXTUREFORMAT_RED = 6;
 /** RED (2nd reference) */
 Engine.TEXTUREFORMAT_R = 6;
+/** RED unsigned short normed to [0, 1] **/
+Engine.TEXTUREFORMAT_R16_UNORM = 33322;
+/** RG unsigned short normed to [0, 1] **/
+Engine.TEXTUREFORMAT_RG16_UNORM = 33324;
+/** RGB unsigned short normed to [0, 1] **/
+Engine.TEXTUREFORMAT_RGB16_UNORM = 32852;
+/** RGBA unsigned short normed to [0, 1] **/
+Engine.TEXTUREFORMAT_RGBA16_UNORM = 32859;
+/** RED signed short normed to [-1, 1] **/
+Engine.TEXTUREFORMAT_R16_SNORM = 36760;
+/** RG signed short normed to [-1, 1] **/
+Engine.TEXTUREFORMAT_RG16_SNORM = 36761;
+/** RGB signed short normed to [-1, 1] **/
+Engine.TEXTUREFORMAT_RGB16_SNORM = 36762;
+/** RGBA signed short normed to [-1, 1] **/
+Engine.TEXTUREFORMAT_RGBA16_SNORM = 36763;
 /** RG */
 Engine.TEXTUREFORMAT_RG = 7;
 /** RED_INTEGER */
@@ -15370,7 +15639,7 @@ Engine.TEXTUREFORMAT_RGB_INTEGER = 10;
 Engine.TEXTUREFORMAT_RGBA_INTEGER = 11;
 /** UNSIGNED_BYTE */
 Engine.TEXTURETYPE_UNSIGNED_BYTE = 0;
-/** UNSIGNED_BYTE (2nd reference) */
+/** @deprecated use more explicit TEXTURETYPE_UNSIGNED_BYTE instead. Use TEXTURETYPE_UNSIGNED_INTEGER for 32bits values.*/
 Engine.TEXTURETYPE_UNSIGNED_INT = 0;
 /** FLOAT */
 Engine.TEXTURETYPE_FLOAT = 1;
@@ -15629,6 +15898,7 @@ __webpack_require__.d(__webpack_exports__, {
   tI: () => (/* binding */ _createShaderProgram),
   bS: () => (/* binding */ _executeWhenRenderingStateIsCompiled),
   tg: () => (/* binding */ _finalizePipelineContext),
+  A5: () => (/* binding */ _isRenderingStateCompiled),
   YM: () => (/* binding */ _preparePipelineContext),
   C5: () => (/* binding */ _setProgram),
   GX: () => (/* binding */ createPipelineContext),
@@ -16235,6 +16505,8 @@ function getStateObject(context) {
             // use feature detection. instanceof returns false. This only exists on WebGL2 context
             _webGLVersion: context.TEXTURE_BINDING_3D ? 2 : 1,
             _context: context,
+            // when using the function without an engine we need to set it to enable parallel compilation
+            parallelShaderCompile: context.getExtension("KHR_parallel_shader_compile") || undefined,
             cachedPipelines: {},
         };
         _stateObject.set(context, state);
@@ -16322,6 +16594,21 @@ function _createShaderProgram(pipelineContext, vertexShader, fragmentShader, con
         _finalizePipelineContext(pipelineContext, context, validateShaderPrograms);
     }
     return shaderProgram;
+}
+/**
+ * @internal
+ */
+function _isRenderingStateCompiled(pipelineContext, gl, validateShaderPrograms) {
+    const webGLPipelineContext = pipelineContext;
+    if (webGLPipelineContext._isDisposed) {
+        return false;
+    }
+    const stateObject = getStateObject(gl);
+    if (gl.getProgramParameter(webGLPipelineContext.program, stateObject.parallelShaderCompile.COMPLETION_STATUS_KHR)) {
+        _finalizePipelineContext(webGLPipelineContext, gl, validateShaderPrograms);
+        return true;
+    }
+    return false;
 }
 /**
  * @internal
@@ -16678,7 +16965,6 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         let canvas = null;
         if (canvasOrContext.getContext) {
             canvas = canvasOrContext;
-            this._renderingCanvas = canvas;
             if (options.preserveDrawingBuffer === undefined) {
                 options.preserveDrawingBuffer = false;
             }
@@ -16778,7 +17064,7 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         }
         else {
             this._gl = canvasOrContext;
-            this._renderingCanvas = this._gl.canvas;
+            canvas = this._gl.canvas;
             if (this._gl.renderbufferStorageMultisample) {
                 this._webGLVersion = 2.0;
                 this._shaderPlatformName = "WEBGL2";
@@ -16791,6 +17077,7 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
                 options.stencil = attributes.stencil;
             }
         }
+        this._sharedInit(canvas);
         // Ensures a consistent color space unpacking of textures cross browser.
         this._gl.pixelStorei(this._gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, this._gl.NONE);
         if (options.useHighPrecisionFloats !== undefined) {
@@ -16872,7 +17159,7 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
             etc1: this._gl.getExtension("WEBGL_compressed_texture_etc1") || this._gl.getExtension("WEBKIT_WEBGL_compressed_texture_etc1"),
             etc2: this._gl.getExtension("WEBGL_compressed_texture_etc") ||
                 this._gl.getExtension("WEBKIT_WEBGL_compressed_texture_etc") ||
-                this._gl.getExtension("WEBGL_compressed_texture_es3_0"),
+                this._gl.getExtension("WEBGL_compressed_texture_es3_0"), // also a requirement of OpenGL ES 3
             textureAnisotropicFilterExtension: this._gl.getExtension("EXT_texture_filter_anisotropic") ||
                 this._gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic") ||
                 this._gl.getExtension("MOZ_EXT_texture_filter_anisotropic"),
@@ -16910,6 +17197,7 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
             textureMaxLevel: this._webGLVersion > 1,
             texture2DArrayMaxLayerCount: this._webGLVersion > 1 ? this._gl.getParameter(this._gl.MAX_ARRAY_TEXTURE_LAYERS) : 128,
             disableMorphTargetTexture: false,
+            textureNorm16: this._gl.getExtension("EXT_texture_norm16") ? true : false,
         };
         this._caps.supportFloatTexturesResolve = this._caps.colorBufferFloat;
         this._caps.rg11b10ufColorRenderable = this._caps.colorBufferFloat;
@@ -16954,6 +17242,16 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         this._caps.textureFloatRender = this._caps.textureFloat && this._canRenderToFloatFramebuffer() ? true : false;
         this._caps.textureHalfFloatLinearFiltering =
             this._webGLVersion > 1 || (this._caps.textureHalfFloat && this._gl.getExtension("OES_texture_half_float_linear")) ? true : false;
+        if (this._caps.textureNorm16) {
+            this._gl.R16_EXT = 0x822a;
+            this._gl.RG16_EXT = 0x822c;
+            this._gl.RGB16_EXT = 0x8054;
+            this._gl.RGBA16_EXT = 0x805b;
+            this._gl.R16_SNORM_EXT = 0x8f98;
+            this._gl.RG16_SNORM_EXT = 0x8f99;
+            this._gl.RGB16_SNORM_EXT = 0x8f9a;
+            this._gl.RGBA16_SNORM_EXT = 0x8f9b;
+        }
         // Compressed formats
         if (this._caps.astc) {
             this._gl.COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR = this._caps.astc.COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR;
@@ -17430,20 +17728,21 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
     unBindFramebuffer(texture, disableGenerateMipMaps = false, onBeforeUnbind) {
         const webglRTWrapper = texture;
         this._currentRenderTarget = null;
-        // If MSAA, we need to bitblt back to main texture
-        const gl = this._gl;
-        if (webglRTWrapper._MSAAFramebuffer) {
+        if (!webglRTWrapper.disableAutomaticMSAAResolve) {
             if (texture.isMulti) {
-                // This texture is part of a MRT texture, we need to treat all attachments
-                this.unBindMultiColorAttachmentFramebuffer(texture, disableGenerateMipMaps, onBeforeUnbind);
-                return;
+                this.resolveMultiFramebuffer(texture);
             }
-            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, webglRTWrapper._MSAAFramebuffer);
-            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, webglRTWrapper._framebuffer);
-            gl.blitFramebuffer(0, 0, texture.width, texture.height, 0, 0, texture.width, texture.height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+            else {
+                this.resolveFramebuffer(texture);
+            }
         }
-        if (texture.texture?.generateMipMaps && !disableGenerateMipMaps && !texture.isCube) {
-            this.generateMipmaps(texture.texture);
+        if (!disableGenerateMipMaps) {
+            if (texture.isMulti) {
+                this.generateMipMapsMultiFramebuffer(texture);
+            }
+            else {
+                this.generateMipMapsFramebuffer(texture);
+            }
         }
         if (onBeforeUnbind) {
             if (webglRTWrapper._MSAAFramebuffer) {
@@ -17453,6 +17752,33 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
             onBeforeUnbind();
         }
         this._bindUnboundFramebuffer(null);
+    }
+    /**
+     * Generates mipmaps for the texture of the (single) render target
+     * @param texture The render target containing the texture to generate the mipmaps for
+     */
+    generateMipMapsFramebuffer(texture) {
+        if (!texture.isMulti && texture.texture?.generateMipMaps && !texture.isCube) {
+            this.generateMipmaps(texture.texture);
+        }
+    }
+    /**
+     * Resolves the MSAA texture of the (single) render target into its non-MSAA version.
+     * Note that if "texture" is not a MSAA render target, no resolve is performed.
+     * @param texture  The render target texture containing the MSAA textures to resolve
+     */
+    resolveFramebuffer(texture) {
+        const rtWrapper = texture;
+        const gl = this._gl;
+        if (!rtWrapper._MSAAFramebuffer || rtWrapper.isMulti) {
+            return;
+        }
+        let bufferBits = rtWrapper.resolveMSAAColors ? gl.COLOR_BUFFER_BIT : 0;
+        bufferBits |= rtWrapper._generateDepthBuffer && rtWrapper.resolveMSAADepth ? gl.DEPTH_BUFFER_BIT : 0;
+        bufferBits |= rtWrapper._generateStencilBuffer && rtWrapper.resolveMSAAStencil ? gl.STENCIL_BUFFER_BIT : 0;
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, rtWrapper._MSAAFramebuffer);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, rtWrapper._framebuffer);
+        gl.blitFramebuffer(0, 0, texture.width, texture.height, 0, 0, texture.width, texture.height, bufferBits, gl.NEAREST);
     }
     /**
      * Force a webGL flush (ie. a flush of all waiting webGL commands)
@@ -18063,7 +18389,9 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         if (webGLPipelineContext && webGLPipelineContext.program) {
             webGLPipelineContext.program.__SPECTOR_rebuildProgram = null;
             (0,effect_functions/* resetCachedPipeline */.mO)(webGLPipelineContext);
-            this._gl.deleteProgram(webGLPipelineContext.program);
+            if (this._gl) {
+                this._gl.deleteProgram(webGLPipelineContext.program);
+            }
         }
     }
     /**
@@ -18209,15 +18537,10 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
      * @internal
      */
     _isRenderingStateCompiled(pipelineContext) {
-        const webGLPipelineContext = pipelineContext;
-        if (this._isDisposed || webGLPipelineContext._isDisposed) {
+        if (this._isDisposed) {
             return false;
         }
-        if (this._gl.getProgramParameter(webGLPipelineContext.program, this._caps.parallelShaderCompile.COMPLETION_STATUS_KHR)) {
-            this._finalizePipelineContext(webGLPipelineContext);
-            return true;
-        }
-        return false;
+        return (0,thinEngine_functions/* _isRenderingStateCompiled */.A5)(pipelineContext, this._gl, this.validateShaderPrograms);
     }
     /**
      * @internal
@@ -18829,20 +19152,26 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
      */
     _createInternalTexture(size, options, delayGPUTextureCreation = true, source = 0 /* InternalTextureSource.Unknown */) {
         let generateMipMaps = false;
+        let createMipMaps = false;
         let type = 0;
         let samplingMode = 3;
         let format = 5;
         let useSRGBBuffer = false;
         let samples = 1;
         let label;
+        let createMSAATexture = false;
+        let comparisonFunction = 0;
         if (options !== undefined && typeof options === "object") {
             generateMipMaps = !!options.generateMipMaps;
+            createMipMaps = !!options.createMipMaps;
             type = options.type === undefined ? 0 : options.type;
             samplingMode = options.samplingMode === undefined ? 3 : options.samplingMode;
             format = options.format === undefined ? 5 : options.format;
             useSRGBBuffer = options.useSRGBBuffer === undefined ? false : options.useSRGBBuffer;
             samples = options.samples ?? 1;
             label = options.label;
+            createMSAATexture = !!options.createMSAATexture;
+            comparisonFunction = options.comparisonFunction || 0;
         }
         else {
             generateMipMaps = !!options;
@@ -18860,17 +19189,21 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
             type = 0;
             logger/* Logger */.V.Warn("Float textures are not supported. Type forced to TEXTURETYPE_UNSIGNED_BYTE");
         }
+        const isDepthTexture = (0,internalTexture/* IsDepthTexture */.vl)(format);
+        const hasStencil = (0,internalTexture/* HasStencilAspect */.$l)(format);
         const gl = this._gl;
-        const texture = new internalTexture/* InternalTexture */.h(this, source);
+        const texture = new internalTexture/* InternalTexture */.hV(this, source);
         const width = size.width || size;
         const height = size.height || size;
         const depth = size.depth || 0;
         const layers = size.layers || 0;
-        const filters = this._getSamplingParameters(samplingMode, generateMipMaps);
+        const filters = this._getSamplingParameters(samplingMode, (generateMipMaps || createMipMaps) && !isDepthTexture);
         const target = layers !== 0 ? gl.TEXTURE_2D_ARRAY : depth !== 0 ? gl.TEXTURE_3D : gl.TEXTURE_2D;
-        const sizedFormat = this._getRGBABufferInternalSizedFormat(type, format, useSRGBBuffer);
-        const internalFormat = this._getInternalFormat(format);
-        const textureType = this._getWebGLTextureType(type);
+        const sizedFormat = isDepthTexture
+            ? this._getInternalFormatFromDepthTextureFormat(format, true, hasStencil)
+            : this._getRGBABufferInternalSizedFormat(type, format, useSRGBBuffer);
+        const internalFormat = isDepthTexture ? (hasStencil ? gl.DEPTH_STENCIL : gl.DEPTH_COMPONENT) : this._getInternalFormat(format);
+        const textureType = isDepthTexture ? this._getWebGLTextureTypeFromDepthTextureFormat(format) : this._getWebGLTextureType(type);
         // Bind
         this._bindTextureDirectly(target, texture);
         if (layers !== 0) {
@@ -18888,8 +19221,18 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, filters.min);
         gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        if (isDepthTexture && this.webGLVersion > 1) {
+            if (comparisonFunction === 0) {
+                gl.texParameteri(target, gl.TEXTURE_COMPARE_FUNC, 515);
+                gl.texParameteri(target, gl.TEXTURE_COMPARE_MODE, gl.NONE);
+            }
+            else {
+                gl.texParameteri(target, gl.TEXTURE_COMPARE_FUNC, comparisonFunction);
+                gl.texParameteri(target, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+            }
+        }
         // MipMaps
-        if (generateMipMaps) {
+        if (generateMipMaps || createMipMaps) {
             this._gl.generateMipmap(target);
         }
         this._bindTextureDirectly(target, null);
@@ -18898,7 +19241,7 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         texture.baseHeight = height;
         texture.width = width;
         texture.height = height;
-        texture.depth = layers;
+        texture.depth = layers || depth;
         texture.isReady = true;
         texture.samples = samples;
         texture.generateMipMaps = generateMipMaps;
@@ -18906,7 +19249,26 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         texture.type = type;
         texture.format = format;
         texture.label = label;
+        texture.comparisonFunction = comparisonFunction;
         this._internalTexturesCache.push(texture);
+        if (createMSAATexture) {
+            let renderBuffer = null;
+            if ((0,internalTexture/* IsDepthTexture */.vl)(texture.format)) {
+                renderBuffer = this._setupFramebufferDepthAttachments((0,internalTexture/* HasStencilAspect */.$l)(texture.format), texture.format !== 19, texture.width, texture.height, samples, texture.format, true);
+            }
+            else {
+                renderBuffer = this._createRenderBuffer(texture.width, texture.height, samples, -1 /* not used */, this._getRGBABufferInternalSizedFormat(texture.type, texture.format, texture._useSRGBBuffer), -1 /* attachment */);
+            }
+            if (!renderBuffer) {
+                throw new Error("Unable to create render buffer");
+            }
+            texture._autoMSAAManagement = true;
+            let hardwareTexture = texture._hardwareTexture;
+            if (!hardwareTexture) {
+                hardwareTexture = texture._hardwareTexture = this._createHardwareTexture();
+            }
+            hardwareTexture.addMSAARenderBuffer(renderBuffer);
+        }
         return texture;
     }
     /**
@@ -18965,7 +19327,7 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
             }
             else {
                 // Using shaders when possible to rescale because canvas.drawImage is lossy
-                const source = new internalTexture/* InternalTexture */.h(this, 2 /* InternalTextureSource.Temp */);
+                const source = new internalTexture/* InternalTexture */.hV(this, 2 /* InternalTextureSource.Temp */);
                 this._bindTextureDirectly(gl.TEXTURE_2D, source, true);
                 gl.texImage2D(gl.TEXTURE_2D, 0, tip.internalFormat, tip.format, tip.type, img);
                 this._rescaleTexture(source, texture, scene, tip.format, () => {
@@ -19302,22 +19664,42 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         }
         return internalFormat;
     }
+    _getWebGLTextureTypeFromDepthTextureFormat(textureFormat) {
+        const gl = this._gl;
+        let type = gl.UNSIGNED_INT;
+        if (textureFormat === 15) {
+            type = gl.UNSIGNED_SHORT;
+        }
+        else if (textureFormat === 17 || textureFormat === 13) {
+            type = gl.UNSIGNED_INT_24_8;
+        }
+        else if (textureFormat === 14) {
+            type = gl.FLOAT;
+        }
+        else if (textureFormat === 18) {
+            type = gl.FLOAT_32_UNSIGNED_INT_24_8_REV;
+        }
+        else if (textureFormat === 19) {
+            type = gl.UNSIGNED_BYTE;
+        }
+        return type;
+    }
     /**
      * @internal
      */
-    _setupFramebufferDepthAttachments(generateStencilBuffer, generateDepthBuffer, width, height, samples = 1, depthTextureFormat) {
+    _setupFramebufferDepthAttachments(generateStencilBuffer, generateDepthBuffer, width, height, samples = 1, depthTextureFormat, dontBindRenderBufferToFrameBuffer = false) {
         const gl = this._gl;
         depthTextureFormat = depthTextureFormat ?? (generateStencilBuffer ? 13 : 14);
         const internalFormat = this._getInternalFormatFromDepthTextureFormat(depthTextureFormat, generateDepthBuffer, generateStencilBuffer);
         // Create the depth/stencil buffer
         if (generateStencilBuffer && generateDepthBuffer) {
-            return this._createRenderBuffer(width, height, samples, gl.DEPTH_STENCIL, internalFormat, gl.DEPTH_STENCIL_ATTACHMENT);
+            return this._createRenderBuffer(width, height, samples, gl.DEPTH_STENCIL, internalFormat, dontBindRenderBufferToFrameBuffer ? -1 : gl.DEPTH_STENCIL_ATTACHMENT);
         }
         if (generateDepthBuffer) {
-            return this._createRenderBuffer(width, height, samples, internalFormat, internalFormat, gl.DEPTH_ATTACHMENT);
+            return this._createRenderBuffer(width, height, samples, internalFormat, internalFormat, dontBindRenderBufferToFrameBuffer ? -1 : gl.DEPTH_ATTACHMENT);
         }
         if (generateStencilBuffer) {
-            return this._createRenderBuffer(width, height, samples, internalFormat, internalFormat, gl.STENCIL_ATTACHMENT);
+            return this._createRenderBuffer(width, height, samples, internalFormat, internalFormat, dontBindRenderBufferToFrameBuffer ? -1 : gl.STENCIL_ATTACHMENT);
         }
         return null;
     }
@@ -19338,7 +19720,9 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         else {
             gl.renderbufferStorage(gl.RENDERBUFFER, internalFormat, width, height);
         }
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, attachment, gl.RENDERBUFFER, renderBuffer);
+        if (attachment !== -1) {
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, attachment, gl.RENDERBUFFER, renderBuffer);
+        }
         if (unbindBuffer) {
             gl.bindRenderbuffer(gl.RENDERBUFFER, null);
         }
@@ -19666,7 +20050,7 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         const keys = Object.keys(this._compiledEffects);
         for (const name of keys) {
             const effect = this._compiledEffects[name];
-            effect.dispose();
+            effect.dispose(true);
         }
         this._compiledEffects = {};
     }
@@ -19854,15 +20238,23 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
                 internalFormat = this._gl.LUMINANCE_ALPHA;
                 break;
             case 6:
+            case 33322:
+            case 36760:
                 internalFormat = this._gl.RED;
                 break;
             case 7:
+            case 33324:
+            case 36761:
                 internalFormat = this._gl.RG;
                 break;
             case 4:
+            case 32852:
+            case 36762:
                 internalFormat = useSRGBBuffer ? this._glSRGBExtensionValues.SRGB : this._gl.RGB;
                 break;
             case 5:
+            case 32859:
+            case 36763:
                 internalFormat = useSRGBBuffer ? this._glSRGBExtensionValues.SRGB8_ALPHA8 : this._gl.RGBA;
                 break;
         }
@@ -19954,6 +20346,14 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
                 switch (format) {
                     case 8:
                         return this._gl.R16I;
+                    case 36760:
+                        return this._gl.R16_SNORM_EXT;
+                    case 36761:
+                        return this._gl.RG16_SNORM_EXT;
+                    case 36762:
+                        return this._gl.RGB16_SNORM_EXT;
+                    case 36763:
+                        return this._gl.RGBA16_SNORM_EXT;
                     case 9:
                         return this._gl.RG16I;
                     case 10:
@@ -19967,6 +20367,14 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
                 switch (format) {
                     case 8:
                         return this._gl.R16UI;
+                    case 33322:
+                        return this._gl.R16_EXT;
+                    case 33324:
+                        return this._gl.RG16_EXT;
+                    case 32852:
+                        return this._gl.RGB16_EXT;
+                    case 32859:
+                        return this._gl.RGBA16_EXT;
                     case 9:
                         return this._gl.RG16UI;
                     case 10:
@@ -20428,8 +20836,8 @@ var buffer = __webpack_require__(5616);
 var light = __webpack_require__(4704);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/texture.js + 1 modules
 var texture = __webpack_require__(2781);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/renderTargetTexture.js
-var renderTargetTexture = __webpack_require__(5474);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/renderTargetTexture.js + 1 modules
+var renderTargetTexture = __webpack_require__(6882);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/PostProcesses/postProcess.js
 var postProcess = __webpack_require__(7891);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/tslib.es6.js
@@ -22549,8 +22957,8 @@ ShadowGenerator._SceneComponentInitialization = (_) => {
 var Shadows_shadowGenerator = __webpack_require__(9711);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
 var math_vector = __webpack_require__(9923);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/renderTargetTexture.js
-var renderTargetTexture = __webpack_require__(5474);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/renderTargetTexture.js + 1 modules
+var renderTargetTexture = __webpack_require__(6882);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/devTools.js
 var devTools = __webpack_require__(5503);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Culling/boundingInfo.js + 2 modules
@@ -26067,14 +26475,17 @@ function _GetCompatibleTextureLoader(extension, mimeType) {
         extension = ".ktx";
     }
     if (!_registeredTextureLoaders.has(extension)) {
+        if (extension.endsWith(".ies")) {
+            registerTextureLoader(".ies", () => __webpack_require__.e(/* import() */ 189).then(__webpack_require__.bind(__webpack_require__, 8189)).then((module) => new module._IESTextureLoader()));
+        }
         if (extension.endsWith(".dds")) {
-            registerTextureLoader(".dds", () => __webpack_require__.e(/* import() */ 994).then(__webpack_require__.bind(__webpack_require__, 994)).then((module) => new module._DDSTextureLoader()));
+            registerTextureLoader(".dds", () => Promise.all(/* import() */[__webpack_require__.e(553), __webpack_require__.e(994)]).then(__webpack_require__.bind(__webpack_require__, 994)).then((module) => new module._DDSTextureLoader()));
         }
         if (extension.endsWith(".basis")) {
             registerTextureLoader(".basis", () => __webpack_require__.e(/* import() */ 692).then(__webpack_require__.bind(__webpack_require__, 6692)).then((module) => new module._BasisTextureLoader()));
         }
         if (extension.endsWith(".env")) {
-            registerTextureLoader(".env", () => __webpack_require__.e(/* import() */ 834).then(__webpack_require__.bind(__webpack_require__, 5834)).then((module) => new module._ENVTextureLoader()));
+            registerTextureLoader(".env", () => Promise.all(/* import() */[__webpack_require__.e(553), __webpack_require__.e(834)]).then(__webpack_require__.bind(__webpack_require__, 5834)).then((module) => new module._ENVTextureLoader()));
         }
         if (extension.endsWith(".hdr")) {
             registerTextureLoader(".hdr", () => __webpack_require__.e(/* import() */ 608).then(__webpack_require__.bind(__webpack_require__, 5608)).then((module) => new module._HDRTextureLoader()));
@@ -27137,6 +27548,9 @@ BaseTexture.DEFAULT_ANISOTROPIC_FILTERING_LEVEL = 4;
 ], BaseTexture.prototype, "name", void 0);
 (0,tslib_es6/* __decorate */.Cg)([
     (0,decorators/* serialize */.lK)()
+], BaseTexture.prototype, "displayName", void 0);
+(0,tslib_es6/* __decorate */.Cg)([
+    (0,decorators/* serialize */.lK)()
 ], BaseTexture.prototype, "metadata", void 0);
 (0,tslib_es6/* __decorate */.Cg)([
     (0,decorators/* serialize */.lK)("hasAlpha")
@@ -27211,10 +27625,12 @@ BaseTexture.DEFAULT_ANISOTROPIC_FILTERING_LEVEL = 4;
 
 // EXPORTS
 __webpack_require__.d(__webpack_exports__, {
-  h: () => (/* binding */ InternalTexture)
+  $l: () => (/* binding */ HasStencilAspect),
+  hV: () => (/* binding */ InternalTexture),
+  vl: () => (/* binding */ IsDepthTexture)
 });
 
-// UNUSED EXPORTS: InternalTextureSource
+// UNUSED EXPORTS: GetTypeForDepthTexture, InternalTextureSource
 
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/observable.js
 var observable = __webpack_require__(9848);
@@ -27351,6 +27767,7 @@ class TextureSampler {
 ;// ./node_modules/@babylonjs/core/Materials/Textures/internalTexture.js
 
 
+
 /**
  * Defines the source of the internal texture
  */
@@ -27417,6 +27834,51 @@ var InternalTextureSource;
      */
     InternalTextureSource[InternalTextureSource["Depth"] = 14] = "Depth";
 })(InternalTextureSource || (InternalTextureSource = {}));
+/**
+ * Checks if a given format is a depth texture format
+ * @param format Format to check
+ * @returns True if the format is a depth texture format
+ */
+function IsDepthTexture(format) {
+    return (format === 13 ||
+        format === 14 ||
+        format === 15 ||
+        format === 16 ||
+        format === 17 ||
+        format === 18 ||
+        format === 19);
+}
+/**
+ * Gets the type of a depth texture for a given format
+ * @param format Format of the texture
+ * @returns The type of the depth texture
+ */
+function GetTypeForDepthTexture(format) {
+    switch (format) {
+        case 13:
+        case 17:
+        case 18:
+        case 14:
+        case 16:
+            return 1;
+        case 15:
+            return 5;
+        case 19:
+            return 0;
+    }
+    return 0;
+}
+/**
+ * Checks if a given format has a stencil aspect
+ * @param format Format to check
+ * @returns True if the format has a stencil aspect
+ */
+function HasStencilAspect(format) {
+    return (format === 13 ||
+        format === 17 ||
+        format === 18 ||
+        format === 19);
+}
 /**
  * Class used to store data associated with WebGL texture data for the engine
  * This class should not be used directly
@@ -27613,6 +28075,8 @@ class InternalTexture extends TextureSampler {
         this._premulAlpha = false;
         /** @internal */
         this._dynamicTextureSource = null;
+        /** @internal */
+        this._autoMSAAManagement = false;
         this._engine = engine;
         this._source = source;
         this._uniqueId = InternalTexture._Counter++;
@@ -27795,45 +28259,43 @@ InternalTexture._Counter = 0;
 
 /***/ }),
 
-/***/ 5474:
+/***/ 6882:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   $: () => (/* binding */ RenderTargetTexture)
-/* harmony export */ });
-/* harmony import */ var _Misc_observable_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9848);
-/* harmony import */ var _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9923);
-/* harmony import */ var _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(2781);
-/* harmony import */ var _PostProcesses_postProcessManager_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(6096);
-/* harmony import */ var _Rendering_renderingManager_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(3099);
-/* harmony import */ var _Misc_arrayTools_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(7309);
-/* harmony import */ var _Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(1597);
-/* harmony import */ var _effect_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(4420);
-/* harmony import */ var _Misc_logger_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(1137);
 
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  $: () => (/* binding */ RenderTargetTexture)
+});
 
-
-
-
-
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/observable.js
+var observable = __webpack_require__(9848);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
+var math_vector = __webpack_require__(9923);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/texture.js + 1 modules
+var texture = __webpack_require__(2781);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/PostProcesses/postProcessManager.js
+var postProcessManager = __webpack_require__(6096);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/tools.functions.js
+var tools_functions = __webpack_require__(1597);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/effect.js
+var effect = __webpack_require__(4420);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/logger.js
+var logger = __webpack_require__(1137);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Rendering/renderingManager.js + 1 modules
+var renderingManager = __webpack_require__(3099);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/arrayTools.js
+var arrayTools = __webpack_require__(7309);
+;// ./node_modules/@babylonjs/core/Rendering/objectRenderer.js
 
 
 
 
 /**
- * Sets a depth stencil texture from a render target on the engine to be used in the shader.
- * @param channel Name of the sampler variable.
- * @param texture Texture to set.
+ * A class that renders objects to the currently bound render target.
+ * This class only renders objects, and is not concerned with the output texture or post-processing.
  */
-_effect_js__WEBPACK_IMPORTED_MODULE_7__/* .Effect */ .M.prototype.setDepthStencilTexture = function (channel, texture) {
-    this._engine.setDepthStencilTexture(this._samplers[channel], this._uniforms[channel], texture, channel);
-};
-/**
- * This Helps creating a texture that will be created from a camera in your scene.
- * It is basically a dynamic texture that could be used to create special effects for instance.
- * Actually, It is the base of lot of effects in the framework like post process, shadows, effect layers and rendering pipelines...
- */
-class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g {
+class ObjectRenderer {
     /**
      * Use this list to define the list of mesh you want to render.
      */
@@ -27849,9 +28311,621 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             this._unObserveRenderList = null;
         }
         if (value) {
-            this._unObserveRenderList = (0,_Misc_arrayTools_js__WEBPACK_IMPORTED_MODULE_5__/* ._ObserveArray */ .lL)(value, this._renderListHasChanged);
+            this._unObserveRenderList = (0,arrayTools/* _ObserveArray */.lL)(value, this._renderListHasChanged);
         }
         this._renderList = value;
+    }
+    /**
+     * Gets the render pass ids used by the object renderer.
+     */
+    get renderPassIds() {
+        return this._renderPassIds;
+    }
+    /**
+     * Gets the current value of the refreshId counter
+     */
+    get currentRefreshId() {
+        return this._currentRefreshId;
+    }
+    /**
+     * Sets a specific material to be used to render a mesh/a list of meshes with this object renderer
+     * @param mesh mesh or array of meshes
+     * @param material material or array of materials to use for this render pass. If undefined is passed, no specific material will be used but the regular material instead (mesh.material). It's possible to provide an array of materials to use a different material for each rendering pass.
+     */
+    setMaterialForRendering(mesh, material) {
+        let meshes;
+        if (!Array.isArray(mesh)) {
+            meshes = [mesh];
+        }
+        else {
+            meshes = mesh;
+        }
+        for (let j = 0; j < meshes.length; ++j) {
+            for (let i = 0; i < this.options.numPasses; ++i) {
+                meshes[j].setMaterialForRenderPass(this._renderPassIds[i], material !== undefined ? (Array.isArray(material) ? material[i] : material) : undefined);
+            }
+        }
+    }
+    /**
+     * Instantiates an object renderer.
+     * @param name The friendly name of the object renderer
+     * @param scene The scene the renderer belongs to
+     * @param options The options used to create the renderer (optional)
+     */
+    constructor(name, scene, options) {
+        this._unObserveRenderList = null;
+        this._renderListHasChanged = (_functionName, previousLength) => {
+            const newLength = this._renderList ? this._renderList.length : 0;
+            if ((previousLength === 0 && newLength > 0) || newLength === 0) {
+                this._scene.meshes.forEach((mesh) => {
+                    mesh._markSubMeshesAsLightDirty();
+                });
+            }
+        };
+        /**
+         * Define the list of particle systems to render. If not provided, will render all the particle systems of the scene.
+         * Note that the particle systems are rendered only if renderParticles is set to true.
+         */
+        this.particleSystemList = null;
+        /**
+         * Use this function to overload the renderList array at rendering time.
+         * Return null to render with the current renderList, else return the list of meshes to use for rendering.
+         * For 2DArray, layerOrFace is the index of the layer that is going to be rendered, else it is the faceIndex of
+         * the cube (if the RTT is a cube, else layerOrFace=0).
+         * The renderList passed to the function is the current render list (the one that will be used if the function returns null).
+         * The length of this list is passed through renderListLength: don't use renderList.length directly because the array can
+         * hold dummy elements!
+         */
+        this.getCustomRenderList = null;
+        /**
+         * Define if particles should be rendered.
+         */
+        this.renderParticles = true;
+        /**
+         * Define if sprites should be rendered.
+         */
+        this.renderSprites = false;
+        /**
+         * Force checking the layerMask property even if a custom list of meshes is provided (ie. if renderList is not undefined)
+         */
+        this.forceLayerMaskCheck = false;
+        /**
+         * An event triggered before rendering the objects
+         */
+        this.onBeforeRenderObservable = new observable/* Observable */.cP();
+        /**
+         * An event triggered after rendering the objects
+         */
+        this.onAfterRenderObservable = new observable/* Observable */.cP();
+        /**
+         * An event triggered before the rendering group is processed
+         */
+        this.onBeforeRenderingManagerRenderObservable = new observable/* Observable */.cP();
+        /**
+         * An event triggered after the rendering group is processed
+         */
+        this.onAfterRenderingManagerRenderObservable = new observable/* Observable */.cP();
+        /**
+         * An event triggered when fast path rendering is used
+         */
+        this.onFastPathRenderObservable = new observable/* Observable */.cP();
+        this._currentRefreshId = -1;
+        this._refreshRate = 1;
+        this._currentSceneCamera = null;
+        this.name = name;
+        this._scene = scene;
+        this.renderList = [];
+        this._renderPassIds = [];
+        this.options = {
+            numPasses: 1,
+            doNotChangeAspectRatio: true,
+            ...options,
+        };
+        this._createRenderPassId();
+        this.renderPassId = this._renderPassIds[0];
+        // Rendering groups
+        this._renderingManager = new renderingManager/* RenderingManager */.m(scene);
+        this._renderingManager._useSceneAutoClearSetup = true;
+    }
+    _releaseRenderPassId() {
+        const engine = this._scene.getEngine();
+        for (let i = 0; i < this.options.numPasses; ++i) {
+            engine.releaseRenderPassId(this._renderPassIds[i]);
+        }
+        this._renderPassIds.length = 0;
+    }
+    _createRenderPassId() {
+        this._releaseRenderPassId();
+        const engine = this._scene.getEngine();
+        for (let i = 0; i < this.options.numPasses; ++i) {
+            this._renderPassIds[i] = engine.createRenderPassId(`ObjectRenderer - ${this.name}#${i}`);
+        }
+    }
+    /**
+     * Resets the refresh counter of the renderer and start back from scratch.
+     * Could be useful to re-render if it is setup to render only once.
+     */
+    resetRefreshCounter() {
+        this._currentRefreshId = -1;
+    }
+    /**
+     * Defines the refresh rate of the rendering or the rendering frequency.
+     * Use 0 to render just once, 1 to render on every frame, 2 to render every two frames and so on...
+     */
+    get refreshRate() {
+        return this._refreshRate;
+    }
+    set refreshRate(value) {
+        this._refreshRate = value;
+        this.resetRefreshCounter();
+    }
+    /**
+     * Indicates if the renderer should render the current frame.
+     * The output is based on the specified refresh rate.
+     * @returns true if the renderer should render the current frame
+     */
+    shouldRender() {
+        if (this._currentRefreshId === -1) {
+            // At least render once
+            this._currentRefreshId = 1;
+            return true;
+        }
+        if (this.refreshRate === this._currentRefreshId) {
+            this._currentRefreshId = 1;
+            return true;
+        }
+        this._currentRefreshId++;
+        return false;
+    }
+    /**
+     * This function will check if the renderer is ready to render (textures are loaded, shaders are compiled)
+     * @param viewportWidth defines the width of the viewport
+     * @param viewportHeight defines the height of the viewport
+     * @returns true if all required resources are ready
+     */
+    isReadyForRendering(viewportWidth, viewportHeight) {
+        this.prepareRenderList();
+        this.initRender(viewportWidth, viewportHeight);
+        const isReady = this._checkReadiness();
+        this.finishRender();
+        return isReady;
+    }
+    /**
+     * Makes sure the list of meshes is ready to be rendered
+     * You should call this function before "initRender", but if you know the render list is ok, you may call "initRender" directly
+     */
+    prepareRenderList() {
+        const scene = this._scene;
+        if (this._waitingRenderList) {
+            if (!this.renderListPredicate) {
+                this.renderList = [];
+                for (let index = 0; index < this._waitingRenderList.length; index++) {
+                    const id = this._waitingRenderList[index];
+                    const mesh = scene.getMeshById(id);
+                    if (mesh) {
+                        this.renderList.push(mesh);
+                    }
+                }
+            }
+            this._waitingRenderList = undefined;
+        }
+        // Is predicate defined?
+        if (this.renderListPredicate) {
+            if (this.renderList) {
+                this.renderList.length = 0; // Clear previous renderList
+            }
+            else {
+                this.renderList = [];
+            }
+            const sceneMeshes = this._scene.meshes;
+            for (let index = 0; index < sceneMeshes.length; index++) {
+                const mesh = sceneMeshes[index];
+                if (this.renderListPredicate(mesh)) {
+                    this.renderList.push(mesh);
+                }
+            }
+        }
+    }
+    /**
+     * This method makes sure everything is setup before "render" can be called
+     * @param viewportWidth Width of the viewport to render to
+     * @param viewportHeight Height of the viewport to render to
+     */
+    initRender(viewportWidth, viewportHeight) {
+        const engine = this._scene.getEngine();
+        const camera = this.activeCamera ?? this._scene.activeCamera;
+        this._currentSceneCamera = this._scene.activeCamera;
+        if (camera) {
+            if (camera !== this._scene.activeCamera) {
+                this._scene.setTransformMatrix(camera.getViewMatrix(), camera.getProjectionMatrix(true));
+                this._scene.activeCamera = camera;
+            }
+            engine.setViewport(camera.rigParent ? camera.rigParent.viewport : camera.viewport, viewportWidth, viewportHeight);
+        }
+        this._defaultRenderListPrepared = false;
+    }
+    /**
+     * This method must be called after the "render" call(s), to complete the rendering process.
+     */
+    finishRender() {
+        const scene = this._scene;
+        scene.activeCamera = this._currentSceneCamera;
+        if (this._currentSceneCamera) {
+            if (this.activeCamera && this.activeCamera !== scene.activeCamera) {
+                scene.setTransformMatrix(this._currentSceneCamera.getViewMatrix(), this._currentSceneCamera.getProjectionMatrix(true));
+            }
+            scene.getEngine().setViewport(this._currentSceneCamera.viewport);
+        }
+        scene.resetCachedMaterial();
+    }
+    /**
+     * Renders all the objects (meshes, particles systems, sprites) to the currently bound render target texture.
+     * @param passIndex defines the pass index to use (default: 0)
+     * @param skipOnAfterRenderObservable defines a flag to skip raising the onAfterRenderObservable
+     */
+    render(passIndex = 0, skipOnAfterRenderObservable = false) {
+        const scene = this._scene;
+        const engine = scene.getEngine();
+        const currentRenderPassId = engine.currentRenderPassId;
+        engine.currentRenderPassId = this._renderPassIds[passIndex];
+        this.onBeforeRenderObservable.notifyObservers(passIndex);
+        const fastPath = engine.snapshotRendering && engine.snapshotRenderingMode === 1;
+        if (!fastPath) {
+            // Get the list of meshes to render
+            let currentRenderList = null;
+            const defaultRenderList = this.renderList ? this.renderList : scene.getActiveMeshes().data;
+            const defaultRenderListLength = this.renderList ? this.renderList.length : scene.getActiveMeshes().length;
+            if (this.getCustomRenderList) {
+                currentRenderList = this.getCustomRenderList(passIndex, defaultRenderList, defaultRenderListLength);
+            }
+            if (!currentRenderList) {
+                // No custom render list provided, we prepare the rendering for the default list, but check
+                // first if we did not already performed the preparation before so as to avoid re-doing it several times
+                if (!this._defaultRenderListPrepared) {
+                    this._prepareRenderingManager(defaultRenderList, defaultRenderListLength, !this.renderList || this.forceLayerMaskCheck);
+                    this._defaultRenderListPrepared = true;
+                }
+                currentRenderList = defaultRenderList;
+            }
+            else {
+                // Prepare the rendering for the custom render list provided
+                this._prepareRenderingManager(currentRenderList, currentRenderList.length, this.forceLayerMaskCheck);
+            }
+            this.onBeforeRenderingManagerRenderObservable.notifyObservers(passIndex);
+            this._renderingManager.render(this.customRenderFunction, currentRenderList, this.renderParticles, this.renderSprites);
+            this.onAfterRenderingManagerRenderObservable.notifyObservers(passIndex);
+        }
+        else {
+            this.onFastPathRenderObservable.notifyObservers(passIndex);
+        }
+        if (!skipOnAfterRenderObservable) {
+            this.onAfterRenderObservable.notifyObservers(passIndex);
+        }
+        engine.currentRenderPassId = currentRenderPassId;
+    }
+    /** @internal */
+    _checkReadiness() {
+        const scene = this._scene;
+        const engine = scene.getEngine();
+        const currentRenderPassId = engine.currentRenderPassId;
+        let returnValue = true;
+        if (!scene.getViewMatrix()) {
+            // We probably didn't execute scene.render() yet, so make sure we have a view/projection matrix setup for the scene
+            scene.updateTransformMatrix();
+        }
+        const numPasses = this.options.numPasses;
+        for (let passIndex = 0; passIndex < numPasses && returnValue; passIndex++) {
+            let currentRenderList = null;
+            const defaultRenderList = this.renderList ? this.renderList : scene.getActiveMeshes().data;
+            const defaultRenderListLength = this.renderList ? this.renderList.length : scene.getActiveMeshes().length;
+            engine.currentRenderPassId = this._renderPassIds[passIndex];
+            this.onBeforeRenderObservable.notifyObservers(passIndex);
+            if (this.getCustomRenderList) {
+                currentRenderList = this.getCustomRenderList(passIndex, defaultRenderList, defaultRenderListLength);
+            }
+            if (!currentRenderList) {
+                currentRenderList = defaultRenderList;
+            }
+            if (!this._doNotChangeAspectRatio) {
+                scene.updateTransformMatrix(true);
+            }
+            for (let i = 0; i < currentRenderList.length && returnValue; ++i) {
+                const mesh = currentRenderList[i];
+                if (!mesh.isEnabled() || mesh.isBlocked || !mesh.isVisible || !mesh.subMeshes) {
+                    continue;
+                }
+                if (this.customIsReadyFunction) {
+                    if (!this.customIsReadyFunction(mesh, this.refreshRate, true)) {
+                        returnValue = false;
+                        continue;
+                    }
+                }
+                else if (!mesh.isReady(true)) {
+                    returnValue = false;
+                    continue;
+                }
+            }
+            this.onAfterRenderObservable.notifyObservers(passIndex);
+            if (numPasses > 1) {
+                scene.incrementRenderId();
+                scene.resetCachedMaterial();
+            }
+        }
+        const particleSystems = this.particleSystemList || scene.particleSystems;
+        for (const particleSystem of particleSystems) {
+            if (!particleSystem.isReady()) {
+                returnValue = false;
+            }
+        }
+        engine.currentRenderPassId = currentRenderPassId;
+        return returnValue;
+    }
+    _prepareRenderingManager(currentRenderList, currentRenderListLength, checkLayerMask) {
+        const scene = this._scene;
+        const camera = scene.activeCamera;
+        this._renderingManager.reset();
+        const sceneRenderId = scene.getRenderId();
+        for (let meshIndex = 0; meshIndex < currentRenderListLength; meshIndex++) {
+            const mesh = currentRenderList[meshIndex];
+            if (mesh && !mesh.isBlocked) {
+                if (this.customIsReadyFunction) {
+                    if (!this.customIsReadyFunction(mesh, this.refreshRate, false)) {
+                        this.resetRefreshCounter();
+                        continue;
+                    }
+                }
+                else if (!mesh.isReady(this.refreshRate === 0)) {
+                    this.resetRefreshCounter();
+                    continue;
+                }
+                if (!mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate && camera) {
+                    mesh._internalAbstractMeshDataInfo._currentLOD = scene.customLODSelector ? scene.customLODSelector(mesh, camera) : mesh.getLOD(camera);
+                    mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate = true;
+                }
+                if (!mesh._internalAbstractMeshDataInfo._currentLOD) {
+                    continue;
+                }
+                let meshToRender = mesh._internalAbstractMeshDataInfo._currentLOD;
+                if (meshToRender !== mesh && meshToRender.billboardMode !== 0) {
+                    meshToRender.computeWorldMatrix(); // Compute world matrix if LOD is billboard
+                }
+                meshToRender._preActivateForIntermediateRendering(sceneRenderId);
+                let isMasked;
+                if (checkLayerMask && camera) {
+                    isMasked = (mesh.layerMask & camera.layerMask) === 0;
+                }
+                else {
+                    isMasked = false;
+                }
+                if (mesh.isEnabled() && mesh.isVisible && mesh.subMeshes && !isMasked) {
+                    if (meshToRender !== mesh) {
+                        meshToRender._activate(sceneRenderId, true);
+                    }
+                    if (mesh._activate(sceneRenderId, true) && mesh.subMeshes.length) {
+                        if (!mesh.isAnInstance) {
+                            meshToRender._internalAbstractMeshDataInfo._onlyForInstancesIntermediate = false;
+                        }
+                        else {
+                            if (mesh._internalAbstractMeshDataInfo._actAsRegularMesh) {
+                                meshToRender = mesh;
+                            }
+                        }
+                        meshToRender._internalAbstractMeshDataInfo._isActiveIntermediate = true;
+                        scene._prepareSkeleton(meshToRender);
+                        for (let subIndex = 0; subIndex < meshToRender.subMeshes.length; subIndex++) {
+                            const subMesh = meshToRender.subMeshes[subIndex];
+                            this._renderingManager.dispatch(subMesh, meshToRender);
+                        }
+                    }
+                    mesh._postActivate();
+                }
+            }
+        }
+        const particleSystems = this.particleSystemList || scene.particleSystems;
+        for (let particleIndex = 0; particleIndex < particleSystems.length; particleIndex++) {
+            const particleSystem = particleSystems[particleIndex];
+            const emitter = particleSystem.emitter;
+            if (!particleSystem.isStarted() || !emitter || (emitter.position && !emitter.isEnabled())) {
+                continue;
+            }
+            this._renderingManager.dispatchParticles(particleSystem);
+        }
+    }
+    /**
+     * Overrides the default sort function applied in the rendering group to prepare the meshes.
+     * This allowed control for front to back rendering or reversely depending of the special needs.
+     *
+     * @param renderingGroupId The rendering group id corresponding to its index
+     * @param opaqueSortCompareFn The opaque queue comparison function use to sort.
+     * @param alphaTestSortCompareFn The alpha test queue comparison function use to sort.
+     * @param transparentSortCompareFn The transparent queue comparison function use to sort.
+     */
+    setRenderingOrder(renderingGroupId, opaqueSortCompareFn = null, alphaTestSortCompareFn = null, transparentSortCompareFn = null) {
+        this._renderingManager.setRenderingOrder(renderingGroupId, opaqueSortCompareFn, alphaTestSortCompareFn, transparentSortCompareFn);
+    }
+    /**
+     * Specifies whether or not the stencil and depth buffer are cleared between two rendering groups.
+     *
+     * @param renderingGroupId The rendering group id corresponding to its index
+     * @param autoClearDepthStencil Automatically clears depth and stencil between groups if true.
+     */
+    setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil) {
+        this._renderingManager.setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil);
+        this._renderingManager._useSceneAutoClearSetup = false;
+    }
+    /**
+     * Clones the renderer.
+     * @returns the cloned renderer
+     */
+    clone() {
+        const newRenderer = new ObjectRenderer(this.name, this._scene, this.options);
+        if (this.renderList) {
+            newRenderer.renderList = this.renderList.slice(0);
+        }
+        return newRenderer;
+    }
+    /**
+     * Dispose the renderer and release its associated resources.
+     */
+    dispose() {
+        this.onBeforeRenderObservable.clear();
+        this.onAfterRenderObservable.clear();
+        this.onBeforeRenderingManagerRenderObservable.clear();
+        this.onAfterRenderingManagerRenderObservable.clear();
+        this.onFastPathRenderObservable.clear();
+        this._releaseRenderPassId();
+        this.renderList = null;
+    }
+    /** @internal */
+    _rebuild() {
+        if (this.refreshRate === ObjectRenderer.REFRESHRATE_RENDER_ONCE) {
+            this.refreshRate = ObjectRenderer.REFRESHRATE_RENDER_ONCE;
+        }
+    }
+    /**
+     * Clear the info related to rendering groups preventing retention point in material dispose.
+     */
+    freeRenderingGroups() {
+        if (this._renderingManager) {
+            this._renderingManager.freeRenderingGroups();
+        }
+    }
+}
+/**
+ * Objects will only be rendered once which can be useful to improve performance if everything in your render is static for instance.
+ */
+ObjectRenderer.REFRESHRATE_RENDER_ONCE = 0;
+/**
+ * Objects will be rendered every frame and is recommended for dynamic contents.
+ */
+ObjectRenderer.REFRESHRATE_RENDER_ONEVERYFRAME = 1;
+/**
+ * Objects will be rendered every 2 frames which could be enough if your dynamic objects are not
+ * the central point of your effect and can save a lot of performances.
+ */
+ObjectRenderer.REFRESHRATE_RENDER_ONEVERYTWOFRAMES = 2;
+//# sourceMappingURL=objectRenderer.js.map
+;// ./node_modules/@babylonjs/core/Materials/Textures/renderTargetTexture.js
+
+
+
+
+
+
+
+
+
+/**
+ * Sets a depth stencil texture from a render target on the engine to be used in the shader.
+ * @param channel Name of the sampler variable.
+ * @param texture Texture to set.
+ */
+effect/* Effect */.M.prototype.setDepthStencilTexture = function (channel, texture) {
+    this._engine.setDepthStencilTexture(this._samplers[channel], this._uniforms[channel], texture, channel);
+};
+/**
+ * This Helps creating a texture that will be created from a camera in your scene.
+ * It is basically a dynamic texture that could be used to create special effects for instance.
+ * Actually, It is the base of lot of effects in the framework like post process, shadows, effect layers and rendering pipelines...
+ */
+class RenderTargetTexture extends texture/* Texture */.g {
+    /**
+     * Use this predicate to dynamically define the list of mesh you want to render.
+     * If set, the renderList property will be overwritten.
+     */
+    get renderListPredicate() {
+        return this._objectRenderer.renderListPredicate;
+    }
+    set renderListPredicate(value) {
+        this._objectRenderer.renderListPredicate = value;
+    }
+    /**
+     * Use this list to define the list of mesh you want to render.
+     */
+    get renderList() {
+        return this._objectRenderer.renderList;
+    }
+    set renderList(value) {
+        this._objectRenderer.renderList = value;
+    }
+    /**
+     * Define the list of particle systems to render in the texture. If not provided, will render all the particle systems of the scene.
+     * Note that the particle systems are rendered only if renderParticles is set to true.
+     */
+    get particleSystemList() {
+        return this._objectRenderer.particleSystemList;
+    }
+    set particleSystemList(value) {
+        this._objectRenderer.particleSystemList = value;
+    }
+    /**
+     * Use this function to overload the renderList array at rendering time.
+     * Return null to render with the current renderList, else return the list of meshes to use for rendering.
+     * For 2DArray RTT, layerOrFace is the index of the layer that is going to be rendered, else it is the faceIndex of
+     * the cube (if the RTT is a cube, else layerOrFace=0).
+     * The renderList passed to the function is the current render list (the one that will be used if the function returns null).
+     * The length of this list is passed through renderListLength: don't use renderList.length directly because the array can
+     * hold dummy elements!
+     */
+    get getCustomRenderList() {
+        return this._objectRenderer.getCustomRenderList;
+    }
+    set getCustomRenderList(value) {
+        this._objectRenderer.getCustomRenderList = value;
+    }
+    /**
+     * Define if particles should be rendered in your texture (default: true).
+     */
+    get renderParticles() {
+        return this._objectRenderer.renderParticles;
+    }
+    set renderParticles(value) {
+        this._objectRenderer.renderParticles = value;
+    }
+    /**
+     * Define if sprites should be rendered in your texture (default: false).
+     */
+    get renderSprites() {
+        return this._objectRenderer.renderSprites;
+    }
+    set renderSprites(value) {
+        this._objectRenderer.renderSprites = value;
+    }
+    /**
+     * Force checking the layerMask property even if a custom list of meshes is provided (ie. if renderList is not undefined) (default: false).
+     */
+    get forceLayerMaskCheck() {
+        return this._objectRenderer.forceLayerMaskCheck;
+    }
+    set forceLayerMaskCheck(value) {
+        this._objectRenderer.forceLayerMaskCheck = value;
+    }
+    /**
+     * Define the camera used to render the texture.
+     */
+    get activeCamera() {
+        return this._objectRenderer.activeCamera;
+    }
+    set activeCamera(value) {
+        this._objectRenderer.activeCamera = value;
+    }
+    /**
+     * Override the mesh isReady function with your own one.
+     */
+    get customIsReadyFunction() {
+        return this._objectRenderer.customIsReadyFunction;
+    }
+    set customIsReadyFunction(value) {
+        this._objectRenderer.customIsReadyFunction = value;
+    }
+    /**
+     * Override the render function of the texture with your own one.
+     */
+    get customRenderFunction() {
+        return this._objectRenderer.customRenderFunction;
+    }
+    set customRenderFunction(value) {
+        this._objectRenderer.customRenderFunction = value;
     }
     /**
      * Post-processes for this render target
@@ -27873,6 +28947,12 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         this._onAfterUnbindObserver = this.onAfterUnbindObservable.add(callback);
     }
     /**
+     * An event triggered before rendering the texture
+     */
+    get onBeforeRenderObservable() {
+        return this._objectRenderer.onBeforeRenderObservable;
+    }
+    /**
      * Set a before render callback in the texture.
      * This has been kept for backward compatibility and use of onBeforeRenderObservable is recommended.
      */
@@ -27881,6 +28961,12 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             this.onBeforeRenderObservable.remove(this._onBeforeRenderObserver);
         }
         this._onBeforeRenderObserver = this.onBeforeRenderObservable.add(callback);
+    }
+    /**
+     * An event triggered after rendering the texture
+     */
+    get onAfterRenderObservable() {
+        return this._objectRenderer.onAfterRenderObservable;
     }
     /**
      * Set a after render callback in the texture.
@@ -27902,18 +28988,32 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         }
         this._onClearObserver = this.onClearObservable.add(callback);
     }
+    /** @internal */
+    get _waitingRenderList() {
+        return this._objectRenderer._waitingRenderList;
+    }
+    /** @internal */
+    set _waitingRenderList(value) {
+        this._objectRenderer._waitingRenderList = value;
+    }
+    /**
+     * Current render pass id of the render target texture. Note it can change over the rendering as there's a separate id for each face of a cube / each layer of an array layer!
+     */
+    get renderPassId() {
+        return this._objectRenderer.renderPassId;
+    }
     /**
      * Gets the render pass ids used by the render target texture. For a single render target the array length will be 1, for a cube texture it will be 6 and for
      * a 2D texture array it will return an array of ids the size of the 2D texture array
      */
     get renderPassIds() {
-        return this._renderPassIds;
+        return this._objectRenderer.renderPassIds;
     }
     /**
      * Gets the current value of the refreshId counter
      */
     get currentRefreshId() {
-        return this._currentRefreshId;
+        return this._objectRenderer.currentRefreshId;
     }
     /**
      * Sets a specific material to be used to render a mesh/a list of meshes in this render target texture
@@ -27921,18 +29021,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
      * @param material material or array of materials to use for this render pass. If undefined is passed, no specific material will be used but the regular material instead (mesh.material). It's possible to provide an array of materials to use a different material for each rendering in the case of a cube texture (6 rendering) and a 2D texture array (as many rendering as the length of the array)
      */
     setMaterialForRendering(mesh, material) {
-        let meshes;
-        if (!Array.isArray(mesh)) {
-            meshes = [mesh];
-        }
-        else {
-            meshes = mesh;
-        }
-        for (let j = 0; j < meshes.length; ++j) {
-            for (let i = 0; i < this._renderPassIds.length; ++i) {
-                meshes[j].setMaterialForRenderPass(this._renderPassIds[i], material !== undefined ? (Array.isArray(material) ? material[i] : material) : undefined);
-            }
-        }
+        this._objectRenderer.setMaterialForRendering(mesh, material);
     }
     /**
      * Define if the texture has multiple draw buffers or if false a single draw buffer.
@@ -27985,7 +29074,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         return this._renderTarget?._depthStencilTexture ?? null;
     }
     /** @internal */
-    constructor(name, size, scene, generateMipMaps = false, doNotChangeAspectRatio = true, type = 0, isCube = false, samplingMode = _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g.TRILINEAR_SAMPLINGMODE, generateDepthBuffer = true, generateStencilBuffer = false, isMulti = false, format = 5, delayAllocation = false, samples, creationFlags, noColorAttachment = false, useSRGBBuffer = false) {
+    constructor(name, size, scene, generateMipMaps = false, doNotChangeAspectRatio = true, type = 0, isCube = false, samplingMode = texture/* Texture */.g.TRILINEAR_SAMPLINGMODE, generateDepthBuffer = true, generateStencilBuffer = false, isMulti = false, format = 5, delayAllocation = false, samples, creationFlags, noColorAttachment = false, useSRGBBuffer = false) {
         let colorAttachment = undefined;
         let gammaSpace = true;
         if (typeof generateMipMaps === "object") {
@@ -27994,7 +29083,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             doNotChangeAspectRatio = options.doNotChangeAspectRatio ?? true;
             type = options.type ?? 0;
             isCube = !!options.isCube;
-            samplingMode = options.samplingMode ?? _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g.TRILINEAR_SAMPLINGMODE;
+            samplingMode = options.samplingMode ?? texture/* Texture */.g.TRILINEAR_SAMPLINGMODE;
             generateDepthBuffer = options.generateDepthBuffer ?? true;
             generateStencilBuffer = !!options.generateStencilBuffer;
             isMulti = !!options.isMulti;
@@ -28008,32 +29097,6 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             gammaSpace = options.gammaSpace ?? gammaSpace;
         }
         super(null, scene, !generateMipMaps, undefined, samplingMode, undefined, undefined, undefined, undefined, format);
-        this._unObserveRenderList = null;
-        this._renderListHasChanged = (_functionName, previousLength) => {
-            const newLength = this._renderList ? this._renderList.length : 0;
-            if ((previousLength === 0 && newLength > 0) || newLength === 0) {
-                this.getScene()?.meshes.forEach((mesh) => {
-                    mesh._markSubMeshesAsLightDirty();
-                });
-            }
-        };
-        /**
-         * Define the list of particle systems to render in the texture. If not provided, will render all the particle systems of the scene.
-         * Note that the particle systems are rendered only if renderParticles is set to true.
-         */
-        this.particleSystemList = null;
-        /**
-         * Define if particles should be rendered in your texture.
-         */
-        this.renderParticles = true;
-        /**
-         * Define if sprites should be rendered in your texture.
-         */
-        this.renderSprites = false;
-        /**
-         * Force checking the layerMask property even if a custom list of meshes is provided (ie. if renderList is not undefined)
-         */
-        this.forceLayerMaskCheck = false;
         /**
          * Define if the camera viewport should be respected while rendering the texture or if the render should be done to the entire texture.
          */
@@ -28041,35 +29104,25 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         /**
          * An event triggered when the texture is unbind.
          */
-        this.onBeforeBindObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_0__/* .Observable */ .cP();
+        this.onBeforeBindObservable = new observable/* Observable */.cP();
         /**
          * An event triggered when the texture is unbind.
          */
-        this.onAfterUnbindObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_0__/* .Observable */ .cP();
-        /**
-         * An event triggered before rendering the texture
-         */
-        this.onBeforeRenderObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_0__/* .Observable */ .cP();
-        /**
-         * An event triggered after rendering the texture
-         */
-        this.onAfterRenderObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_0__/* .Observable */ .cP();
+        this.onAfterUnbindObservable = new observable/* Observable */.cP();
         /**
          * An event triggered after the texture clear
          */
-        this.onClearObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_0__/* .Observable */ .cP();
+        this.onClearObservable = new observable/* Observable */.cP();
         /**
          * An event triggered when the texture is resized.
          */
-        this.onResizeObservable = new _Misc_observable_js__WEBPACK_IMPORTED_MODULE_0__/* .Observable */ .cP();
+        this.onResizeObservable = new observable/* Observable */.cP();
         /** @internal */
         this._cleared = false;
         /**
          * Skip the initial clear of the rtt at the beginning of the frame render loop
          */
         this.skipInitialClear = false;
-        this._currentRefreshId = -1;
-        this._refreshRate = 1;
         this._samples = 1;
         this._canRescale = true;
         this._renderTarget = null;
@@ -28077,7 +29130,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
          * Gets or sets the center of the bounding box associated with the texture (when in cube mode)
          * It must define where the camera used to render the texture is set
          */
-        this.boundingBoxPosition = _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_1__/* .Vector3 */ .Pq.Zero();
+        this.boundingBoxPosition = math_vector/* Vector3 */.Pq.Zero();
         this._dumpToolsLoading = false;
         scene = this.getScene();
         if (!scene) {
@@ -28085,21 +29138,84 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         }
         const engine = this.getScene().getEngine();
         this._gammaSpace = gammaSpace;
-        this._coordinatesMode = _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g.PROJECTION_MODE;
-        this.renderList = [];
+        this._coordinatesMode = texture/* Texture */.g.PROJECTION_MODE;
         this.name = name;
         this.isRenderTarget = true;
         this._initialSizeParameter = size;
-        this._renderPassIds = [];
-        this._isCubeData = isCube;
         this._processSizeParameter(size);
-        this.renderPassId = this._renderPassIds[0];
+        this._objectRenderer = new ObjectRenderer(name, scene, {
+            numPasses: isCube ? 6 : this.getRenderLayers() || 1,
+            doNotChangeAspectRatio,
+        });
+        this._objectRenderer.onBeforeRenderingManagerRenderObservable.add(() => {
+            // Before clear
+            for (const step of this._scene._beforeRenderTargetClearStage) {
+                step.action(this, this._currentFaceIndex, this._currentLayer);
+            }
+            // Clear
+            if (this.onClearObservable.hasObservers()) {
+                this.onClearObservable.notifyObservers(engine);
+            }
+            else if (!this.skipInitialClear) {
+                engine.clear(this.clearColor || this._scene.clearColor, true, true, true);
+            }
+            if (!this._doNotChangeAspectRatio) {
+                this._scene.updateTransformMatrix(true);
+            }
+            // Before Camera Draw
+            for (const step of this._scene._beforeRenderTargetDrawStage) {
+                step.action(this, this._currentFaceIndex, this._currentLayer);
+            }
+        });
+        this._objectRenderer.onAfterRenderingManagerRenderObservable.add(() => {
+            // After Camera Draw
+            for (const step of this._scene._afterRenderTargetDrawStage) {
+                step.action(this, this._currentFaceIndex, this._currentLayer);
+            }
+            const saveGenerateMipMaps = this._texture?.generateMipMaps ?? false;
+            if (this._texture) {
+                this._texture.generateMipMaps = false; // if left true, the mipmaps will be generated (if this._texture.generateMipMaps = true) when the first post process binds its own RTT: by doing so it will unbind the current RTT,
+                // which will trigger a mipmap generation. We don't want this because it's a wasted work, we will do an unbind of the current RTT at the end of the process (see unbindFrameBuffer) which will
+                // trigger the generation of the final mipmaps
+            }
+            if (this._postProcessManager) {
+                this._postProcessManager._finalizeFrame(false, this._renderTarget ?? undefined, this._currentFaceIndex, this._postProcesses, this.ignoreCameraViewport);
+            }
+            else if (this._currentUseCameraPostProcess) {
+                this._scene.postProcessManager._finalizeFrame(false, this._renderTarget ?? undefined, this._currentFaceIndex);
+            }
+            for (const step of this._scene._afterRenderTargetPostProcessStage) {
+                step.action(this, this._currentFaceIndex, this._currentLayer);
+            }
+            if (this._texture) {
+                this._texture.generateMipMaps = saveGenerateMipMaps;
+            }
+            if (!this._doNotChangeAspectRatio) {
+                this._scene.updateTransformMatrix(true);
+            }
+            // Dump ?
+            if (this._currentDumpForDebug) {
+                if (!this._dumpTools) {
+                    logger/* Logger */.V.Error("dumpTools module is still being loaded. To speed up the process import dump tools directly in your project");
+                }
+                else {
+                    this._dumpTools.DumpFramebuffer(this.getRenderWidth(), this.getRenderHeight(), engine);
+                }
+            }
+        });
+        this._objectRenderer.onFastPathRenderObservable.add(() => {
+            if (this.onClearObservable.hasObservers()) {
+                this.onClearObservable.notifyObservers(engine);
+            }
+            else {
+                if (!this.skipInitialClear) {
+                    engine.clear(this.clearColor || this._scene.clearColor, true, true, true);
+                }
+            }
+        });
         this._resizeObserver = engine.onResizeObservable.add(() => { });
         this._generateMipMaps = generateMipMaps ? true : false;
         this._doNotChangeAspectRatio = doNotChangeAspectRatio;
-        // Rendering groups
-        this._renderingManager = new _Rendering_renderingManager_js__WEBPACK_IMPORTED_MODULE_4__/* .RenderingManager */ .m(scene);
-        this._renderingManager._useSceneAutoClearSetup = true;
         if (isMulti) {
             return;
         }
@@ -28117,15 +29233,15 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             colorAttachment: colorAttachment,
             label: this.name,
         };
-        if (this.samplingMode === _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g.NEAREST_SAMPLINGMODE) {
-            this.wrapU = _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g.CLAMP_ADDRESSMODE;
-            this.wrapV = _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g.CLAMP_ADDRESSMODE;
+        if (this.samplingMode === texture/* Texture */.g.NEAREST_SAMPLINGMODE) {
+            this.wrapU = texture/* Texture */.g.CLAMP_ADDRESSMODE;
+            this.wrapV = texture/* Texture */.g.CLAMP_ADDRESSMODE;
         }
         if (!delayAllocation) {
             if (isCube) {
                 this._renderTarget = scene.getEngine().createRenderTargetCubeTexture(this.getRenderSize(), this._renderTargetOptions);
-                this.coordinatesMode = _Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g.INVCUBIC_MODE;
-                this._textureMatrix = _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_1__/* .Matrix */ .uq.Identity();
+                this.coordinatesMode = texture/* Texture */.g.INVCUBIC_MODE;
+                this._textureMatrix = math_vector/* Matrix */.uq.Identity();
             }
             else {
                 this._renderTarget = scene.getEngine().createRenderTargetTexture(this._size, this._renderTargetOptions);
@@ -28149,24 +29265,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
     createDepthStencilTexture(comparisonFunction = 0, bilinearFiltering = true, generateStencil = false, samples = 1, format = 14, label) {
         this._renderTarget?.createDepthStencilTexture(comparisonFunction, bilinearFiltering, generateStencil, samples, format, label);
     }
-    _releaseRenderPassId() {
-        if (this._scene) {
-            const engine = this._scene.getEngine();
-            for (let i = 0; i < this._renderPassIds.length; ++i) {
-                engine.releaseRenderPassId(this._renderPassIds[i]);
-            }
-        }
-        this._renderPassIds = [];
-    }
-    _createRenderPassId() {
-        this._releaseRenderPassId();
-        const engine = this._scene.getEngine(); // scene can't be null in a RenderTargetTexture, see constructor
-        const numPasses = this._isCubeData ? 6 : this.getRenderLayers() || 1;
-        for (let i = 0; i < numPasses; ++i) {
-            this._renderPassIds[i] = engine.createRenderPassId(`RenderTargetTexture - ${this.name}#${i}`);
-        }
-    }
-    _processSizeParameter(size, createRenderPassIds = true) {
+    _processSizeParameter(size) {
         if (size.ratio) {
             this._sizeRatio = size.ratio;
             const engine = this._getEngine();
@@ -28177,9 +29276,6 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         }
         else {
             this._size = size;
-        }
-        if (createRenderPassIds) {
-            this._createRenderPassId();
         }
     }
     /**
@@ -28195,24 +29291,6 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         }
     }
     /**
-     * Resets the refresh counter of the texture and start bak from scratch.
-     * Could be useful to regenerate the texture if it is setup to render only once.
-     */
-    resetRefreshCounter() {
-        this._currentRefreshId = -1;
-    }
-    /**
-     * Define the refresh rate of the texture or the rendering frequency.
-     * Use 0 to render just once, 1 to render on every frame, 2 to render every two frames and so on...
-     */
-    get refreshRate() {
-        return this._refreshRate;
-    }
-    set refreshRate(value) {
-        this._refreshRate = value;
-        this.resetRefreshCounter();
-    }
-    /**
      * Adds a post process to the render target rendering passes.
      * @param postProcess define the post process to add
      */
@@ -28222,7 +29300,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             if (!scene) {
                 return;
             }
-            this._postProcessManager = new _PostProcesses_postProcessManager_js__WEBPACK_IMPORTED_MODULE_3__/* .PostProcessManager */ .X(scene);
+            this._postProcessManager = new postProcessManager/* PostProcessManager */.X(scene);
             this._postProcesses = new Array();
         }
         this._postProcesses.push(postProcess);
@@ -28260,19 +29338,26 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             this._postProcesses[0].autoClear = false;
         }
     }
+    /**
+     * Resets the refresh counter of the texture and start bak from scratch.
+     * Could be useful to regenerate the texture if it is setup to render only once.
+     */
+    resetRefreshCounter() {
+        this._objectRenderer.resetRefreshCounter();
+    }
+    /**
+     * Define the refresh rate of the texture or the rendering frequency.
+     * Use 0 to render just once, 1 to render on every frame, 2 to render every two frames and so on...
+     */
+    get refreshRate() {
+        return this._objectRenderer.refreshRate;
+    }
+    set refreshRate(value) {
+        this._objectRenderer.refreshRate = value;
+    }
     /** @internal */
     _shouldRender() {
-        if (this._currentRefreshId === -1) {
-            // At least render once
-            this._currentRefreshId = 1;
-            return true;
-        }
-        if (this.refreshRate === this._currentRefreshId) {
-            this._currentRefreshId = 1;
-            return true;
-        }
-        this._currentRefreshId++;
-        return false;
+        return this._objectRenderer.shouldRender();
     }
     /**
      * Gets the actual render size of the texture.
@@ -28362,7 +29447,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         if (!scene) {
             return;
         }
-        this._processSizeParameter(size, false);
+        this._processSizeParameter(size);
         if (wasCube) {
             this._renderTarget = scene.getEngine().createRenderTargetCubeTexture(this.getRenderSize(), this._renderTargetOptions);
         }
@@ -28395,225 +29480,51 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             // avoid a static import to allow ignoring the import in some cases
             __webpack_require__.e(/* import() */ 928).then(__webpack_require__.bind(__webpack_require__, 9928)).then((module) => (this._dumpTools = module));
         }
-        return this._render(false, false, true);
-    }
-    _render(useCameraPostProcess = false, dumpForDebug = false, checkReadiness = false) {
-        const scene = this.getScene();
-        if (!scene) {
-            return checkReadiness;
-        }
-        const engine = scene.getEngine();
-        if (this.useCameraPostProcesses !== undefined) {
-            useCameraPostProcess = this.useCameraPostProcesses;
-        }
-        if (this._waitingRenderList) {
-            if (!this.renderListPredicate) {
-                this.renderList = [];
-                for (let index = 0; index < this._waitingRenderList.length; index++) {
-                    const id = this._waitingRenderList[index];
-                    const mesh = scene.getMeshById(id);
-                    if (mesh) {
-                        this.renderList.push(mesh);
-                    }
-                }
-            }
-            this._waitingRenderList = undefined;
-        }
-        // Is predicate defined?
-        if (this.renderListPredicate) {
-            if (this.renderList) {
-                this.renderList.length = 0; // Clear previous renderList
-            }
-            else {
-                this.renderList = [];
-            }
-            const scene = this.getScene();
-            if (!scene) {
-                return checkReadiness;
-            }
-            const sceneMeshes = scene.meshes;
-            for (let index = 0; index < sceneMeshes.length; index++) {
-                const mesh = sceneMeshes[index];
-                if (this.renderListPredicate(mesh)) {
-                    this.renderList.push(mesh);
-                }
-            }
-        }
-        const currentRenderPassId = engine.currentRenderPassId;
+        this._objectRenderer.prepareRenderList();
         this.onBeforeBindObservable.notifyObservers(this);
-        // Set custom projection.
-        // Needs to be before binding to prevent changing the aspect ratio.
-        const camera = this.activeCamera ?? scene.activeCamera;
-        const sceneCamera = scene.activeCamera;
-        if (camera) {
-            if (camera !== scene.activeCamera) {
-                scene.setTransformMatrix(camera.getViewMatrix(), camera.getProjectionMatrix(true));
-                scene.activeCamera = camera;
-            }
-            engine.setViewport(camera.rigParent ? camera.rigParent.viewport : camera.viewport, this.getRenderWidth(), this.getRenderHeight());
-        }
-        this._defaultRenderListPrepared = false;
-        let returnValue = checkReadiness;
-        if (!checkReadiness) {
-            if ((this.is2DArray || this.is3D) && !this.isMulti) {
-                for (let layer = 0; layer < this.getRenderLayers(); layer++) {
-                    this._renderToTarget(0, useCameraPostProcess, dumpForDebug, layer, camera);
-                    scene.incrementRenderId();
-                    scene.resetCachedMaterial();
-                }
-            }
-            else if (this.isCube && !this.isMulti) {
-                for (let face = 0; face < 6; face++) {
-                    this._renderToTarget(face, useCameraPostProcess, dumpForDebug, undefined, camera);
-                    scene.incrementRenderId();
-                    scene.resetCachedMaterial();
-                }
-            }
-            else {
-                this._renderToTarget(0, useCameraPostProcess, dumpForDebug, undefined, camera);
-            }
-        }
-        else {
-            if (!scene.getViewMatrix()) {
-                // We probably didn't execute scene.render() yet, so make sure we have a view/projection matrix setup for the scene
-                scene.updateTransformMatrix();
-            }
-            const numLayers = this.is2DArray || this.is3D ? this.getRenderLayers() : this.isCube ? 6 : 1;
-            for (let layer = 0; layer < numLayers && returnValue; layer++) {
-                let currentRenderList = null;
-                const defaultRenderList = this.renderList ? this.renderList : scene.getActiveMeshes().data;
-                const defaultRenderListLength = this.renderList ? this.renderList.length : scene.getActiveMeshes().length;
-                engine.currentRenderPassId = this._renderPassIds[layer];
-                this.onBeforeRenderObservable.notifyObservers(layer);
-                if (this.getCustomRenderList) {
-                    currentRenderList = this.getCustomRenderList(layer, defaultRenderList, defaultRenderListLength);
-                }
-                if (!currentRenderList) {
-                    currentRenderList = defaultRenderList;
-                }
-                if (!this._doNotChangeAspectRatio) {
-                    scene.updateTransformMatrix(true);
-                }
-                for (let i = 0; i < currentRenderList.length && returnValue; ++i) {
-                    const mesh = currentRenderList[i];
-                    if (!mesh.isEnabled() || mesh.isBlocked || !mesh.isVisible || !mesh.subMeshes) {
-                        continue;
-                    }
-                    if (this.customIsReadyFunction) {
-                        if (!this.customIsReadyFunction(mesh, this.refreshRate, checkReadiness)) {
-                            returnValue = false;
-                            continue;
-                        }
-                    }
-                    else if (!mesh.isReady(true)) {
-                        returnValue = false;
-                        continue;
-                    }
-                }
-                this.onAfterRenderObservable.notifyObservers(layer);
-                if (this.is2DArray || this.is3D || this.isCube) {
-                    scene.incrementRenderId();
-                    scene.resetCachedMaterial();
-                }
-            }
-            const particleSystems = this.particleSystemList || scene.particleSystems;
-            for (const particleSystem of particleSystems) {
-                if (!particleSystem.isReady()) {
-                    returnValue = false;
-                }
-            }
-        }
+        this._objectRenderer.initRender(this.getRenderWidth(), this.getRenderHeight());
+        const isReady = this._objectRenderer._checkReadiness();
         this.onAfterUnbindObservable.notifyObservers(this);
-        engine.currentRenderPassId = currentRenderPassId;
-        scene.activeCamera = sceneCamera;
-        if (sceneCamera) {
-            if (this.activeCamera && this.activeCamera !== scene.activeCamera) {
-                scene.setTransformMatrix(sceneCamera.getViewMatrix(), sceneCamera.getProjectionMatrix(true));
-            }
-            engine.setViewport(sceneCamera.viewport);
-        }
-        scene.resetCachedMaterial();
-        return returnValue;
+        this._objectRenderer.finishRender();
+        return isReady;
     }
-    _bestReflectionRenderTargetDimension(renderDimension, scale) {
-        const minimum = 128;
-        const x = renderDimension * scale;
-        const curved = (0,_Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_6__/* .NearestPOT */ .OG)(x + (minimum * minimum) / (minimum + x));
-        // Ensure we don't exceed the render dimension (while staying POT)
-        return Math.min((0,_Misc_tools_functions_js__WEBPACK_IMPORTED_MODULE_6__/* .FloorPOT */ .C4)(renderDimension), curved);
-    }
-    _prepareRenderingManager(currentRenderList, currentRenderListLength, camera, checkLayerMask) {
+    _render(useCameraPostProcess = false, dumpForDebug = false) {
         const scene = this.getScene();
         if (!scene) {
             return;
         }
-        this._renderingManager.reset();
-        const sceneRenderId = scene.getRenderId();
-        for (let meshIndex = 0; meshIndex < currentRenderListLength; meshIndex++) {
-            const mesh = currentRenderList[meshIndex];
-            if (mesh && !mesh.isBlocked) {
-                if (this.customIsReadyFunction) {
-                    if (!this.customIsReadyFunction(mesh, this.refreshRate, false)) {
-                        this.resetRefreshCounter();
-                        continue;
-                    }
-                }
-                else if (!mesh.isReady(this.refreshRate === 0)) {
-                    this.resetRefreshCounter();
-                    continue;
-                }
-                if (!mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate && camera) {
-                    mesh._internalAbstractMeshDataInfo._currentLOD = scene.customLODSelector ? scene.customLODSelector(mesh, camera) : mesh.getLOD(camera);
-                    mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate = true;
-                }
-                if (!mesh._internalAbstractMeshDataInfo._currentLOD) {
-                    continue;
-                }
-                let meshToRender = mesh._internalAbstractMeshDataInfo._currentLOD;
-                if (meshToRender !== mesh && meshToRender.billboardMode !== 0) {
-                    meshToRender.computeWorldMatrix(); // Compute world matrix if LOD is billboard
-                }
-                meshToRender._preActivateForIntermediateRendering(sceneRenderId);
-                let isMasked;
-                if (checkLayerMask && camera) {
-                    isMasked = (mesh.layerMask & camera.layerMask) === 0;
-                }
-                else {
-                    isMasked = false;
-                }
-                if (mesh.isEnabled() && mesh.isVisible && mesh.subMeshes && !isMasked) {
-                    if (meshToRender !== mesh) {
-                        meshToRender._activate(sceneRenderId, true);
-                    }
-                    if (mesh._activate(sceneRenderId, true) && mesh.subMeshes.length) {
-                        if (!mesh.isAnInstance) {
-                            meshToRender._internalAbstractMeshDataInfo._onlyForInstancesIntermediate = false;
-                        }
-                        else {
-                            if (mesh._internalAbstractMeshDataInfo._actAsRegularMesh) {
-                                meshToRender = mesh;
-                            }
-                        }
-                        meshToRender._internalAbstractMeshDataInfo._isActiveIntermediate = true;
-                        scene._prepareSkeleton(meshToRender);
-                        for (let subIndex = 0; subIndex < meshToRender.subMeshes.length; subIndex++) {
-                            const subMesh = meshToRender.subMeshes[subIndex];
-                            this._renderingManager.dispatch(subMesh, meshToRender);
-                        }
-                    }
-                    mesh._postActivate();
-                }
+        if (this.useCameraPostProcesses !== undefined) {
+            useCameraPostProcess = this.useCameraPostProcesses;
+        }
+        this._objectRenderer.prepareRenderList();
+        this.onBeforeBindObservable.notifyObservers(this);
+        this._objectRenderer.initRender(this.getRenderWidth(), this.getRenderHeight());
+        if ((this.is2DArray || this.is3D) && !this.isMulti) {
+            for (let layer = 0; layer < this.getRenderLayers(); layer++) {
+                this._renderToTarget(0, useCameraPostProcess, dumpForDebug, layer);
+                scene.incrementRenderId();
+                scene.resetCachedMaterial();
             }
         }
-        const particleSystems = this.particleSystemList || scene.particleSystems;
-        for (let particleIndex = 0; particleIndex < particleSystems.length; particleIndex++) {
-            const particleSystem = particleSystems[particleIndex];
-            const emitter = particleSystem.emitter;
-            if (!particleSystem.isStarted() || !emitter || (emitter.position && !emitter.isEnabled())) {
-                continue;
+        else if (this.isCube && !this.isMulti) {
+            for (let face = 0; face < 6; face++) {
+                this._renderToTarget(face, useCameraPostProcess, dumpForDebug);
+                scene.incrementRenderId();
+                scene.resetCachedMaterial();
             }
-            this._renderingManager.dispatchParticles(particleSystem);
         }
+        else {
+            this._renderToTarget(0, useCameraPostProcess, dumpForDebug);
+        }
+        this.onAfterUnbindObservable.notifyObservers(this);
+        this._objectRenderer.finishRender();
+    }
+    _bestReflectionRenderTargetDimension(renderDimension, scale) {
+        const minimum = 128;
+        const x = renderDimension * scale;
+        const curved = (0,tools_functions/* NearestPOT */.OG)(x + (minimum * minimum) / (minimum + x));
+        // Ensure we don't exceed the render dimension (while staying POT)
+        return Math.min((0,tools_functions/* FloorPOT */.C4)(renderDimension), curved);
     }
     /**
      * @internal
@@ -28651,113 +29562,20 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
             this._bindFrameBuffer(faceIndex, layer);
         }
     }
-    _renderToTarget(faceIndex, useCameraPostProcess, dumpForDebug, layer = 0, camera = null) {
+    _renderToTarget(faceIndex, useCameraPostProcess, dumpForDebug, layer = 0) {
         const scene = this.getScene();
         if (!scene) {
             return;
         }
         const engine = scene.getEngine();
-        // Bind
+        this._currentFaceIndex = faceIndex;
+        this._currentLayer = layer;
+        this._currentUseCameraPostProcess = useCameraPostProcess;
+        this._currentDumpForDebug = dumpForDebug;
         this._prepareFrame(scene, faceIndex, layer, useCameraPostProcess);
         engine._debugPushGroup?.(`render to face #${faceIndex} layer #${layer}`, 2);
-        if (this.is2DArray || this.is3D) {
-            engine.currentRenderPassId = this._renderPassIds[layer];
-            this.onBeforeRenderObservable.notifyObservers(layer);
-        }
-        else {
-            engine.currentRenderPassId = this._renderPassIds[faceIndex];
-            this.onBeforeRenderObservable.notifyObservers(faceIndex);
-        }
-        const fastPath = engine.snapshotRendering && engine.snapshotRenderingMode === 1;
-        if (!fastPath) {
-            // Get the list of meshes to render
-            let currentRenderList = null;
-            const defaultRenderList = this.renderList ? this.renderList : scene.getActiveMeshes().data;
-            const defaultRenderListLength = this.renderList ? this.renderList.length : scene.getActiveMeshes().length;
-            if (this.getCustomRenderList) {
-                currentRenderList = this.getCustomRenderList(this.is2DArray || this.is3D ? layer : faceIndex, defaultRenderList, defaultRenderListLength);
-            }
-            if (!currentRenderList) {
-                // No custom render list provided, we prepare the rendering for the default list, but check
-                // first if we did not already performed the preparation before so as to avoid re-doing it several times
-                if (!this._defaultRenderListPrepared) {
-                    this._prepareRenderingManager(defaultRenderList, defaultRenderListLength, camera, !this.renderList || this.forceLayerMaskCheck);
-                    this._defaultRenderListPrepared = true;
-                }
-                currentRenderList = defaultRenderList;
-            }
-            else {
-                // Prepare the rendering for the custom render list provided
-                this._prepareRenderingManager(currentRenderList, currentRenderList.length, camera, this.forceLayerMaskCheck);
-            }
-            // Before clear
-            for (const step of scene._beforeRenderTargetClearStage) {
-                step.action(this, faceIndex, layer);
-            }
-            // Clear
-            if (this.onClearObservable.hasObservers()) {
-                this.onClearObservable.notifyObservers(engine);
-            }
-            else if (!this.skipInitialClear) {
-                engine.clear(this.clearColor || scene.clearColor, true, true, true);
-            }
-            if (!this._doNotChangeAspectRatio) {
-                scene.updateTransformMatrix(true);
-            }
-            // Before Camera Draw
-            for (const step of scene._beforeRenderTargetDrawStage) {
-                step.action(this, faceIndex, layer);
-            }
-            // Render
-            this._renderingManager.render(this.customRenderFunction, currentRenderList, this.renderParticles, this.renderSprites);
-            // After Camera Draw
-            for (const step of scene._afterRenderTargetDrawStage) {
-                step.action(this, faceIndex, layer);
-            }
-            const saveGenerateMipMaps = this._texture?.generateMipMaps ?? false;
-            if (this._texture) {
-                this._texture.generateMipMaps = false; // if left true, the mipmaps will be generated (if this._texture.generateMipMaps = true) when the first post process binds its own RTT: by doing so it will unbind the current RTT,
-                // which will trigger a mipmap generation. We don't want this because it's a wasted work, we will do an unbind of the current RTT at the end of the process (see unbindFrameBuffer) which will
-                // trigger the generation of the final mipmaps
-            }
-            if (this._postProcessManager) {
-                this._postProcessManager._finalizeFrame(false, this._renderTarget ?? undefined, faceIndex, this._postProcesses, this.ignoreCameraViewport);
-            }
-            else if (useCameraPostProcess) {
-                scene.postProcessManager._finalizeFrame(false, this._renderTarget ?? undefined, faceIndex);
-            }
-            for (const step of scene._afterRenderTargetPostProcessStage) {
-                step.action(this, faceIndex, layer);
-            }
-            if (this._texture) {
-                this._texture.generateMipMaps = saveGenerateMipMaps;
-            }
-            if (!this._doNotChangeAspectRatio) {
-                scene.updateTransformMatrix(true);
-            }
-            // Dump ?
-            if (dumpForDebug) {
-                if (!this._dumpTools) {
-                    _Misc_logger_js__WEBPACK_IMPORTED_MODULE_8__/* .Logger */ .V.Error("dumpTools module is still being loaded. To speed up the process import dump tools directly in your project");
-                }
-                else {
-                    this._dumpTools.DumpFramebuffer(this.getRenderWidth(), this.getRenderHeight(), engine);
-                }
-            }
-        }
-        else {
-            // Clear
-            if (this.onClearObservable.hasObservers()) {
-                this.onClearObservable.notifyObservers(engine);
-            }
-            else {
-                if (!this.skipInitialClear) {
-                    engine.clear(this.clearColor || scene.clearColor, true, true, true);
-                }
-            }
-        }
+        this._objectRenderer.render(faceIndex + layer, true); // only faceIndex or layer (if any) will be different from 0 (we don't support array of cubes), so it's safe to add them to get the pass index
         engine._debugPopGroup?.(2);
-        // Unbind
         this._unbindFrameBuffer(engine, faceIndex);
         if (this._texture && this.isCube && faceIndex === 5) {
             engine.generateMipMapsForCubemap(this._texture, true);
@@ -28773,7 +29591,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
      * @param transparentSortCompareFn The transparent queue comparison function use to sort.
      */
     setRenderingOrder(renderingGroupId, opaqueSortCompareFn = null, alphaTestSortCompareFn = null, transparentSortCompareFn = null) {
-        this._renderingManager.setRenderingOrder(renderingGroupId, opaqueSortCompareFn, alphaTestSortCompareFn, transparentSortCompareFn);
+        this._objectRenderer.setRenderingOrder(renderingGroupId, opaqueSortCompareFn, alphaTestSortCompareFn, transparentSortCompareFn);
     }
     /**
      * Specifies whether or not the stencil and depth buffer are cleared between two rendering groups.
@@ -28782,8 +29600,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
      * @param autoClearDepthStencil Automatically clears depth and stencil between groups if true.
      */
     setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil) {
-        this._renderingManager.setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil);
-        this._renderingManager._useSceneAutoClearSetup = false;
+        this._objectRenderer.setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil);
     }
     /**
      * Clones the texture.
@@ -28839,10 +29656,8 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
     dispose() {
         this.onResizeObservable.clear();
         this.onClearObservable.clear();
-        this.onAfterRenderObservable.clear();
         this.onAfterUnbindObservable.clear();
         this.onBeforeBindObservable.clear();
-        this.onBeforeRenderObservable.clear();
         if (this._postProcessManager) {
             this._postProcessManager.dispose();
             this._postProcessManager = null;
@@ -28850,13 +29665,12 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
         if (this._prePassRenderTarget) {
             this._prePassRenderTarget.dispose();
         }
-        this._releaseRenderPassId();
+        this._objectRenderer.dispose();
         this.clearPostProcesses(true);
         if (this._resizeObserver) {
             this.getScene().getEngine().onResizeObservable.remove(this._resizeObserver);
             this._resizeObserver = null;
         }
-        this.renderList = null;
         // Remove from custom render targets
         const scene = this.getScene();
         if (!scene) {
@@ -28879,9 +29693,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
     }
     /** @internal */
     _rebuild() {
-        if (this.refreshRate === RenderTargetTexture.REFRESHRATE_RENDER_ONCE) {
-            this.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
-        }
+        this._objectRenderer._rebuild();
         if (this._postProcessManager) {
             this._postProcessManager._rebuild();
         }
@@ -28890,9 +29702,7 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
      * Clear the info related to rendering groups preventing retention point in material dispose.
      */
     freeRenderingGroups() {
-        if (this._renderingManager) {
-            this._renderingManager.freeRenderingGroups();
-        }
+        this._objectRenderer.freeRenderingGroups();
     }
     /**
      * Gets the number of views the corresponding to the texture (eg. a MultiviewRenderTarget will have > 1)
@@ -28905,18 +29715,18 @@ class RenderTargetTexture extends _Materials_Textures_texture_js__WEBPACK_IMPORT
 /**
  * The texture will only be rendered once which can be useful to improve performance if everything in your render is static for instance.
  */
-RenderTargetTexture.REFRESHRATE_RENDER_ONCE = 0;
+RenderTargetTexture.REFRESHRATE_RENDER_ONCE = ObjectRenderer.REFRESHRATE_RENDER_ONCE;
 /**
- * The texture will only be rendered rendered every frame and is recommended for dynamic contents.
+ * The texture will be rendered every frame and is recommended for dynamic contents.
  */
-RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYFRAME = 1;
+RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYFRAME = ObjectRenderer.REFRESHRATE_RENDER_ONEVERYFRAME;
 /**
  * The texture will be rendered every 2 frames which could be enough if your dynamic objects are not
  * the central point of your effect and can save a lot of performances.
  */
-RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYTWOFRAMES = 2;
+RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYTWOFRAMES = ObjectRenderer.REFRESHRATE_RENDER_ONEVERYTWOFRAMES;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-_Materials_Textures_texture_js__WEBPACK_IMPORTED_MODULE_2__/* .Texture */ .g._CreateRenderTargetTexture = (name, renderTargetSize, scene, generateMipMaps, creationFlags) => {
+texture/* Texture */.g._CreateRenderTargetTexture = (name, renderTargetSize, scene, generateMipMaps, creationFlags) => {
     return new RenderTargetTexture(name, renderTargetSize, scene, generateMipMaps);
 };
 //# sourceMappingURL=renderTargetTexture.js.map
@@ -29275,6 +30085,7 @@ class Texture extends baseTexture/* BaseTexture */.t {
             useSRGBBuffer = noMipmapOrOptions.useSRGBBuffer ?? false;
             internalTexture = noMipmapOrOptions.internalTexture ?? null;
             gammaSpace = noMipmapOrOptions.gammaSpace ?? gammaSpace;
+            forcedExtension = noMipmapOrOptions.forcedExtension ?? forcedExtension;
         }
         else {
             noMipmap = !!noMipmapOrOptions;
@@ -30108,6 +30919,8 @@ function setClipPlane(effect, uniformName, clipPlane) {
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   E: () => (/* binding */ DrawWrapper)
 /* harmony export */ });
+/* harmony import */ var _Misc_timingTools_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2940);
+
 /** @internal */
 class DrawWrapper {
     static GetEffect(effect) {
@@ -30145,7 +30958,26 @@ class DrawWrapper {
             this.drawContext?.reset();
         }
     }
-    dispose() {
+    /**
+     * Dispose the effect wrapper and its resources
+     * @param immediate if the effect should be disposed immediately or on the next frame.
+     * If dispose() is not called during a scene or engine dispose, we want to delay the dispose of the underlying effect. Mostly to give a chance to user code to reuse the effect in some way.
+     */
+    dispose(immediate = false) {
+        if (this.effect) {
+            const effect = this.effect;
+            if (immediate) {
+                effect.dispose();
+            }
+            else {
+                _Misc_timingTools_js__WEBPACK_IMPORTED_MODULE_0__/* .TimingTools */ ._.SetImmediate(() => {
+                    effect.getEngine().onEndFrameObservable.addOnce(() => {
+                        effect.dispose();
+                    });
+                });
+            }
+            this.effect = null;
+        }
         this.drawContext?.dispose();
     }
 }
@@ -30157,6 +30989,7 @@ class DrawWrapper {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   FK: () => (/* binding */ _retryWithInterval),
 /* harmony export */   b4: () => (/* binding */ getCachedPipeline),
 /* harmony export */   bu: () => (/* binding */ _processShaderCode),
 /* harmony export */   mO: () => (/* binding */ resetCachedPipeline),
@@ -30356,6 +31189,25 @@ const createAndPreparePipelineContext = (options, createPipelineContext, _prepar
         throw e;
     }
 };
+const _retryWithInterval = (condition, onSuccess, onError, step = 16, maxTimeout = 1000) => {
+    const int = setInterval(() => {
+        try {
+            if (condition()) {
+                clearInterval(int);
+                onSuccess();
+            }
+        }
+        catch (e) {
+            clearInterval(int);
+            onError?.(e);
+        }
+        maxTimeout -= step;
+        if (maxTimeout < 0) {
+            clearInterval(int);
+            onError?.();
+        }
+    }, step);
+};
 //# sourceMappingURL=effect.functions.js.map
 
 /***/ }),
@@ -30387,6 +31239,12 @@ class Effect {
     }
     static set ShadersRepository(repo) {
         _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_2__/* .ShaderStore */ .l.ShadersRepository = repo;
+    }
+    /**
+     * Gets a boolean indicating that the effect was already disposed
+     */
+    get isDisposed() {
+        return this._isDisposed;
     }
     /**
      * Observable that will be called when effect is bound.
@@ -30730,27 +31588,17 @@ class Effect {
             func(effect);
         });
         if (!this._pipelineContext || this._pipelineContext.isAsync) {
-            setTimeout(() => {
-                this._checkIsReady(null);
-            }, 16);
+            this._checkIsReady(null);
         }
     }
     _checkIsReady(previousPipelineContext) {
-        try {
-            if (this._isReadyInternal()) {
-                return;
-            }
-        }
-        catch (e) {
+        (0,_effect_functions_js__WEBPACK_IMPORTED_MODULE_3__/* ._retryWithInterval */ .FK)(() => {
+            return this._isReadyInternal() || this._isDisposed;
+        }, () => {
+            // no-op - done in the _isReadyInternal call
+        }, (e) => {
             this._processCompilationErrors(e, previousPipelineContext);
-            return;
-        }
-        if (this._isDisposed) {
-            return;
-        }
-        setTimeout(() => {
-            this._checkIsReady(previousPipelineContext);
-        }, 16);
+        });
     }
     /**
      * Gets the vertex shader source code of this effect
@@ -31511,11 +32359,17 @@ class Effect {
     }
     /**
      * Release all associated resources.
+     * @param force specifies if the effect must be released no matter what
      **/
-    dispose() {
-        this._refCount--;
-        if (this._refCount > 0) {
-            // Others are still using the effect
+    dispose(force = false) {
+        if (force) {
+            this._refCount = 0;
+        }
+        else {
+            this._refCount--;
+        }
+        if (this._refCount > 0 || this._isDisposed) {
+            // Others are still using the effect or the effect was already disposed
             return;
         }
         if (this._pipelineContext) {
@@ -32092,7 +32946,7 @@ class EffectWrapper {
             this._onContextRestoredObserver = null;
         }
         this.onEffectCreatedObservable.clear();
-        this.effect.dispose();
+        this._drawWrapper.dispose(true);
     }
 }
 /**
@@ -34731,11 +35585,11 @@ class Material {
     }
     /**
      * Disposes the material
-     * @param forceDisposeEffect specifies if effects should be forcefully disposed
+     * @param _forceDisposeEffect kept for backward compat. We reference count the effect now.
      * @param forceDisposeTextures specifies if textures should be forcefully disposed
      * @param notBoundToMesh specifies if the material that is being disposed is known to be not bound to any mesh
      */
-    dispose(forceDisposeEffect, forceDisposeTextures, notBoundToMesh) {
+    dispose(_forceDisposeEffect, forceDisposeTextures, notBoundToMesh) {
         const scene = this.getScene();
         // Animations
         scene.stopAnimation(this);
@@ -34757,8 +35611,8 @@ class Material {
                 for (const meshId in this.meshMap) {
                     const mesh = this.meshMap[meshId];
                     if (mesh) {
+                        this.releaseVertexArrayObject(mesh, true);
                         mesh.material = null; // will set the entry in the map to undefined
-                        this.releaseVertexArrayObject(mesh, forceDisposeEffect);
                     }
                 }
             }
@@ -34766,15 +35620,15 @@ class Material {
                 const meshes = scene.meshes;
                 for (const mesh of meshes) {
                     if (mesh.material === this && !mesh.sourceMesh) {
+                        this.releaseVertexArrayObject(mesh, true);
                         mesh.material = null;
-                        this.releaseVertexArrayObject(mesh, forceDisposeEffect);
                     }
                 }
             }
         }
         this._uniformBuffer.dispose();
         // Shader are kept in cache for further use but we can get rid of this by using forceDisposeEffect
-        if (forceDisposeEffect && this._drawWrapper.effect) {
+        if (this._drawWrapper.effect) {
             if (!this._storeEffectOnSubMeshes) {
                 this._drawWrapper.effect.dispose();
             }
@@ -35478,7 +36332,7 @@ function PrepareDefinesForLights(scene, mesh, defines, specularSupported, maxSim
     }
     let lightIndex = 0;
     const state = {
-        needNormals: defines._needNormals,
+        needNormals: defines._needNormals, // prevents overriding previous reflection or other needs for normals
         needRebuild: false,
         lightmapMode: false,
         shadowEnabled: false,
@@ -37010,17 +37864,17 @@ class MaterialPluginManager {
                         if (processorOptions === null) {
                             const shaderLanguage = 0 /* ShaderLanguage.GLSL */;
                             processorOptions = {
-                                defines: [],
+                                defines: [], // not used by _ProcessIncludes
                                 indexParameters: eventData.indexParameters,
                                 isFragment: false,
                                 shouldUseHighPrecisionShader: this._engine._shouldUseHighPrecisionShader,
-                                processor: undefined,
+                                processor: undefined, // not used by _ProcessIncludes
                                 supportsUniformBuffers: this._engine.supportsUniformBuffers,
                                 shadersRepository: shaderStore/* ShaderStore */.l.GetShadersRepository(shaderLanguage),
                                 includesShadersStore: shaderStore/* ShaderStore */.l.GetIncludesShadersStore(shaderLanguage),
-                                version: undefined,
+                                version: undefined, // not used by _ProcessIncludes
                                 platformName: this._engine.shaderPlatformName,
-                                processingContext: undefined,
+                                processingContext: undefined, // not used by _ProcessIncludes
                                 isNDCHalfZRange: this._engine.isNDCHalfZRange,
                                 useReverseDepthBuffer: this._engine.useReverseDepthBuffer,
                                 processCodeAfterIncludes: undefined, // not used by _ProcessIncludes
@@ -41509,6 +42363,14 @@ class Color3 {
         return new Color3(Math.random(), Math.random(), Math.random());
     }
 }
+/**
+ * If the first color is flagged with integers (as everything is 0,0,0), V8 stores all of the properties as integers internally because it doesn't know any better yet.
+ * If subsequent colors are created with non-integer values, V8 determines that it would be best to represent these properties as doubles instead of integers,
+ * and henceforth it will use floating-point representation for all color instances that it creates.
+ * But the original color instances are unchanged and has a "deprecated map".
+ * If we keep using the color instances from step 1, it will now be a poison pill which will mess up optimizations in any code it touches.
+ */
+Color3._V8PerformanceHack = new Color3(0.5, 0.5, 0.5);
 // Statics
 Color3._BlackReadOnly = Color3.Black();
 Object.defineProperties(Color3.prototype, {
@@ -42291,6 +43153,14 @@ class Color4 {
         return colors;
     }
 }
+/**
+ * If the first color is flagged with integers (as everything is 0,0,0,0), V8 stores all of the properties as integers internally because it doesn't know any better yet.
+ * If subsequent colors are created with non-integer values, V8 determines that it would be best to represent these properties as doubles instead of integers,
+ * and henceforth it will use floating-point representation for all color instances that it creates.
+ * But the original color instances are unchanged and has a "deprecated map".
+ * If we keep using the color instances from step 1, it will now be a poison pill which will mess up optimizations in any code it touches.
+ */
+Color4._V8PerformanceHack = new Color4(0.5, 0.5, 0.5, 0.5);
 Object.defineProperties(Color4.prototype, {
     dimension: { value: [4] },
     rank: { value: 1 },
@@ -45353,6 +46223,14 @@ class Vector2 {
         return Vector2.Distance(p, proj);
     }
 }
+/**
+ * If the first vector is flagged with integers (as everything is 0,0), V8 stores all of the properties as integers internally because it doesn't know any better yet.
+ * If subsequent vectors are created with non-integer values, V8 determines that it would be best to represent these properties as doubles instead of integers,
+ * and henceforth it will use floating-point representation for all Vector2 instances that it creates.
+ * But the original Vector2 instances are unchanged and has a "deprecated map".
+ * If we keep using the Vector2 instances from step 1, it will now be a poison pill which will mess up optimizations in any code it touches.
+ */
+Vector2._V8PerformanceHack = new Vector2(0.5, 0.5);
 Vector2._ZeroReadOnly = Vector2.Zero();
 Vector2;
 Object.defineProperties(Vector2.prototype, {
@@ -47271,6 +48149,14 @@ class Vector3 {
         return ref;
     }
 }
+/**
+ * If the first vector is flagged with integers (as everything is 0,0,0), V8 stores all of the properties as integers internally because it doesn't know any better yet.
+ * If subsequent vectors are created with non-integer values, V8 determines that it would be best to represent these properties as doubles instead of integers,
+ * and henceforth it will use floating-point representation for all Vector3 instances that it creates.
+ * But the original Vector3 instances are unchanged and has a "deprecated map".
+ * If we keep using the Vector3 instances from step 1, it will now be a poison pill which will mess up optimizations in any code it touches.
+ */
+Vector3._V8PerformanceHack = new Vector3(0.5, 0.5, 0.5);
 Vector3._UpReadOnly = Vector3.Up();
 Vector3._DownReadOnly = Vector3.Down();
 Vector3._LeftHandedForwardReadOnly = Vector3.Forward(false);
@@ -48236,6 +49122,14 @@ class Vector4 {
         return left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
     }
 }
+/**
+ * If the first vector is flagged with integers (as everything is 0,0,0,0), V8 stores all of the properties as integers internally because it doesn't know any better yet.
+ * If subsequent vectors are created with non-integer values, V8 determines that it would be best to represent these properties as doubles instead of integers,
+ * and henceforth it will use floating-point representation for all Vector4 instances that it creates.
+ * But the original Vector4 instances are unchanged and has a "deprecated map".
+ * If we keep using the Vector4 instances from step 1, it will now be a poison pill which will mess up optimizations in any code it touches.
+ */
+Vector4._V8PerformanceHack = new Vector4(0.5, 0.5, 0.5, 0.5);
 Vector4._ZeroReadOnly = Vector4.Zero();
 Vector4;
 Object.defineProperties(Vector4.prototype, {
@@ -49593,6 +50487,14 @@ class Quaternion {
         return ref.copyFromFloats((value1.x + value2.x) / 2, (value1.y + value2.y) / 2, (value1.z + value2.z) / 2, (value1.w + value2.w) / 2);
     }
 }
+/**
+ * If the first quaternion is flagged with integers (as everything is 0,0,0,0), V8 stores all of the properties as integers internally because it doesn't know any better yet.
+ * If subsequent quaternion are created with non-integer values, V8 determines that it would be best to represent these properties as doubles instead of integers,
+ * and henceforth it will use floating-point representation for all quaternion instances that it creates.
+ * But the original quaternion instances are unchanged and has a "deprecated map".
+ * If we keep using the quaternion instances from step 1, it will now be a poison pill which will mess up optimizations in any code it touches.
+ */
+Quaternion._V8PerformanceHack = new Quaternion(0.5, 0.5, 0.5, 0.5);
 Quaternion;
 Object.defineProperties(Quaternion.prototype, {
     dimension: { value: [4] },
@@ -52175,14 +53077,14 @@ var math_viewport = __webpack_require__(4494);
 //                         l - m
 // Leaving the trigonometric terms aside we can precompute the constants to :
 const SH3ylmBasisConstants = [
-    Math.sqrt(1 / (4 * Math.PI)),
-    -Math.sqrt(3 / (4 * Math.PI)),
-    Math.sqrt(3 / (4 * Math.PI)),
-    -Math.sqrt(3 / (4 * Math.PI)),
-    Math.sqrt(15 / (4 * Math.PI)),
-    -Math.sqrt(15 / (4 * Math.PI)),
-    Math.sqrt(5 / (16 * Math.PI)),
-    -Math.sqrt(15 / (4 * Math.PI)),
+    Math.sqrt(1 / (4 * Math.PI)), // l00
+    -Math.sqrt(3 / (4 * Math.PI)), // l1_1
+    Math.sqrt(3 / (4 * Math.PI)), // l10
+    -Math.sqrt(3 / (4 * Math.PI)), // l11
+    Math.sqrt(15 / (4 * Math.PI)), // l2_2
+    -Math.sqrt(15 / (4 * Math.PI)), // l2_1
+    Math.sqrt(5 / (16 * Math.PI)), // l20
+    -Math.sqrt(15 / (4 * Math.PI)), // l21
     Math.sqrt(15 / (16 * Math.PI)), // l22
 ];
 // cm = cos(m * phi)
@@ -52190,14 +53092,14 @@ const SH3ylmBasisConstants = [
 // {x,y,z} = {cos(phi)sin(theta), sin(phi)sin(theta), cos(theta)}
 // By recursion on using trigo identities:
 const SH3ylmBasisTrigonometricTerms = [
-    () => 1,
-    (direction) => direction.y,
-    (direction) => direction.z,
-    (direction) => direction.x,
-    (direction) => direction.x * direction.y,
-    (direction) => direction.y * direction.z,
-    (direction) => 3 * direction.z * direction.z - 1,
-    (direction) => direction.x * direction.z,
+    () => 1, // l00
+    (direction) => direction.y, // l1_1
+    (direction) => direction.z, // l10
+    (direction) => direction.x, // l11
+    (direction) => direction.x * direction.y, // l2_2
+    (direction) => direction.y * direction.z, // l2_1
+    (direction) => 3 * direction.z * direction.z - 1, // l20
+    (direction) => direction.x * direction.z, // l21
     (direction) => direction.x * direction.x - direction.y * direction.y, // l22
 ];
 // Wrap the full compute
@@ -52582,8 +53484,8 @@ __webpack_require__.d(__webpack_exports__, {
 var math_vector = __webpack_require__(9923);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.color.js
 var math_color = __webpack_require__(6041);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/mesh.js + 8 modules
-var mesh = __webpack_require__(9774);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/mesh.js + 7 modules
+var mesh = __webpack_require__(6726);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/mesh.vertexData.js
 var mesh_vertexData = __webpack_require__(6803);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Compat/compatibilityOptions.js
@@ -53531,7 +54433,7 @@ mesh/* Mesh */.e.CreateBox = (name, size, scene = null, updatable, sideOrientati
 /* harmony export */   x: () => (/* binding */ CreatePlane)
 /* harmony export */ });
 /* unused harmony exports CreatePlaneVertexData, PlaneBuilder */
-/* harmony import */ var _mesh_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9774);
+/* harmony import */ var _mesh_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6726);
 /* harmony import */ var _mesh_vertexData_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6803);
 /* harmony import */ var _Compat_compatibilityOptions_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(1313);
 
@@ -53659,7 +54561,7 @@ class WebGLDataBuffer extends _Buffers_dataBuffer_js__WEBPACK_IMPORTED_MODULE_0_
 
 /***/ }),
 
-/***/ 9774:
+/***/ 6726:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 
@@ -53754,55 +54656,8 @@ var math_functions = __webpack_require__(1139);
 var engineStore = __webpack_require__(6315);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Compat/compatibilityOptions.js
 var compatibilityOptions = __webpack_require__(1313);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/logger.js
-var logger = __webpack_require__(1137);
-;// ./node_modules/@babylonjs/core/Buffers/bufferUtils.js
-
-
-/**
- * Copies the given data array to the given float array.
- * @param input the input data array
- * @param size the number of components
- * @param type the component type
- * @param byteOffset the byte offset of the data
- * @param byteStride the byte stride of the data
- * @param normalized whether the data is normalized
- * @param totalVertices number of vertices in the buffer to take into account
- * @param output the output float array
- */
-function CopyFloatData(input, size, type, byteOffset, byteStride, normalized, totalVertices, output) {
-    const tightlyPackedByteStride = size * Buffers_buffer/* VertexBuffer */.R.GetTypeByteLength(type);
-    const count = totalVertices * size;
-    if (output.length !== count) {
-        throw new Error("Output length is not valid");
-    }
-    if (type !== Buffers_buffer/* VertexBuffer */.R.FLOAT || byteStride !== tightlyPackedByteStride) {
-        Buffers_buffer/* VertexBuffer */.R.ForEach(input, byteOffset, byteStride, size, type, count, normalized, (value, index) => (output[index] = value));
-        return;
-    }
-    if (input instanceof Array) {
-        const offset = byteOffset / 4;
-        output.set(input, offset);
-    }
-    else if (input instanceof ArrayBuffer) {
-        const floatData = new Float32Array(input, byteOffset, count);
-        output.set(floatData);
-    }
-    else {
-        const offset = input.byteOffset + byteOffset;
-        // Protect against bad data
-        const remainder = offset % 4;
-        if (remainder) {
-            logger/* Logger */.V.Warn("CopyFloatData: copied misaligned data.");
-            // If not aligned, copy the data to aligned buffer
-            output.set(new Float32Array(input.buffer.slice(offset, offset + count * 4)));
-            return;
-        }
-        const floatData = new Float32Array(input.buffer, offset, count);
-        output.set(floatData);
-    }
-}
-//# sourceMappingURL=bufferUtils.js.map
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Buffers/bufferUtils.js
+var bufferUtils = __webpack_require__(1675);
 ;// ./node_modules/@babylonjs/core/Meshes/geometry.js
 
 
@@ -54157,7 +55012,7 @@ class Geometry {
         vertexData[kind] || (vertexData[kind] = new Float32Array(this._totalVertices * vertexBuffer.getSize()));
         const data = vertexBuffer.getData();
         if (data) {
-            CopyFloatData(data, vertexBuffer.getSize(), vertexBuffer.type, vertexBuffer.byteOffset, vertexBuffer.byteStride, vertexBuffer.normalized, this._totalVertices, vertexData[kind]);
+            (0,bufferUtils/* CopyFloatData */.gs)(data, vertexBuffer.getSize(), vertexBuffer.type, vertexBuffer.byteOffset, vertexBuffer.byteStride, vertexBuffer.normalized, this._totalVertices, vertexData[kind]);
         }
     }
     /**
@@ -57033,7 +57888,7 @@ class AbstractMesh extends TransformNode {
         if (!this.subMeshes) {
             return;
         }
-        this.resetDrawCache();
+        this.resetDrawCache(undefined, value == null);
         this._unBindEffect();
     }
     /**
@@ -57593,13 +58448,14 @@ class AbstractMesh extends TransformNode {
     /**
      * Resets the draw wrappers cache for all submeshes of this abstract mesh
      * @param passId If provided, releases only the draw wrapper corresponding to this render pass id
+     * @param immediate If true, the effect will be released immediately, otherwise it will be released at the next frame
      */
-    resetDrawCache(passId) {
+    resetDrawCache(passId, immediate = false) {
         if (!this.subMeshes) {
             return;
         }
         for (const subMesh of this.subMeshes) {
-            subMesh.resetDrawCache(passId);
+            subMesh.resetDrawCache(passId, immediate);
         }
     }
     // Methods
@@ -58326,13 +59182,14 @@ class AbstractMesh extends TransformNode {
         return null;
     }
     /**
-     * Disposes all the submeshes of the current meshnp
+     * Disposes all the submeshes of the current mesh
+     * @param immediate should dispose the effects immediately or not
      * @returns the current mesh
      */
-    releaseSubMeshes() {
+    releaseSubMeshes(immediate = false) {
         if (this.subMeshes) {
             while (this.subMeshes.length) {
-                this.subMeshes[0].dispose();
+                this.subMeshes[0].dispose(immediate);
             }
         }
         else {
@@ -58411,7 +59268,7 @@ class AbstractMesh extends TransformNode {
         });
         // SubMeshes
         if (this.getClassName() !== "InstancedMesh" || this.getClassName() !== "InstancedLinesMesh") {
-            this.releaseSubMeshes();
+            this.releaseSubMeshes(true);
         }
         // Query
         const engine = scene.getEngine();
@@ -58798,7 +59655,7 @@ class AbstractMesh extends TransformNode {
             facetData.facetPositions = [];
             facetData.facetNormals = [];
             facetData.facetPartitioning = new Array();
-            facetData.facetParameters = null;
+            facetData.facetParameters = {};
             facetData.depthSortedIndices = new Uint32Array(0);
         }
         return this;
@@ -59173,6 +60030,8 @@ class MultiMaterial extends Materials_material/* Material */.i {
 }
 (0,typeStore/* RegisterClass */.Y5)("BABYLON.MultiMaterial", MultiMaterial);
 //# sourceMappingURL=multiMaterial.js.map
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/logger.js
+var logger = __webpack_require__(1137);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/sceneComponent.js
 var sceneComponent = __webpack_require__(6945);
 ;// ./node_modules/@babylonjs/core/Meshes/meshLODLevel.js
@@ -65583,9 +66442,9 @@ class SubMesh {
     /**
      * @internal
      */
-    _removeDrawWrapper(passId, disposeWrapper = true) {
+    _removeDrawWrapper(passId, disposeWrapper = true, immediate = false) {
         if (disposeWrapper) {
-            this._drawWrappers[passId]?.dispose();
+            this._drawWrappers[passId]?.dispose(immediate);
         }
         this._drawWrappers[passId] = undefined;
     }
@@ -65630,16 +66489,17 @@ class SubMesh {
     /**
      * Resets the draw wrappers cache
      * @param passId If provided, releases only the draw wrapper corresponding to this render pass id
+     * @param immediate If true, the draw wrapper will dispose the effect immediately (false by default)
      */
-    resetDrawCache(passId) {
+    resetDrawCache(passId, immediate = false) {
         if (this._drawWrappers) {
             if (passId !== undefined) {
-                this._removeDrawWrapper(passId);
+                this._removeDrawWrapper(passId, true, immediate);
                 return;
             }
             else {
                 for (const drawWrapper of this._drawWrappers) {
-                    drawWrapper?.dispose();
+                    drawWrapper?.dispose(immediate);
                 }
             }
         }
@@ -66106,8 +66966,9 @@ class SubMesh {
     // Dispose
     /**
      * Release associated resources
+     * @param immediate If true, the effect will be disposed immediately (false by default)
      */
-    dispose() {
+    dispose(immediate = false) {
         if (this._linesIndexBuffer) {
             this._mesh.getScene().getEngine()._releaseBuffer(this._linesIndexBuffer);
             this._linesIndexBuffer = null;
@@ -66115,7 +66976,7 @@ class SubMesh {
         // Remove from mesh
         const index = this._mesh.subMeshes.indexOf(this);
         this._mesh.subMeshes.splice(index, 1);
-        this.resetDrawCache();
+        this.resetDrawCache(undefined, immediate);
     }
     /**
      * Gets the class name
@@ -66159,7 +67020,7 @@ class SubMesh {
 /***/ 203:
 /***/ ((__unused_webpack___webpack_module__, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-/* harmony import */ var _Meshes_mesh_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9774);
+/* harmony import */ var _Meshes_mesh_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6726);
 /* harmony import */ var _Buffers_buffer_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5616);
 /* harmony import */ var _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9923);
 /* harmony import */ var _Misc_logger_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(1137);
@@ -66484,215 +67345,6 @@ _Meshes_mesh_js__WEBPACK_IMPORTED_MODULE_0__/* .Mesh */ .e.prototype._disposeThi
 
 /***/ }),
 
-/***/ 6755:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   d: () => (/* binding */ CubeMapToSphericalPolynomialTools)
-/* harmony export */ });
-/* harmony import */ var _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9923);
-/* harmony import */ var _Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4867);
-/* harmony import */ var _Maths_sphericalPolynomial_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4640);
-/* harmony import */ var _Maths_math_constants_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5559);
-/* harmony import */ var _Maths_math_color_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6041);
-
-
-
-
-
-
-class FileFaceOrientation {
-    constructor(name, worldAxisForNormal, worldAxisForFileX, worldAxisForFileY) {
-        this.name = name;
-        this.worldAxisForNormal = worldAxisForNormal;
-        this.worldAxisForFileX = worldAxisForFileX;
-        this.worldAxisForFileY = worldAxisForFileY;
-    }
-}
-/**
- * Helper class dealing with the extraction of spherical polynomial dataArray
- * from a cube map.
- */
-class CubeMapToSphericalPolynomialTools {
-    /**
-     * Converts a texture to the according Spherical Polynomial data.
-     * This extracts the first 3 orders only as they are the only one used in the lighting.
-     *
-     * @param texture The texture to extract the information from.
-     * @returns The Spherical Polynomial data.
-     */
-    static ConvertCubeMapTextureToSphericalPolynomial(texture) {
-        if (!texture.isCube) {
-            // Only supports cube Textures currently.
-            return null;
-        }
-        texture.getScene()?.getEngine().flushFramebuffer();
-        const size = texture.getSize().width;
-        const rightPromise = texture.readPixels(0, undefined, undefined, false);
-        const leftPromise = texture.readPixels(1, undefined, undefined, false);
-        let upPromise;
-        let downPromise;
-        if (texture.isRenderTarget) {
-            upPromise = texture.readPixels(3, undefined, undefined, false);
-            downPromise = texture.readPixels(2, undefined, undefined, false);
-        }
-        else {
-            upPromise = texture.readPixels(2, undefined, undefined, false);
-            downPromise = texture.readPixels(3, undefined, undefined, false);
-        }
-        const frontPromise = texture.readPixels(4, undefined, undefined, false);
-        const backPromise = texture.readPixels(5, undefined, undefined, false);
-        const gammaSpace = texture.gammaSpace;
-        // Always read as RGBA.
-        const format = 5;
-        let type = 0;
-        if (texture.textureType == 1 || texture.textureType == 2) {
-            type = 1;
-        }
-        return new Promise((resolve) => {
-            Promise.all([leftPromise, rightPromise, upPromise, downPromise, frontPromise, backPromise]).then(([left, right, up, down, front, back]) => {
-                const cubeInfo = {
-                    size,
-                    right,
-                    left,
-                    up,
-                    down,
-                    front,
-                    back,
-                    format,
-                    type,
-                    gammaSpace,
-                };
-                resolve(this.ConvertCubeMapToSphericalPolynomial(cubeInfo));
-            });
-        });
-    }
-    /**
-     * Compute the area on the unit sphere of the rectangle defined by (x,y) and the origin
-     * See https://www.rorydriscoll.com/2012/01/15/cubemap-texel-solid-angle/
-     * @param x
-     * @param y
-     * @returns the area
-     */
-    static _AreaElement(x, y) {
-        return Math.atan2(x * y, Math.sqrt(x * x + y * y + 1));
-    }
-    /**
-     * Converts a cubemap to the according Spherical Polynomial data.
-     * This extracts the first 3 orders only as they are the only one used in the lighting.
-     *
-     * @param cubeInfo The Cube map to extract the information from.
-     * @returns The Spherical Polynomial data.
-     */
-    static ConvertCubeMapToSphericalPolynomial(cubeInfo) {
-        const sphericalHarmonics = new _Maths_sphericalPolynomial_js__WEBPACK_IMPORTED_MODULE_2__/* .SphericalHarmonics */ .O();
-        let totalSolidAngle = 0.0;
-        // The (u,v) range is [-1,+1], so the distance between each texel is 2/Size.
-        const du = 2.0 / cubeInfo.size;
-        const dv = du;
-        const halfTexel = 0.5 * du;
-        // The (u,v) of the first texel is half a texel from the corner (-1,-1).
-        const minUV = halfTexel - 1.0;
-        for (let faceIndex = 0; faceIndex < 6; faceIndex++) {
-            const fileFace = this._FileFaces[faceIndex];
-            const dataArray = cubeInfo[fileFace.name];
-            let v = minUV;
-            // TODO: we could perform the summation directly into a SphericalPolynomial (SP), which is more efficient than SphericalHarmonic (SH).
-            // This is possible because during the summation we do not need the SH-specific properties, e.g. orthogonality.
-            // Because SP is still linear, so summation is fine in that basis.
-            const stride = cubeInfo.format === 5 ? 4 : 3;
-            for (let y = 0; y < cubeInfo.size; y++) {
-                let u = minUV;
-                for (let x = 0; x < cubeInfo.size; x++) {
-                    // World direction (not normalised)
-                    const worldDirection = fileFace.worldAxisForFileX.scale(u).add(fileFace.worldAxisForFileY.scale(v)).add(fileFace.worldAxisForNormal);
-                    worldDirection.normalize();
-                    const deltaSolidAngle = this._AreaElement(u - halfTexel, v - halfTexel) -
-                        this._AreaElement(u - halfTexel, v + halfTexel) -
-                        this._AreaElement(u + halfTexel, v - halfTexel) +
-                        this._AreaElement(u + halfTexel, v + halfTexel);
-                    let r = dataArray[y * cubeInfo.size * stride + x * stride + 0];
-                    let g = dataArray[y * cubeInfo.size * stride + x * stride + 1];
-                    let b = dataArray[y * cubeInfo.size * stride + x * stride + 2];
-                    // Prevent NaN harmonics with extreme HDRI data.
-                    if (isNaN(r)) {
-                        r = 0;
-                    }
-                    if (isNaN(g)) {
-                        g = 0;
-                    }
-                    if (isNaN(b)) {
-                        b = 0;
-                    }
-                    // Handle Integer types.
-                    if (cubeInfo.type === 0) {
-                        r /= 255;
-                        g /= 255;
-                        b /= 255;
-                    }
-                    // Handle Gamma space textures.
-                    if (cubeInfo.gammaSpace) {
-                        r = Math.pow((0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_1__/* .Clamp */ .OQ)(r), _Maths_math_constants_js__WEBPACK_IMPORTED_MODULE_3__/* .ToLinearSpace */ .tk);
-                        g = Math.pow((0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_1__/* .Clamp */ .OQ)(g), _Maths_math_constants_js__WEBPACK_IMPORTED_MODULE_3__/* .ToLinearSpace */ .tk);
-                        b = Math.pow((0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_1__/* .Clamp */ .OQ)(b), _Maths_math_constants_js__WEBPACK_IMPORTED_MODULE_3__/* .ToLinearSpace */ .tk);
-                    }
-                    // Prevent to explode in case of really high dynamic ranges.
-                    // sh 3 would not be enough to accurately represent it.
-                    const max = this.MAX_HDRI_VALUE;
-                    if (this.PRESERVE_CLAMPED_COLORS) {
-                        const currentMax = Math.max(r, g, b);
-                        if (currentMax > max) {
-                            const factor = max / currentMax;
-                            r *= factor;
-                            g *= factor;
-                            b *= factor;
-                        }
-                    }
-                    else {
-                        r = (0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_1__/* .Clamp */ .OQ)(r, 0, max);
-                        g = (0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_1__/* .Clamp */ .OQ)(g, 0, max);
-                        b = (0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_1__/* .Clamp */ .OQ)(b, 0, max);
-                    }
-                    const color = new _Maths_math_color_js__WEBPACK_IMPORTED_MODULE_4__/* .Color3 */ .v9(r, g, b);
-                    sphericalHarmonics.addLight(worldDirection, color, deltaSolidAngle);
-                    totalSolidAngle += deltaSolidAngle;
-                    u += du;
-                }
-                v += dv;
-            }
-        }
-        // Solid angle for entire sphere is 4*pi
-        const sphereSolidAngle = 4.0 * Math.PI;
-        // Adjust the solid angle to allow for how many faces we processed.
-        const facesProcessed = 6.0;
-        const expectedSolidAngle = (sphereSolidAngle * facesProcessed) / 6.0;
-        // Adjust the harmonics so that the accumulated solid angle matches the expected solid angle.
-        // This is needed because the numerical integration over the cube uses a
-        // small angle approximation of solid angle for each texel (see deltaSolidAngle),
-        // and also to compensate for accumulative error due to float precision in the summation.
-        const correctionFactor = expectedSolidAngle / totalSolidAngle;
-        sphericalHarmonics.scaleInPlace(correctionFactor);
-        sphericalHarmonics.convertIncidentRadianceToIrradiance();
-        sphericalHarmonics.convertIrradianceToLambertianRadiance();
-        return _Maths_sphericalPolynomial_js__WEBPACK_IMPORTED_MODULE_2__/* .SphericalPolynomial */ .Q.FromHarmonics(sphericalHarmonics);
-    }
-}
-CubeMapToSphericalPolynomialTools._FileFaces = [
-    new FileFaceOrientation("right", new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(1, 0, 0), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, 0, -1), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, -1, 0)),
-    new FileFaceOrientation("left", new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(-1, 0, 0), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, 0, 1), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, -1, 0)),
-    new FileFaceOrientation("up", new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, 1, 0), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(1, 0, 0), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, 0, 1)),
-    new FileFaceOrientation("down", new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, -1, 0), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(1, 0, 0), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, 0, -1)),
-    new FileFaceOrientation("front", new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, 0, 1), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(1, 0, 0), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, -1, 0)),
-    new FileFaceOrientation("back", new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, 0, -1), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(-1, 0, 0), new _Maths_math_vector_js__WEBPACK_IMPORTED_MODULE_0__/* .Vector3 */ .Pq(0, -1, 0)), // -Z bottom
-];
-/** @internal */
-CubeMapToSphericalPolynomialTools.MAX_HDRI_VALUE = 4096;
-/** @internal */
-CubeMapToSphericalPolynomialTools.PRESERVE_CLAMPED_COLORS = false;
-//# sourceMappingURL=cubemapToSphericalPolynomial.js.map
-
-/***/ }),
-
 /***/ 7309:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -66958,719 +67610,6 @@ function makeAsyncFunction(coroutineFactory, scheduler, abortSignal) {
     };
 }
 //# sourceMappingURL=coroutine.js.map
-
-/***/ }),
-
-/***/ 3537:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-
-// EXPORTS
-__webpack_require__.d(__webpack_exports__, {
-  D: () => (/* binding */ DDSTools)
-});
-
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.scalar.functions.js
-var math_scalar_functions = __webpack_require__(4867);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/logger.js
-var logger = __webpack_require__(1137);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/HighDynamicRange/cubemapToSphericalPolynomial.js
-var cubemapToSphericalPolynomial = __webpack_require__(6755);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/textureTools.js + 1 modules
-var textureTools = __webpack_require__(1947);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/internalTexture.js + 1 modules
-var internalTexture = __webpack_require__(854);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/fileTools.js + 2 modules
-var fileTools = __webpack_require__(655);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/guid.js
-var guid = __webpack_require__(8688);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Engines/abstractEngine.js + 4 modules
-var abstractEngine = __webpack_require__(6326);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/Loaders/textureLoaderManager.js
-var textureLoaderManager = __webpack_require__(8454);
-;// ./node_modules/@babylonjs/core/Engines/AbstractEngine/abstractEngine.cubeTexture.js
-
-
-
-
-
-
-abstractEngine/* AbstractEngine */.$.prototype._partialLoadFile = function (url, index, loadedFiles, onfinish, onErrorCallBack = null) {
-    const onload = (data) => {
-        loadedFiles[index] = data;
-        loadedFiles._internalCount++;
-        if (loadedFiles._internalCount === 6) {
-            onfinish(loadedFiles);
-        }
-    };
-    const onerror = (request, exception) => {
-        if (onErrorCallBack && request) {
-            onErrorCallBack(request.status + " " + request.statusText, exception);
-        }
-    };
-    this._loadFile(url, onload, undefined, undefined, true, onerror);
-};
-abstractEngine/* AbstractEngine */.$.prototype._cascadeLoadFiles = function (scene, onfinish, files, onError = null) {
-    const loadedFiles = [];
-    loadedFiles._internalCount = 0;
-    for (let index = 0; index < 6; index++) {
-        this._partialLoadFile(files[index], index, loadedFiles, onfinish, onError);
-    }
-};
-abstractEngine/* AbstractEngine */.$.prototype._cascadeLoadImgs = function (scene, texture, onfinish, files, onError = null, mimeType) {
-    const loadedImages = [];
-    loadedImages._internalCount = 0;
-    for (let index = 0; index < 6; index++) {
-        this._partialLoadImg(files[index], index, loadedImages, scene, texture, onfinish, onError, mimeType);
-    }
-};
-abstractEngine/* AbstractEngine */.$.prototype._partialLoadImg = function (url, index, loadedImages, scene, texture, onfinish, onErrorCallBack = null, mimeType) {
-    const tokenPendingData = (0,guid/* RandomGUID */.z)();
-    const onload = (img) => {
-        loadedImages[index] = img;
-        loadedImages._internalCount++;
-        if (scene) {
-            scene.removePendingData(tokenPendingData);
-        }
-        if (loadedImages._internalCount === 6 && onfinish) {
-            onfinish(texture, loadedImages);
-        }
-    };
-    const onerror = (message, exception) => {
-        if (scene) {
-            scene.removePendingData(tokenPendingData);
-        }
-        if (onErrorCallBack) {
-            onErrorCallBack(message, exception);
-        }
-    };
-    (0,fileTools/* LoadImage */.W$)(url, onload, onerror, scene ? scene.offlineProvider : null, mimeType);
-    if (scene) {
-        scene.addPendingData(tokenPendingData);
-    }
-};
-abstractEngine/* AbstractEngine */.$.prototype.createCubeTextureBase = function (rootUrl, scene, files, noMipmap, onLoad = null, onError = null, format, forcedExtension = null, createPolynomials = false, lodScale = 0, lodOffset = 0, fallback = null, beforeLoadCubeDataCallback = null, imageHandler = null, useSRGBBuffer = false, buffer = null) {
-    const texture = fallback ? fallback : new internalTexture/* InternalTexture */.h(this, 7 /* InternalTextureSource.Cube */);
-    texture.isCube = true;
-    texture.url = rootUrl;
-    texture.generateMipMaps = !noMipmap;
-    texture._lodGenerationScale = lodScale;
-    texture._lodGenerationOffset = lodOffset;
-    texture._useSRGBBuffer = !!useSRGBBuffer && this._caps.supportSRGBBuffers && (this.version > 1 || this.isWebGPU || !!noMipmap);
-    if (texture !== fallback) {
-        texture.label = rootUrl.substring(0, 60); // default label, can be overriden by the caller
-    }
-    if (!this._doNotHandleContextLost) {
-        texture._extension = forcedExtension;
-        texture._files = files;
-        texture._buffer = buffer;
-    }
-    const originalRootUrl = rootUrl;
-    if (this._transformTextureUrl && !fallback) {
-        rootUrl = this._transformTextureUrl(rootUrl);
-    }
-    const rootUrlWithoutUriParams = rootUrl.split("?")[0];
-    const lastDot = rootUrlWithoutUriParams.lastIndexOf(".");
-    const extension = forcedExtension ? forcedExtension : lastDot > -1 ? rootUrlWithoutUriParams.substring(lastDot).toLowerCase() : "";
-    const loaderPromise = (0,textureLoaderManager/* _GetCompatibleTextureLoader */.gT)(extension);
-    const onInternalError = (request, exception) => {
-        if (rootUrl === originalRootUrl) {
-            if (onError && request) {
-                onError(request.status + " " + request.statusText, exception);
-            }
-        }
-        else {
-            // fall back to the original url if the transformed url fails to load
-            logger/* Logger */.V.Warn(`Failed to load ${rootUrl}, falling back to the ${originalRootUrl}`);
-            this.createCubeTextureBase(originalRootUrl, scene, files, !!noMipmap, onLoad, onError, format, forcedExtension, createPolynomials, lodScale, lodOffset, texture, beforeLoadCubeDataCallback, imageHandler, useSRGBBuffer, buffer);
-        }
-    };
-    if (loaderPromise) {
-        loaderPromise.then((loader) => {
-            const onloaddata = (data) => {
-                if (beforeLoadCubeDataCallback) {
-                    beforeLoadCubeDataCallback(texture, data);
-                }
-                loader.loadCubeData(data, texture, createPolynomials, onLoad, onError);
-            };
-            if (buffer) {
-                onloaddata(buffer);
-            }
-            else if (files && files.length === 6) {
-                if (loader.supportCascades) {
-                    this._cascadeLoadFiles(scene, (images) => onloaddata(images.map((image) => new Uint8Array(image))), files, onError);
-                }
-                else {
-                    if (onError) {
-                        onError("Textures type does not support cascades.");
-                    }
-                    else {
-                        logger/* Logger */.V.Warn("Texture loader does not support cascades.");
-                    }
-                }
-            }
-            else {
-                this._loadFile(rootUrl, (data) => onloaddata(new Uint8Array(data)), undefined, undefined, true, onInternalError);
-            }
-        });
-    }
-    else {
-        if (!files || files.length === 0) {
-            throw new Error("Cannot load cubemap because files were not defined, or the correct loader was not found.");
-        }
-        this._cascadeLoadImgs(scene, texture, (texture, imgs) => {
-            if (imageHandler) {
-                imageHandler(texture, imgs);
-            }
-        }, files, onError);
-    }
-    this._internalTexturesCache.push(texture);
-    return texture;
-};
-//# sourceMappingURL=abstractEngine.cubeTexture.js.map
-;// ./node_modules/@babylonjs/core/Misc/dds.js
-/* eslint-disable @typescript-eslint/naming-convention */
-
-
-
-
-
-
-// Based on demo done by Brandon Jones - http://media.tojicode.com/webgl-samples/dds.html
-// All values and structures referenced from:
-// http://msdn.microsoft.com/en-us/library/bb943991.aspx/
-const DDS_MAGIC = 0x20534444;
-const //DDSD_CAPS = 0x1,
-//DDSD_HEIGHT = 0x2,
-//DDSD_WIDTH = 0x4,
-//DDSD_PITCH = 0x8,
-//DDSD_PIXELFORMAT = 0x1000,
-DDSD_MIPMAPCOUNT = 0x20000;
-//DDSD_LINEARSIZE = 0x80000,
-//DDSD_DEPTH = 0x800000;
-// var DDSCAPS_COMPLEX = 0x8,
-//     DDSCAPS_MIPMAP = 0x400000,
-//     DDSCAPS_TEXTURE = 0x1000;
-const DDSCAPS2_CUBEMAP = 0x200;
-// DDSCAPS2_CUBEMAP_POSITIVEX = 0x400,
-// DDSCAPS2_CUBEMAP_NEGATIVEX = 0x800,
-// DDSCAPS2_CUBEMAP_POSITIVEY = 0x1000,
-// DDSCAPS2_CUBEMAP_NEGATIVEY = 0x2000,
-// DDSCAPS2_CUBEMAP_POSITIVEZ = 0x4000,
-// DDSCAPS2_CUBEMAP_NEGATIVEZ = 0x8000,
-// DDSCAPS2_VOLUME = 0x200000;
-const //DDPF_ALPHAPIXELS = 0x1,
-//DDPF_ALPHA = 0x2,
-DDPF_FOURCC = 0x4, DDPF_RGB = 0x40, 
-//DDPF_YUV = 0x200,
-DDPF_LUMINANCE = 0x20000;
-function FourCCToInt32(value) {
-    return value.charCodeAt(0) + (value.charCodeAt(1) << 8) + (value.charCodeAt(2) << 16) + (value.charCodeAt(3) << 24);
-}
-function Int32ToFourCC(value) {
-    return String.fromCharCode(value & 0xff, (value >> 8) & 0xff, (value >> 16) & 0xff, (value >> 24) & 0xff);
-}
-const FOURCC_DXT1 = FourCCToInt32("DXT1");
-const FOURCC_DXT3 = FourCCToInt32("DXT3");
-const FOURCC_DXT5 = FourCCToInt32("DXT5");
-const FOURCC_DX10 = FourCCToInt32("DX10");
-const FOURCC_D3DFMT_R16G16B16A16F = 113;
-const FOURCC_D3DFMT_R32G32B32A32F = 116;
-const DXGI_FORMAT_R32G32B32A32_FLOAT = 2;
-const DXGI_FORMAT_R16G16B16A16_FLOAT = 10;
-const DXGI_FORMAT_B8G8R8X8_UNORM = 88;
-const headerLengthInt = 31; // The header length in 32 bit ints
-// Offsets into the header array
-const off_magic = 0;
-const off_size = 1;
-const off_flags = 2;
-const off_height = 3;
-const off_width = 4;
-const off_mipmapCount = 7;
-const off_pfFlags = 20;
-const off_pfFourCC = 21;
-const off_RGBbpp = 22;
-const off_RMask = 23;
-const off_GMask = 24;
-const off_BMask = 25;
-const off_AMask = 26;
-// var off_caps1 = 27;
-const off_caps2 = 28;
-// var off_caps3 = 29;
-// var off_caps4 = 30;
-const off_dxgiFormat = 32;
-/**
- * Class used to provide DDS decompression tools
- */
-class DDSTools {
-    /**
-     * Gets DDS information from an array buffer
-     * @param data defines the array buffer view to read data from
-     * @returns the DDS information
-     */
-    static GetDDSInfo(data) {
-        const header = new Int32Array(data.buffer, data.byteOffset, headerLengthInt);
-        const extendedHeader = new Int32Array(data.buffer, data.byteOffset, headerLengthInt + 4);
-        let mipmapCount = 1;
-        if (header[off_flags] & DDSD_MIPMAPCOUNT) {
-            mipmapCount = Math.max(1, header[off_mipmapCount]);
-        }
-        const fourCC = header[off_pfFourCC];
-        const dxgiFormat = fourCC === FOURCC_DX10 ? extendedHeader[off_dxgiFormat] : 0;
-        let textureType = 0;
-        switch (fourCC) {
-            case FOURCC_D3DFMT_R16G16B16A16F:
-                textureType = 2;
-                break;
-            case FOURCC_D3DFMT_R32G32B32A32F:
-                textureType = 1;
-                break;
-            case FOURCC_DX10:
-                if (dxgiFormat === DXGI_FORMAT_R16G16B16A16_FLOAT) {
-                    textureType = 2;
-                    break;
-                }
-                if (dxgiFormat === DXGI_FORMAT_R32G32B32A32_FLOAT) {
-                    textureType = 1;
-                    break;
-                }
-        }
-        return {
-            width: header[off_width],
-            height: header[off_height],
-            mipmapCount: mipmapCount,
-            isFourCC: (header[off_pfFlags] & DDPF_FOURCC) === DDPF_FOURCC,
-            isRGB: (header[off_pfFlags] & DDPF_RGB) === DDPF_RGB,
-            isLuminance: (header[off_pfFlags] & DDPF_LUMINANCE) === DDPF_LUMINANCE,
-            isCube: (header[off_caps2] & DDSCAPS2_CUBEMAP) === DDSCAPS2_CUBEMAP,
-            isCompressed: fourCC === FOURCC_DXT1 || fourCC === FOURCC_DXT3 || fourCC === FOURCC_DXT5,
-            dxgiFormat: dxgiFormat,
-            textureType: textureType,
-        };
-    }
-    static _GetHalfFloatAsFloatRGBAArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer, lod) {
-        const destArray = new Float32Array(dataLength);
-        const srcData = new Uint16Array(arrayBuffer, dataOffset);
-        let index = 0;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const srcPos = (x + y * width) * 4;
-                destArray[index] = (0,textureTools/* FromHalfFloat */.SX)(srcData[srcPos]);
-                destArray[index + 1] = (0,textureTools/* FromHalfFloat */.SX)(srcData[srcPos + 1]);
-                destArray[index + 2] = (0,textureTools/* FromHalfFloat */.SX)(srcData[srcPos + 2]);
-                if (DDSTools.StoreLODInAlphaChannel) {
-                    destArray[index + 3] = lod;
-                }
-                else {
-                    destArray[index + 3] = (0,textureTools/* FromHalfFloat */.SX)(srcData[srcPos + 3]);
-                }
-                index += 4;
-            }
-        }
-        return destArray;
-    }
-    static _GetHalfFloatRGBAArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer, lod) {
-        if (DDSTools.StoreLODInAlphaChannel) {
-            const destArray = new Uint16Array(dataLength);
-            const srcData = new Uint16Array(arrayBuffer, dataOffset);
-            let index = 0;
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const srcPos = (x + y * width) * 4;
-                    destArray[index] = srcData[srcPos];
-                    destArray[index + 1] = srcData[srcPos + 1];
-                    destArray[index + 2] = srcData[srcPos + 2];
-                    destArray[index + 3] = (0,textureTools/* ToHalfFloat */.LZ)(lod);
-                    index += 4;
-                }
-            }
-            return destArray;
-        }
-        return new Uint16Array(arrayBuffer, dataOffset, dataLength);
-    }
-    static _GetFloatRGBAArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer, lod) {
-        if (DDSTools.StoreLODInAlphaChannel) {
-            const destArray = new Float32Array(dataLength);
-            const srcData = new Float32Array(arrayBuffer, dataOffset);
-            let index = 0;
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const srcPos = (x + y * width) * 4;
-                    destArray[index] = srcData[srcPos];
-                    destArray[index + 1] = srcData[srcPos + 1];
-                    destArray[index + 2] = srcData[srcPos + 2];
-                    destArray[index + 3] = lod;
-                    index += 4;
-                }
-            }
-            return destArray;
-        }
-        return new Float32Array(arrayBuffer, dataOffset, dataLength);
-    }
-    static _GetFloatAsHalfFloatRGBAArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer, lod) {
-        const destArray = new Uint16Array(dataLength);
-        const srcData = new Float32Array(arrayBuffer, dataOffset);
-        let index = 0;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                destArray[index] = (0,textureTools/* ToHalfFloat */.LZ)(srcData[index]);
-                destArray[index + 1] = (0,textureTools/* ToHalfFloat */.LZ)(srcData[index + 1]);
-                destArray[index + 2] = (0,textureTools/* ToHalfFloat */.LZ)(srcData[index + 2]);
-                if (DDSTools.StoreLODInAlphaChannel) {
-                    destArray[index + 3] = (0,textureTools/* ToHalfFloat */.LZ)(lod);
-                }
-                else {
-                    destArray[index + 3] = (0,textureTools/* ToHalfFloat */.LZ)(srcData[index + 3]);
-                }
-                index += 4;
-            }
-        }
-        return destArray;
-    }
-    static _GetFloatAsUIntRGBAArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer, lod) {
-        const destArray = new Uint8Array(dataLength);
-        const srcData = new Float32Array(arrayBuffer, dataOffset);
-        let index = 0;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const srcPos = (x + y * width) * 4;
-                destArray[index] = (0,math_scalar_functions/* Clamp */.OQ)(srcData[srcPos]) * 255;
-                destArray[index + 1] = (0,math_scalar_functions/* Clamp */.OQ)(srcData[srcPos + 1]) * 255;
-                destArray[index + 2] = (0,math_scalar_functions/* Clamp */.OQ)(srcData[srcPos + 2]) * 255;
-                if (DDSTools.StoreLODInAlphaChannel) {
-                    destArray[index + 3] = lod;
-                }
-                else {
-                    destArray[index + 3] = (0,math_scalar_functions/* Clamp */.OQ)(srcData[srcPos + 3]) * 255;
-                }
-                index += 4;
-            }
-        }
-        return destArray;
-    }
-    static _GetHalfFloatAsUIntRGBAArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer, lod) {
-        const destArray = new Uint8Array(dataLength);
-        const srcData = new Uint16Array(arrayBuffer, dataOffset);
-        let index = 0;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const srcPos = (x + y * width) * 4;
-                destArray[index] = (0,math_scalar_functions/* Clamp */.OQ)((0,textureTools/* FromHalfFloat */.SX)(srcData[srcPos])) * 255;
-                destArray[index + 1] = (0,math_scalar_functions/* Clamp */.OQ)((0,textureTools/* FromHalfFloat */.SX)(srcData[srcPos + 1])) * 255;
-                destArray[index + 2] = (0,math_scalar_functions/* Clamp */.OQ)((0,textureTools/* FromHalfFloat */.SX)(srcData[srcPos + 2])) * 255;
-                if (DDSTools.StoreLODInAlphaChannel) {
-                    destArray[index + 3] = lod;
-                }
-                else {
-                    destArray[index + 3] = (0,math_scalar_functions/* Clamp */.OQ)((0,textureTools/* FromHalfFloat */.SX)(srcData[srcPos + 3])) * 255;
-                }
-                index += 4;
-            }
-        }
-        return destArray;
-    }
-    static _GetRGBAArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer, rOffset, gOffset, bOffset, aOffset) {
-        const byteArray = new Uint8Array(dataLength);
-        const srcData = new Uint8Array(arrayBuffer, dataOffset);
-        let index = 0;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const srcPos = (x + y * width) * 4;
-                byteArray[index] = srcData[srcPos + rOffset];
-                byteArray[index + 1] = srcData[srcPos + gOffset];
-                byteArray[index + 2] = srcData[srcPos + bOffset];
-                byteArray[index + 3] = srcData[srcPos + aOffset];
-                index += 4;
-            }
-        }
-        return byteArray;
-    }
-    static _ExtractLongWordOrder(value) {
-        if (value === 0 || value === 255 || value === -16777216) {
-            return 0;
-        }
-        return 1 + DDSTools._ExtractLongWordOrder(value >> 8);
-    }
-    static _GetRGBArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer, rOffset, gOffset, bOffset) {
-        const byteArray = new Uint8Array(dataLength);
-        const srcData = new Uint8Array(arrayBuffer, dataOffset);
-        let index = 0;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const srcPos = (x + y * width) * 3;
-                byteArray[index] = srcData[srcPos + rOffset];
-                byteArray[index + 1] = srcData[srcPos + gOffset];
-                byteArray[index + 2] = srcData[srcPos + bOffset];
-                index += 3;
-            }
-        }
-        return byteArray;
-    }
-    static _GetLuminanceArrayBuffer(width, height, dataOffset, dataLength, arrayBuffer) {
-        const byteArray = new Uint8Array(dataLength);
-        const srcData = new Uint8Array(arrayBuffer, dataOffset);
-        let index = 0;
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const srcPos = x + y * width;
-                byteArray[index] = srcData[srcPos];
-                index++;
-            }
-        }
-        return byteArray;
-    }
-    /**
-     * Uploads DDS Levels to a Babylon Texture
-     * @internal
-     */
-    static UploadDDSLevels(engine, texture, data, info, loadMipmaps, faces, lodIndex = -1, currentFace, destTypeMustBeFilterable = true) {
-        let sphericalPolynomialFaces = null;
-        if (info.sphericalPolynomial) {
-            sphericalPolynomialFaces = [];
-        }
-        const ext = !!engine.getCaps().s3tc;
-        // TODO WEBGPU Once generateMipMaps is split into generateMipMaps + hasMipMaps in InternalTexture this line can be removed
-        texture.generateMipMaps = loadMipmaps;
-        const header = new Int32Array(data.buffer, data.byteOffset, headerLengthInt);
-        let fourCC, width, height, dataLength = 0, dataOffset;
-        let byteArray, mipmapCount, mip;
-        let internalCompressedFormat = 0;
-        let blockBytes = 1;
-        if (header[off_magic] !== DDS_MAGIC) {
-            logger/* Logger */.V.Error("Invalid magic number in DDS header");
-            return;
-        }
-        if (!info.isFourCC && !info.isRGB && !info.isLuminance) {
-            logger/* Logger */.V.Error("Unsupported format, must contain a FourCC, RGB or LUMINANCE code");
-            return;
-        }
-        if (info.isCompressed && !ext) {
-            logger/* Logger */.V.Error("Compressed textures are not supported on this platform.");
-            return;
-        }
-        let bpp = header[off_RGBbpp];
-        dataOffset = header[off_size] + 4;
-        let computeFormats = false;
-        if (info.isFourCC) {
-            fourCC = header[off_pfFourCC];
-            switch (fourCC) {
-                case FOURCC_DXT1:
-                    blockBytes = 8;
-                    internalCompressedFormat = 33777;
-                    break;
-                case FOURCC_DXT3:
-                    blockBytes = 16;
-                    internalCompressedFormat = 33778;
-                    break;
-                case FOURCC_DXT5:
-                    blockBytes = 16;
-                    internalCompressedFormat = 33779;
-                    break;
-                case FOURCC_D3DFMT_R16G16B16A16F:
-                    computeFormats = true;
-                    bpp = 64;
-                    break;
-                case FOURCC_D3DFMT_R32G32B32A32F:
-                    computeFormats = true;
-                    bpp = 128;
-                    break;
-                case FOURCC_DX10: {
-                    // There is an additionnal header so dataOffset need to be changed
-                    dataOffset += 5 * 4; // 5 uints
-                    let supported = false;
-                    switch (info.dxgiFormat) {
-                        case DXGI_FORMAT_R16G16B16A16_FLOAT:
-                            computeFormats = true;
-                            bpp = 64;
-                            supported = true;
-                            break;
-                        case DXGI_FORMAT_R32G32B32A32_FLOAT:
-                            computeFormats = true;
-                            bpp = 128;
-                            supported = true;
-                            break;
-                        case DXGI_FORMAT_B8G8R8X8_UNORM:
-                            info.isRGB = true;
-                            info.isFourCC = false;
-                            bpp = 32;
-                            supported = true;
-                            break;
-                    }
-                    if (supported) {
-                        break;
-                    }
-                }
-                // eslint-disable-next-line no-fallthrough
-                default:
-                    logger/* Logger */.V.Error(["Unsupported FourCC code:", Int32ToFourCC(fourCC)]);
-                    return;
-            }
-        }
-        const rOffset = DDSTools._ExtractLongWordOrder(header[off_RMask]);
-        const gOffset = DDSTools._ExtractLongWordOrder(header[off_GMask]);
-        const bOffset = DDSTools._ExtractLongWordOrder(header[off_BMask]);
-        const aOffset = DDSTools._ExtractLongWordOrder(header[off_AMask]);
-        if (computeFormats) {
-            internalCompressedFormat = engine._getRGBABufferInternalSizedFormat(info.textureType);
-        }
-        mipmapCount = 1;
-        if (header[off_flags] & DDSD_MIPMAPCOUNT && loadMipmaps !== false) {
-            mipmapCount = Math.max(1, header[off_mipmapCount]);
-        }
-        const startFace = currentFace || 0;
-        const caps = engine.getCaps();
-        for (let face = startFace; face < faces; face++) {
-            width = header[off_width];
-            height = header[off_height];
-            for (mip = 0; mip < mipmapCount; ++mip) {
-                if (lodIndex === -1 || lodIndex === mip) {
-                    // In case of fixed LOD, if the lod has just been uploaded, early exit.
-                    const i = lodIndex === -1 ? mip : 0;
-                    if (!info.isCompressed && info.isFourCC) {
-                        texture.format = 5;
-                        dataLength = width * height * 4;
-                        let floatArray = null;
-                        if (engine._badOS || engine._badDesktopOS || (!caps.textureHalfFloat && !caps.textureFloat)) {
-                            // Required because iOS has many issues with float and half float generation
-                            if (bpp === 128) {
-                                floatArray = DDSTools._GetFloatAsUIntRGBAArrayBuffer(width, height, data.byteOffset + dataOffset, dataLength, data.buffer, i);
-                                if (sphericalPolynomialFaces && i == 0) {
-                                    sphericalPolynomialFaces.push(DDSTools._GetFloatRGBAArrayBuffer(width, height, data.byteOffset + dataOffset, dataLength, data.buffer, i));
-                                }
-                            }
-                            else if (bpp === 64) {
-                                floatArray = DDSTools._GetHalfFloatAsUIntRGBAArrayBuffer(width, height, data.byteOffset + dataOffset, dataLength, data.buffer, i);
-                                if (sphericalPolynomialFaces && i == 0) {
-                                    sphericalPolynomialFaces.push(DDSTools._GetHalfFloatAsFloatRGBAArrayBuffer(width, height, data.byteOffset + dataOffset, dataLength, data.buffer, i));
-                                }
-                            }
-                            texture.type = 0;
-                        }
-                        else {
-                            const floatAvailable = caps.textureFloat && ((destTypeMustBeFilterable && caps.textureFloatLinearFiltering) || !destTypeMustBeFilterable);
-                            const halfFloatAvailable = caps.textureHalfFloat && ((destTypeMustBeFilterable && caps.textureHalfFloatLinearFiltering) || !destTypeMustBeFilterable);
-                            const destType = (bpp === 128 || (bpp === 64 && !halfFloatAvailable)) && floatAvailable
-                                ? 1
-                                : (bpp === 64 || (bpp === 128 && !floatAvailable)) && halfFloatAvailable
-                                    ? 2
-                                    : 0;
-                            let dataGetter;
-                            let dataGetterPolynomial = null;
-                            switch (bpp) {
-                                case 128: {
-                                    switch (destType) {
-                                        case 1:
-                                            dataGetter = DDSTools._GetFloatRGBAArrayBuffer;
-                                            dataGetterPolynomial = null;
-                                            break;
-                                        case 2:
-                                            dataGetter = DDSTools._GetFloatAsHalfFloatRGBAArrayBuffer;
-                                            dataGetterPolynomial = DDSTools._GetFloatRGBAArrayBuffer;
-                                            break;
-                                        case 0:
-                                            dataGetter = DDSTools._GetFloatAsUIntRGBAArrayBuffer;
-                                            dataGetterPolynomial = DDSTools._GetFloatRGBAArrayBuffer;
-                                            break;
-                                    }
-                                    break;
-                                }
-                                default: {
-                                    // 64 bpp
-                                    switch (destType) {
-                                        case 1:
-                                            dataGetter = DDSTools._GetHalfFloatAsFloatRGBAArrayBuffer;
-                                            dataGetterPolynomial = null;
-                                            break;
-                                        case 2:
-                                            dataGetter = DDSTools._GetHalfFloatRGBAArrayBuffer;
-                                            dataGetterPolynomial = DDSTools._GetHalfFloatAsFloatRGBAArrayBuffer;
-                                            break;
-                                        case 0:
-                                            dataGetter = DDSTools._GetHalfFloatAsUIntRGBAArrayBuffer;
-                                            dataGetterPolynomial = DDSTools._GetHalfFloatAsFloatRGBAArrayBuffer;
-                                            break;
-                                    }
-                                    break;
-                                }
-                            }
-                            texture.type = destType;
-                            floatArray = dataGetter(width, height, data.byteOffset + dataOffset, dataLength, data.buffer, i);
-                            if (sphericalPolynomialFaces && i == 0) {
-                                sphericalPolynomialFaces.push(dataGetterPolynomial ? dataGetterPolynomial(width, height, data.byteOffset + dataOffset, dataLength, data.buffer, i) : floatArray);
-                            }
-                        }
-                        if (floatArray) {
-                            engine._uploadDataToTextureDirectly(texture, floatArray, face, i);
-                        }
-                    }
-                    else if (info.isRGB) {
-                        texture.type = 0;
-                        if (bpp === 24) {
-                            texture.format = 4;
-                            dataLength = width * height * 3;
-                            byteArray = DDSTools._GetRGBArrayBuffer(width, height, data.byteOffset + dataOffset, dataLength, data.buffer, rOffset, gOffset, bOffset);
-                            engine._uploadDataToTextureDirectly(texture, byteArray, face, i);
-                        }
-                        else {
-                            // 32
-                            texture.format = 5;
-                            dataLength = width * height * 4;
-                            byteArray = DDSTools._GetRGBAArrayBuffer(width, height, data.byteOffset + dataOffset, dataLength, data.buffer, rOffset, gOffset, bOffset, aOffset);
-                            engine._uploadDataToTextureDirectly(texture, byteArray, face, i);
-                        }
-                    }
-                    else if (info.isLuminance) {
-                        const unpackAlignment = engine._getUnpackAlignement();
-                        const unpaddedRowSize = width;
-                        const paddedRowSize = Math.floor((width + unpackAlignment - 1) / unpackAlignment) * unpackAlignment;
-                        dataLength = paddedRowSize * (height - 1) + unpaddedRowSize;
-                        byteArray = DDSTools._GetLuminanceArrayBuffer(width, height, data.byteOffset + dataOffset, dataLength, data.buffer);
-                        texture.format = 1;
-                        texture.type = 0;
-                        engine._uploadDataToTextureDirectly(texture, byteArray, face, i);
-                    }
-                    else {
-                        dataLength = (((Math.max(4, width) / 4) * Math.max(4, height)) / 4) * blockBytes;
-                        byteArray = new Uint8Array(data.buffer, data.byteOffset + dataOffset, dataLength);
-                        texture.type = 0;
-                        engine._uploadCompressedDataToTextureDirectly(texture, internalCompressedFormat, width, height, byteArray, face, i);
-                    }
-                }
-                dataOffset += bpp ? width * height * (bpp / 8) : dataLength;
-                width *= 0.5;
-                height *= 0.5;
-                width = Math.max(1.0, width);
-                height = Math.max(1.0, height);
-            }
-            if (currentFace !== undefined) {
-                // Loading a single face
-                break;
-            }
-        }
-        if (sphericalPolynomialFaces && sphericalPolynomialFaces.length > 0) {
-            info.sphericalPolynomial = cubemapToSphericalPolynomial/* CubeMapToSphericalPolynomialTools */.d.ConvertCubeMapToSphericalPolynomial({
-                size: header[off_width],
-                right: sphericalPolynomialFaces[0],
-                left: sphericalPolynomialFaces[1],
-                up: sphericalPolynomialFaces[2],
-                down: sphericalPolynomialFaces[3],
-                front: sphericalPolynomialFaces[4],
-                back: sphericalPolynomialFaces[5],
-                format: 5,
-                type: 1,
-                gammaSpace: false,
-            });
-        }
-        else {
-            info.sphericalPolynomial = undefined;
-        }
-    }
-}
-/**
- * Gets or sets a boolean indicating that LOD info is stored in alpha channel (false by default)
- */
-DDSTools.StoreLODInAlphaChannel = false;
-//# sourceMappingURL=dds.js.map
 
 /***/ }),
 
@@ -69477,6 +69416,7 @@ Logger.Error = Logger._LogEnabled.bind(Logger, Logger.ErrorLogLevel);
 /* harmony export */   cP: () => (/* binding */ Observable)
 /* harmony export */ });
 /* unused harmony exports EventState, Observer */
+const isWeakRefSupported = typeof WeakRef !== "undefined";
 /**
  * A class serves as a medium between the observable and its observers
  */
@@ -69636,8 +69576,12 @@ class Observable {
             }
         }
         // attach the remove function to the observer
+        const observableWeakRef = isWeakRefSupported ? new WeakRef(this) : { deref: () => this };
         observer._remove = () => {
-            this.remove(observer);
+            const observable = observableWeakRef.deref();
+            if (observable) {
+                observable._remove(observer);
+            }
         };
         return observer;
     }
@@ -70583,499 +70527,6 @@ class Tags {
     }
 }
 //# sourceMappingURL=tags.js.map
-
-/***/ }),
-
-/***/ 1947:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-
-// EXPORTS
-__webpack_require__.d(__webpack_exports__, {
-  Qs: () => (/* binding */ ApplyPostProcess),
-  SX: () => (/* binding */ FromHalfFloat),
-  LZ: () => (/* binding */ ToHalfFloat)
-});
-
-// UNUSED EXPORTS: CreateResizedCopy, GetTextureDataAsync, TextureTools
-
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/texture.js + 1 modules
-var Textures_texture = __webpack_require__(2781);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/renderTargetTexture.js
-var renderTargetTexture = __webpack_require__(5474);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/PostProcesses/postProcess.js
-var PostProcesses_postProcess = __webpack_require__(7891);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Engines/abstractEngine.js + 4 modules
-var abstractEngine = __webpack_require__(6326);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/typeStore.js
-var typeStore = __webpack_require__(6552);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/decorators.serialization.js
-var decorators_serialization = __webpack_require__(6877);
-;// ./node_modules/@babylonjs/core/PostProcesses/passPostProcess.js
-
-
-
-
-
-/**
- * PassPostProcess which produces an output the same as it's input
- */
-class PassPostProcess extends PostProcesses_postProcess/* PostProcess */.w {
-    /**
-     * Gets a string identifying the name of the class
-     * @returns "PassPostProcess" string
-     */
-    getClassName() {
-        return "PassPostProcess";
-    }
-    /**
-     * Creates the PassPostProcess
-     * @param name The name of the effect.
-     * @param options The required width/height ratio to downsize to before computing the render pass.
-     * @param camera The camera to apply the render pass to.
-     * @param samplingMode The sampling mode to be used when computing the pass. (default: 0)
-     * @param engine The engine which the post process will be applied. (default: current engine)
-     * @param reusable If the post process can be reused on the same frame. (default: false)
-     * @param textureType The type of texture to be used when performing the post processing.
-     * @param blockCompilation If compilation of the shader should not be done in the constructor. The updateEffect method can be used to compile the shader at a later time. (default: false)
-     */
-    constructor(name, options, camera = null, samplingMode, engine, reusable, textureType = 0, blockCompilation = false) {
-        super(name, "pass", null, null, options, camera, samplingMode, engine, reusable, undefined, textureType, undefined, null, blockCompilation);
-    }
-    _gatherImports(useWebGPU, list) {
-        if (useWebGPU) {
-            this._webGPUReady = true;
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 9965))]));
-        }
-        else {
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 9820))]));
-        }
-        super._gatherImports(useWebGPU, list);
-    }
-    /**
-     * @internal
-     */
-    static _Parse(parsedPostProcess, targetCamera, scene, rootUrl) {
-        return decorators_serialization/* SerializationHelper */.p.Parse(() => {
-            return new PassPostProcess(parsedPostProcess.name, parsedPostProcess.options, targetCamera, parsedPostProcess.renderTargetSamplingMode, parsedPostProcess._engine, parsedPostProcess.reusable);
-        }, parsedPostProcess, scene, rootUrl);
-    }
-}
-(0,typeStore/* RegisterClass */.Y5)("BABYLON.PassPostProcess", PassPostProcess);
-/**
- * PassCubePostProcess which produces an output the same as it's input (which must be a cube texture)
- */
-class PassCubePostProcess extends PostProcesses_postProcess/* PostProcess */.w {
-    /**
-     * Gets or sets the cube face to display.
-     *  * 0 is +X
-     *  * 1 is -X
-     *  * 2 is +Y
-     *  * 3 is -Y
-     *  * 4 is +Z
-     *  * 5 is -Z
-     */
-    get face() {
-        return this._face;
-    }
-    set face(value) {
-        if (value < 0 || value > 5) {
-            return;
-        }
-        this._face = value;
-        switch (this._face) {
-            case 0:
-                this.updateEffect("#define POSITIVEX");
-                break;
-            case 1:
-                this.updateEffect("#define NEGATIVEX");
-                break;
-            case 2:
-                this.updateEffect("#define POSITIVEY");
-                break;
-            case 3:
-                this.updateEffect("#define NEGATIVEY");
-                break;
-            case 4:
-                this.updateEffect("#define POSITIVEZ");
-                break;
-            case 5:
-                this.updateEffect("#define NEGATIVEZ");
-                break;
-        }
-    }
-    /**
-     * Gets a string identifying the name of the class
-     * @returns "PassCubePostProcess" string
-     */
-    getClassName() {
-        return "PassCubePostProcess";
-    }
-    /**
-     * Creates the PassCubePostProcess
-     * @param name The name of the effect.
-     * @param options The required width/height ratio to downsize to before computing the render pass.
-     * @param camera The camera to apply the render pass to.
-     * @param samplingMode The sampling mode to be used when computing the pass. (default: 0)
-     * @param engine The engine which the post process will be applied. (default: current engine)
-     * @param reusable If the post process can be reused on the same frame. (default: false)
-     * @param textureType The type of texture to be used when performing the post processing.
-     * @param blockCompilation If compilation of the shader should not be done in the constructor. The updateEffect method can be used to compile the shader at a later time. (default: false)
-     */
-    constructor(name, options, camera = null, samplingMode, engine, reusable, textureType = 0, blockCompilation = false) {
-        super(name, "passCube", null, null, options, camera, samplingMode, engine, reusable, "#define POSITIVEX", textureType, undefined, null, blockCompilation);
-        this._face = 0;
-    }
-    _gatherImports(useWebGPU, list) {
-        if (useWebGPU) {
-            this._webGPUReady = true;
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 7682))]));
-        }
-        else {
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 4511))]));
-        }
-        super._gatherImports(useWebGPU, list);
-    }
-    /**
-     * @internal
-     */
-    static _Parse(parsedPostProcess, targetCamera, scene, rootUrl) {
-        return decorators_serialization/* SerializationHelper */.p.Parse(() => {
-            return new PassCubePostProcess(parsedPostProcess.name, parsedPostProcess.options, targetCamera, parsedPostProcess.renderTargetSamplingMode, parsedPostProcess._engine, parsedPostProcess.reusable);
-        }, parsedPostProcess, scene, rootUrl);
-    }
-}
-abstractEngine/* AbstractEngine */.$._RescalePostProcessFactory = (engine) => {
-    return new PassPostProcess("rescale", 1, null, 2, engine, false, 0);
-};
-//# sourceMappingURL=passPostProcess.js.map
-;// ./node_modules/@babylonjs/core/Misc/textureTools.js
-
-
-
-
-
-/**
- * Uses the GPU to create a copy texture rescaled at a given size
- * @param texture Texture to copy from
- * @param width defines the desired width
- * @param height defines the desired height
- * @param useBilinearMode defines if bilinear mode has to be used
- * @returns the generated texture
- */
-function CreateResizedCopy(texture, width, height, useBilinearMode = true) {
-    const scene = texture.getScene();
-    const engine = scene.getEngine();
-    const rtt = new renderTargetTexture/* RenderTargetTexture */.$("resized" + texture.name, { width: width, height: height }, scene, !texture.noMipmap, true, texture._texture.type, false, texture.samplingMode, false);
-    rtt.wrapU = texture.wrapU;
-    rtt.wrapV = texture.wrapV;
-    rtt.uOffset = texture.uOffset;
-    rtt.vOffset = texture.vOffset;
-    rtt.uScale = texture.uScale;
-    rtt.vScale = texture.vScale;
-    rtt.uAng = texture.uAng;
-    rtt.vAng = texture.vAng;
-    rtt.wAng = texture.wAng;
-    rtt.coordinatesIndex = texture.coordinatesIndex;
-    rtt.level = texture.level;
-    rtt.anisotropicFilteringLevel = texture.anisotropicFilteringLevel;
-    rtt._texture.isReady = false;
-    texture.wrapU = Textures_texture/* Texture */.g.CLAMP_ADDRESSMODE;
-    texture.wrapV = Textures_texture/* Texture */.g.CLAMP_ADDRESSMODE;
-    const passPostProcess = new PassPostProcess("pass", 1, null, useBilinearMode ? Textures_texture/* Texture */.g.BILINEAR_SAMPLINGMODE : Textures_texture/* Texture */.g.NEAREST_SAMPLINGMODE, engine, false, 0);
-    passPostProcess.externalTextureSamplerBinding = true;
-    passPostProcess.onEffectCreatedObservable.addOnce((e) => {
-        e.executeWhenCompiled(() => {
-            passPostProcess.onApply = function (effect) {
-                effect.setTexture("textureSampler", texture);
-            };
-            const internalTexture = rtt.renderTarget;
-            if (internalTexture) {
-                scene.postProcessManager.directRender([passPostProcess], internalTexture);
-                engine.unBindFramebuffer(internalTexture);
-                rtt.disposeFramebufferObjects();
-                passPostProcess.dispose();
-                rtt.getInternalTexture().isReady = true;
-            }
-        });
-    });
-    return rtt;
-}
-/**
- * Apply a post process to a texture
- * @param postProcessName name of the fragment post process
- * @param internalTexture the texture to encode
- * @param scene the scene hosting the texture
- * @param type type of the output texture. If not provided, use the one from internalTexture
- * @param samplingMode sampling mode to use to sample the source texture. If not provided, use the one from internalTexture
- * @param format format of the output texture. If not provided, use the one from internalTexture
- * @param width width of the output texture. If not provided, use the one from internalTexture
- * @param height height of the output texture. If not provided, use the one from internalTexture
- * @returns a promise with the internalTexture having its texture replaced by the result of the processing
- */
-function ApplyPostProcess(postProcessName, internalTexture, scene, type, samplingMode, format, width, height) {
-    // Gets everything ready.
-    const engine = internalTexture.getEngine();
-    internalTexture.isReady = false;
-    samplingMode = samplingMode ?? internalTexture.samplingMode;
-    type = type ?? internalTexture.type;
-    format = format ?? internalTexture.format;
-    width = width ?? internalTexture.width;
-    height = height ?? internalTexture.height;
-    if (type === -1) {
-        type = 0;
-    }
-    return new Promise((resolve) => {
-        // Create the post process
-        const postProcess = new PostProcesses_postProcess/* PostProcess */.w("postprocess", postProcessName, null, null, 1, null, samplingMode, engine, false, undefined, type, undefined, null, false, format);
-        postProcess.externalTextureSamplerBinding = true;
-        // Hold the output of the decoding.
-        const encodedTexture = engine.createRenderTargetTexture({ width: width, height: height }, {
-            generateDepthBuffer: false,
-            generateMipMaps: false,
-            generateStencilBuffer: false,
-            samplingMode,
-            type,
-            format,
-        });
-        postProcess.onEffectCreatedObservable.addOnce((e) => {
-            e.executeWhenCompiled(() => {
-                // PP Render Pass
-                postProcess.onApply = (effect) => {
-                    effect._bindTexture("textureSampler", internalTexture);
-                    effect.setFloat2("scale", 1, 1);
-                };
-                scene.postProcessManager.directRender([postProcess], encodedTexture, true);
-                // Cleanup
-                engine.restoreDefaultFramebuffer();
-                engine._releaseTexture(internalTexture);
-                if (postProcess) {
-                    postProcess.dispose();
-                }
-                // Internal Swap
-                encodedTexture._swapAndDie(internalTexture);
-                // Ready to get rolling again.
-                internalTexture.type = type;
-                internalTexture.format = 5;
-                internalTexture.isReady = true;
-                resolve(internalTexture);
-            });
-        });
-    });
-}
-// ref: http://stackoverflow.com/questions/32633585/how-do-you-convert-to-half-floats-in-javascript
-let floatView;
-let int32View;
-/**
- * Converts a number to half float
- * @param value number to convert
- * @returns converted number
- */
-function ToHalfFloat(value) {
-    if (!floatView) {
-        floatView = new Float32Array(1);
-        int32View = new Int32Array(floatView.buffer);
-    }
-    floatView[0] = value;
-    const x = int32View[0];
-    let bits = (x >> 16) & 0x8000; /* Get the sign */
-    let m = (x >> 12) & 0x07ff; /* Keep one extra bit for rounding */
-    const e = (x >> 23) & 0xff; /* Using int is faster here */
-    /* If zero, or denormal, or exponent underflows too much for a denormal
-     * half, return signed zero. */
-    if (e < 103) {
-        return bits;
-    }
-    /* If NaN, return NaN. If Inf or exponent overflow, return Inf. */
-    if (e > 142) {
-        bits |= 0x7c00;
-        /* If exponent was 0xff and one mantissa bit was set, it means NaN,
-         * not Inf, so make sure we set one mantissa bit too. */
-        bits |= (e == 255 ? 0 : 1) && x & 0x007fffff;
-        return bits;
-    }
-    /* If exponent underflows but not too much, return a denormal */
-    if (e < 113) {
-        m |= 0x0800;
-        /* Extra rounding may overflow and set mantissa to 0 and exponent
-         * to 1, which is OK. */
-        bits |= (m >> (114 - e)) + ((m >> (113 - e)) & 1);
-        return bits;
-    }
-    bits |= ((e - 112) << 10) | (m >> 1);
-    bits += m & 1;
-    return bits;
-}
-/**
- * Converts a half float to a number
- * @param value half float to convert
- * @returns converted half float
- */
-function FromHalfFloat(value) {
-    const s = (value & 0x8000) >> 15;
-    const e = (value & 0x7c00) >> 10;
-    const f = value & 0x03ff;
-    if (e === 0) {
-        return (s ? -1 : 1) * Math.pow(2, -14) * (f / Math.pow(2, 10));
-    }
-    else if (e == 0x1f) {
-        return f ? NaN : (s ? -1 : 1) * Infinity;
-    }
-    return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / Math.pow(2, 10));
-}
-const ProcessAsync = async (texture, width, height, face, lod) => {
-    const scene = texture.getScene();
-    const engine = scene.getEngine();
-    if (!engine.isWebGPU) {
-        if (texture.isCube) {
-            await __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 2905));
-        }
-        else {
-            await __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 9278));
-        }
-    }
-    else {
-        if (texture.isCube) {
-            await __webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 1650));
-        }
-        else {
-            await __webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 3613));
-        }
-    }
-    let lodPostProcess;
-    if (!texture.isCube) {
-        lodPostProcess = new PostProcesses_postProcess/* PostProcess */.w("lod", "lod", {
-            uniforms: ["lod", "gamma"],
-            samplingMode: Textures_texture/* Texture */.g.NEAREST_NEAREST_MIPNEAREST,
-            engine,
-            shaderLanguage: engine.isWebGPU ? 1 /* ShaderLanguage.WGSL */ : 0 /* ShaderLanguage.GLSL */,
-        });
-    }
-    else {
-        const faceDefines = ["#define POSITIVEX", "#define NEGATIVEX", "#define POSITIVEY", "#define NEGATIVEY", "#define POSITIVEZ", "#define NEGATIVEZ"];
-        lodPostProcess = new PostProcesses_postProcess/* PostProcess */.w("lodCube", "lodCube", {
-            uniforms: ["lod", "gamma"],
-            samplingMode: Textures_texture/* Texture */.g.NEAREST_NEAREST_MIPNEAREST,
-            engine,
-            defines: faceDefines[face],
-            shaderLanguage: engine.isWebGPU ? 1 /* ShaderLanguage.WGSL */ : 0 /* ShaderLanguage.GLSL */,
-        });
-    }
-    await new Promise((resolve) => {
-        lodPostProcess.onEffectCreatedObservable.addOnce((e) => {
-            e.executeWhenCompiled(() => {
-                resolve(0);
-            });
-        });
-    });
-    const rtt = new renderTargetTexture/* RenderTargetTexture */.$("temp", { width: width, height: height }, scene, false);
-    lodPostProcess.onApply = function (effect) {
-        effect.setTexture("textureSampler", texture);
-        effect.setFloat("lod", lod);
-        effect.setInt("gamma", texture.gammaSpace ? 1 : 0);
-    };
-    const internalTexture = texture.getInternalTexture();
-    try {
-        if (rtt.renderTarget && internalTexture) {
-            const samplingMode = internalTexture.samplingMode;
-            if (lod !== 0) {
-                texture.updateSamplingMode(Textures_texture/* Texture */.g.NEAREST_NEAREST_MIPNEAREST);
-            }
-            else {
-                texture.updateSamplingMode(Textures_texture/* Texture */.g.NEAREST_NEAREST);
-            }
-            scene.postProcessManager.directRender([lodPostProcess], rtt.renderTarget, true);
-            texture.updateSamplingMode(samplingMode);
-            //Reading datas from WebGL
-            const bufferView = await engine.readPixels(0, 0, width, height);
-            const data = new Uint8Array(bufferView.buffer, 0, bufferView.byteLength);
-            // Unbind
-            engine.unBindFramebuffer(rtt.renderTarget);
-            return data;
-        }
-        else {
-            throw Error("Render to texture failed.");
-        }
-    }
-    finally {
-        rtt.dispose();
-        lodPostProcess.dispose();
-    }
-};
-/**
- * Gets the data of the specified texture by rendering it to an intermediate RGBA texture and retrieving the bytes from it.
- * This is convienent to get 8-bit RGBA values for a texture in a GPU compressed format.
- * @param texture the source texture
- * @param width the width of the result, which does not have to match the source texture width
- * @param height the height of the result, which does not have to match the source texture height
- * @param face if the texture has multiple faces, the face index to use for the source
- * @param lod if the texture has multiple LODs, the lod index to use for the source
- * @returns the 8-bit texture data
- */
-async function GetTextureDataAsync(texture, width, height, face = 0, lod = 0) {
-    if (!texture.isReady() && texture._texture) {
-        await new Promise((resolve, reject) => {
-            if (texture._texture === null) {
-                reject(0);
-                return;
-            }
-            texture._texture.onLoadedObservable.addOnce(() => {
-                resolve(0);
-            });
-        });
-    }
-    return await ProcessAsync(texture, width, height, face, lod);
-}
-/**
- * Class used to host texture specific utilities
- */
-const TextureTools = {
-    /**
-     * Uses the GPU to create a copy texture rescaled at a given size
-     * @param texture Texture to copy from
-     * @param width defines the desired width
-     * @param height defines the desired height
-     * @param useBilinearMode defines if bilinear mode has to be used
-     * @returns the generated texture
-     */
-    CreateResizedCopy,
-    /**
-     * Apply a post process to a texture
-     * @param postProcessName name of the fragment post process
-     * @param internalTexture the texture to encode
-     * @param scene the scene hosting the texture
-     * @param type type of the output texture. If not provided, use the one from internalTexture
-     * @param samplingMode sampling mode to use to sample the source texture. If not provided, use the one from internalTexture
-     * @param format format of the output texture. If not provided, use the one from internalTexture
-     * @returns a promise with the internalTexture having its texture replaced by the result of the processing
-     */
-    ApplyPostProcess,
-    /**
-     * Converts a number to half float
-     * @param value number to convert
-     * @returns converted number
-     */
-    ToHalfFloat,
-    /**
-     * Converts a half float to a number
-     * @param value half float to convert
-     * @returns converted half float
-     */
-    FromHalfFloat,
-    /**
-     * Gets the data of the specified texture by rendering it to an intermediate RGBA texture and retrieving the bytes from it.
-     * This is convienent to get 8-bit RGBA values for a texture in a GPU compressed format.
-     * @param texture the source texture
-     * @param width the width of the result, which does not have to match the source texture width
-     * @param height the height of the result, which does not have to match the source texture height
-     * @param face if the texture has multiple faces, the face index to use for the source
-     * @param channels a filter for which of the RGBA channels to return in the result
-     * @param lod if the texture has multiple LODs, the lod index to use for the source
-     * @returns the 8-bit texture data
-     */
-    GetTextureDataAsync,
-};
-//# sourceMappingURL=textureTools.js.map
 
 /***/ }),
 
@@ -73121,9 +72572,9 @@ class PostProcess {
                     defines,
                     vertexUrl,
                     indexParameters,
-                    blockCompilation,
+                    blockCompilation: true,
                     shaderLanguage,
-                    extraInitializations,
+                    extraInitializations: undefined,
                 });
         this.name = name;
         this.onEffectCreatedObservable = this._effectWrapper.onEffectCreatedObservable;
@@ -78562,6 +78013,8 @@ class InputManager {
                 }
             }
             let needToIgnoreNext = false;
+            // Never pick if this is a multi-touch gesture (e.g. pinch)
+            checkPicking = checkPicking && !this._isMultiTouchGesture;
             if (checkPicking) {
                 const btn = evt.button;
                 clickInfo.hasSwiped = this._isPointerSwiping();
@@ -79283,6 +78736,7 @@ class Scene {
             return;
         }
         this._environmentTexture = value;
+        this.onEnvironmentTextureChangedObservable.notifyObservers(value);
         this.markAllMaterialsAsDirty(1);
     }
     /**
@@ -80139,6 +79593,10 @@ class Scene {
          * This Observable will when an animation file has been imported into the scene.
          */
         this.onAnimationFileImportedObservable = new observable/* Observable */.cP();
+        /**
+         * An event triggered when the environmentTexture is changed.
+         */
+        this.onEnvironmentTextureChangedObservable = new observable/* Observable */.cP();
         // Animations
         /** @internal */
         this._registeredForLateAnimationBindings = new smartArray/* SmartArrayNoDuplicate */.b(256);
@@ -81162,7 +80620,9 @@ class Scene {
         if (!newMesh.parent) {
             newMesh._addToSceneRootNodes();
         }
-        this.onNewMeshAddedObservable.notifyObservers(newMesh);
+        tools/* Tools */.S0.SetImmediate(() => {
+            this.onNewMeshAddedObservable.notifyObservers(newMesh);
+        });
         if (recursive) {
             newMesh.getChildMeshes().forEach((m) => {
                 this.addMesh(m);
@@ -81444,7 +80904,9 @@ class Scene {
                 mesh._resyncLightSources();
             }
         }
-        this.onNewLightAddedObservable.notifyObservers(newLight);
+        tools/* Tools */.S0.SetImmediate(() => {
+            this.onNewLightAddedObservable.notifyObservers(newLight);
+        });
     }
     /**
      * Sorts the list list based on light priorities
@@ -81463,7 +80925,9 @@ class Scene {
             return;
         }
         this.cameras.push(newCamera);
-        this.onNewCameraAddedObservable.notifyObservers(newCamera);
+        tools/* Tools */.S0.SetImmediate(() => {
+            this.onNewCameraAddedObservable.notifyObservers(newCamera);
+        });
         if (!newCamera.parent) {
             newCamera._addToSceneRootNodes();
         }
@@ -81477,7 +80941,9 @@ class Scene {
             return;
         }
         this.skeletons.push(newSkeleton);
-        this.onNewSkeletonAddedObservable.notifyObservers(newSkeleton);
+        tools/* Tools */.S0.SetImmediate(() => {
+            this.onNewSkeletonAddedObservable.notifyObservers(newSkeleton);
+        });
     }
     /**
      * Adds the given particle system to this scene
@@ -81518,7 +80984,9 @@ class Scene {
             return;
         }
         this.multiMaterials.push(newMultiMaterial);
-        this.onNewMultiMaterialAddedObservable.notifyObservers(newMultiMaterial);
+        tools/* Tools */.S0.SetImmediate(() => {
+            this.onNewMultiMaterialAddedObservable.notifyObservers(newMultiMaterial);
+        });
     }
     /**
      * Adds the given material to this scene
@@ -81534,7 +81002,9 @@ class Scene {
         }
         newMaterial._indexInSceneMaterialArray = this.materials.length;
         this.materials.push(newMaterial);
-        this.onNewMaterialAddedObservable.notifyObservers(newMaterial);
+        tools/* Tools */.S0.SetImmediate(() => {
+            this.onNewMaterialAddedObservable.notifyObservers(newMaterial);
+        });
     }
     /**
      * Adds the given morph target to this scene
@@ -81889,7 +81359,9 @@ class Scene {
             return false;
         }
         this.addGeometry(geometry);
-        this.onNewGeometryAddedObservable.notifyObservers(geometry);
+        tools/* Tools */.S0.SetImmediate(() => {
+            this.onNewGeometryAddedObservable.notifyObservers(geometry);
+        });
         return true;
     }
     /**
@@ -83250,18 +82722,18 @@ class Scene {
         this._disposeList(this.animationGroups);
         // Release lights
         this._disposeList(this.lights);
-        // Release meshes
-        this._disposeList(this.meshes, (item) => item.dispose(true));
-        this._disposeList(this.transformNodes, (item) => item.dispose(true));
-        // Release cameras
-        const cameras = this.cameras;
-        this._disposeList(cameras);
         // Release materials
         if (this._defaultMaterial) {
             this._defaultMaterial.dispose();
         }
         this._disposeList(this.multiMaterials);
         this._disposeList(this.materials);
+        // Release meshes
+        this._disposeList(this.meshes, (item) => item.dispose(true));
+        this._disposeList(this.transformNodes, (item) => item.dispose(true));
+        // Release cameras
+        const cameras = this.cameras;
+        this._disposeList(cameras);
         // Release particles
         this._disposeList(this.particleSystems);
         // Release postProcesses
@@ -83345,6 +82817,7 @@ class Scene {
         this.onActiveCameraChanged.clear();
         this.onScenePerformancePriorityChangedObservable.clear();
         this.onClearColorChangedObservable.clear();
+        this.onEnvironmentTextureChangedObservable.clear();
         this._isDisposed = true;
     }
     _disposeList(items, callback) {
@@ -84030,7 +83503,6 @@ SceneComponentConstants.NAME_GEOMETRYBUFFERRENDERER = "GeometryBufferRenderer";
 SceneComponentConstants.NAME_PREPASSRENDERER = "PrePassRenderer";
 SceneComponentConstants.NAME_DEPTHRENDERER = "DepthRenderer";
 SceneComponentConstants.NAME_DEPTHPEELINGRENDERER = "DepthPeelingRenderer";
-SceneComponentConstants.NAME_IBLSHADOWSRENDERER = "IblShadowsRenderer";
 SceneComponentConstants.NAME_POSTPROCESSRENDERPIPELINEMANAGER = "PostProcessRenderPipelineManager";
 SceneComponentConstants.NAME_SPRITE = "Sprite";
 SceneComponentConstants.NAME_SUBSURFACE = "SubSurface";
@@ -84041,6 +83513,7 @@ SceneComponentConstants.NAME_OCTREE = "Octree";
 SceneComponentConstants.NAME_PHYSICSENGINE = "PhysicsEngine";
 SceneComponentConstants.NAME_AUDIO = "Audio";
 SceneComponentConstants.NAME_FLUIDRENDERER = "FluidRenderer";
+SceneComponentConstants.NAME_IBLCDFGENERATOR = "iblCDFGenerator";
 SceneComponentConstants.STEP_ISREADYFORMESH_EFFECTLAYER = 0;
 SceneComponentConstants.STEP_BEFOREEVALUATEACTIVEMESH_BOUNDINGBOXRENDERER = 0;
 SceneComponentConstants.STEP_EVALUATESUBMESH_BOUNDINGBOXRENDERER = 0;

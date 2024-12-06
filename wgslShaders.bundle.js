@@ -999,7 +999,7 @@ var shadow: f32=unpack(textureSample(shadowTexture,shadowSampler,directionToLigh
 #else
 var shadow: f32=textureSample(shadowTexture,shadowSampler,directionToLight).x;
 #endif
-return select(darkness,1.0,depth>shadow);}
+return select(1.0,darkness,depth>shadow);}
 fn computeShadowWithPoissonSamplingCube(worldPos: vec3f,lightPosition: vec3f,shadowTexture: texture_cube<f32>,shadowSampler: sampler,mapSize: f32,darkness: f32,depthValues: vec2f)->f32
 {var directionToLight: vec3f=worldPos-lightPosition;var depth: f32=length(directionToLight);depth=(depth+depthValues.x)/(depthValues.y);depth=clamp(depth,0.,1.0);directionToLight=normalize(directionToLight);directionToLight.y=-directionToLight.y;var visibility: f32=1.;var poissonDisk: array<vec3f,4>;poissonDisk[0]= vec3f(-1.0,1.0,-1.0);poissonDisk[1]= vec3f(1.0,-1.0,-1.0);poissonDisk[2]= vec3f(-1.0,-1.0,-1.0);poissonDisk[3]= vec3f(1.0,-1.0,1.0);
 #ifndef SHADOWFLOAT
@@ -1948,7 +1948,7 @@ shadow=computeShadowWithPCSS64(fragmentInputs.vPositionFromLight{X},fragmentInpu
 #endif
 #else
 #if defined(SHADOWCUBE{X})
-shadow=computeShadowCube(fragmentInputs.vPositionW,light{X}.vLightData.xyz,shadowTexture{X}Sampler,light{X}.shadowsInfo.x,light{X}.depthValues);
+shadow=computeShadowCube(fragmentInputs.vPositionW,light{X}.vLightData.xyz,shadowTexture{X},shadowTexture{X}Sampler,light{X}.shadowsInfo.x,light{X}.depthValues);
 #else
 shadow=computeShadow(fragmentInputs.vPositionFromLight{X},fragmentInputs.vDepthMetric{X},shadowTexture{X},shadowTexture{X}Sampler,light{X}.shadowsInfo.x,light{X}.shadowsInfo.w);
 #endif
@@ -2047,7 +2047,7 @@ const oitFragment_name = "oitFragment";
 const oitFragment_shader = `#ifdef ORDER_INDEPENDENT_TRANSPARENCY
 var fragDepth: f32=fragmentInputs.position.z; 
 #ifdef ORDER_INDEPENDENT_TRANSPARENCY_16BITS
-var halfFloat: i32=packHalf2x16( vec2f(fragDepth));var full: vec2f=unpackHalf2x16(halfFloat);fragDepth=full.x;
+var halfFloat: u32=pack2x16float( vec2f(fragDepth));var full: vec2f=unpack2x16float(halfFloat);fragDepth=full.x;
 #endif
 var fragCoord: vec2i=vec2i(fragmentInputs.position.xy);var lastDepth: vec2f=textureLoad(oitDepthSampler,fragCoord,0).rg;var lastFrontColor: vec4f=textureLoad(oitFrontColorSampler,fragCoord,0);fragmentOutputs.depth=vec2f(-MAX_DEPTH);fragmentOutputs.frontColor=lastFrontColor;fragmentOutputs.backColor= vec4f(0.0);
 #ifdef USE_REVERSE_DEPTHBUFFER

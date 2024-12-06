@@ -5,7 +5,7 @@
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "2ddd9cc47310fa974307.wasm";
+module.exports = __webpack_require__.p + "651e761de31482c17067.wasm";
 
 /***/ }),
 
@@ -134,14 +134,6 @@ function _assertBoolean(n) {
 */
 function init() {
     wasm.init();
-}
-
-/**
-* @returns {Runtime}
-*/
-function createBulletRuntime() {
-    const ret = wasm.createBulletRuntime();
-    return Runtime.__wrap(ret);
 }
 
 function _assertNum(n) {
@@ -484,6 +476,107 @@ function destroyShape(ptr) {
 }
 
 /**
+* @returns {number}
+*/
+function createMultiPhysicsWorld() {
+    const ret = wasm.createMultiPhysicsWorld();
+    return ret >>> 0;
+}
+
+/**
+* @param {number} world
+*/
+function destroyMultiPhysicsWorld(world) {
+    _assertNum(world);
+    wasm.destroyMultiPhysicsWorld(world);
+}
+
+/**
+* @param {number} world
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function multiPhysicsWorldSetGravity(world, x, y, z) {
+    _assertNum(world);
+    wasm.multiPhysicsWorldSetGravity(world, x, y, z);
+}
+
+/**
+* @param {number} world
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
+    _assertNum(world);
+    _assertNum(max_sub_steps);
+    wasm.multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
+}
+
+/**
+* @param {number} world
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldAddRigidBody(world, rigidbody) {
+    _assertNum(world);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldAddRigidBody(world, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldRemoveRigidBody(world, rigidbody) {
+    _assertNum(world);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidBody(world, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} bundle
+*/
+function multiPhysicsWorldAddRigidBodyBundle(world, bundle) {
+    _assertNum(world);
+    _assertNum(bundle);
+    wasm.multiPhysicsWorldAddRigidBodyBundle(world, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} bundle
+*/
+function multiPhysicsWorldRemoveRigidBodyBundle(world, bundle) {
+    _assertNum(world);
+    _assertNum(bundle);
+    wasm.multiPhysicsWorldRemoveRigidBodyBundle(world, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} constraint
+* @param {boolean} disable_collisions_between_linked_bodies
+*/
+function multiPhysicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies) {
+    _assertNum(world);
+    _assertNum(constraint);
+    _assertBoolean(disable_collisions_between_linked_bodies);
+    wasm.multiPhysicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies);
+}
+
+/**
+* @param {number} world
+* @param {number} constraint
+*/
+function multiPhysicsWorldRemoveConstraint(world, constraint) {
+    _assertNum(world);
+    _assertNum(constraint);
+    wasm.multiPhysicsWorldRemoveConstraint(world, constraint);
+}
+
+/**
 * @param {number} info
 * @returns {number}
 */
@@ -679,38 +772,6 @@ function initThreadPool(num_threads) {
 function wbg_rayon_start_worker(receiver) {
     _assertNum(receiver);
     wasm.wbg_rayon_start_worker(receiver);
-}
-
-const RuntimeFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_runtime_free(ptr >>> 0, 1));
-/**
-*/
-class Runtime {
-
-    constructor() {
-        throw new Error('cannot invoke `new` directly');
-    }
-
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(Runtime.prototype);
-        obj.__wbg_ptr = ptr;
-        RuntimeFinalization.register(obj, obj.__wbg_ptr, obj);
-        return obj;
-    }
-
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        RuntimeFinalization.unregister(this);
-        return ptr;
-    }
-
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_runtime_free(ptr, 0);
-    }
 }
 
 const wbg_rayon_PoolBuilderFinalization = (typeof FinalizationRegistry === 'undefined')

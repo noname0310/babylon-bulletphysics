@@ -569,7 +569,7 @@ async function UploadLevelsAsync(texture, imageData, imageType = DefaultEnvironm
                 const maxLODIndex = (mipmapsCount - 1) * scale + offset; // roughness = 1 (mipmaps start from 0)
                 const lodIndex = minLODIndex + (maxLODIndex - minLODIndex) * roughness;
                 const mipmapIndex = Math.round(Math.min(Math.max(lodIndex, 0), maxLODIndex));
-                const glTextureFromLod = new internalTexture/* InternalTexture */.h(engine, 2 /* InternalTextureSource.Temp */);
+                const glTextureFromLod = new internalTexture/* InternalTexture */.hV(engine, 2 /* InternalTextureSource.Temp */);
                 glTextureFromLod.isCube = true;
                 glTextureFromLod.invertY = true;
                 glTextureFromLod.generateMipMaps = false;

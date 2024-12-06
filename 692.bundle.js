@@ -460,7 +460,7 @@ const LoadTextureFromTranscodeResult = (texture, transcodeResult) => {
             texture.format = 4;
             if (engine._features.basisNeedsPOT && (Math.log2(rootImage.width) % 1 !== 0 || Math.log2(rootImage.height) % 1 !== 0)) {
                 // Create non power of two texture
-                const source = new internalTexture/* InternalTexture */.h(engine, 2 /* InternalTextureSource.Temp */);
+                const source = new internalTexture/* InternalTexture */.hV(engine, 2 /* InternalTextureSource.Temp */);
                 texture._invertVScale = texture.invertY;
                 source.type = 10;
                 source.format = 4;
