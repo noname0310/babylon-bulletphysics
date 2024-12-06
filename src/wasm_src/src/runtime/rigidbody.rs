@@ -3,10 +3,12 @@ use wasm_bindgen::prelude::*;
 
 use crate::bind;
 
+use super::collision_shape::{CollisionShape, CollisionShapeHandle};
+
 #[repr(C)]
 pub(crate) struct RigidBodyConstructionInfo<'a> {
     // for shape
-    pub(crate) shape: &'a mut bind::collision_shape::CollisionShape,
+    pub(crate) shape: &'a mut CollisionShape,
     
     // for motion state
     pub(crate) initial_transform: Mat4,
@@ -40,7 +42,7 @@ pub(crate) struct RigidBody {
     ref_count: u32,
     #[cfg(debug_assertions)]
     #[allow(dead_code)]
-    shape_handle: bind::collision_shape::CollisionShapeHandle,
+    shape_handle: CollisionShapeHandle,
 }
 
 impl RigidBody {
@@ -67,9 +69,9 @@ impl RigidBody {
         }
     }
 
-    // pub(super) fn get_inner(&self) -> &bind::rigidbody::RigidBody {
-    //     &self.inner
-    // }
+    pub(super) fn get_inner(&self) -> &bind::rigidbody::RigidBody {
+        &self.inner
+    }
 
     pub(super) fn get_inner_mut(&mut self) -> &mut bind::rigidbody::RigidBody {
         &mut self.inner
@@ -85,6 +87,10 @@ impl RigidBody {
 
     pub(crate) fn restore_dynamic(&mut self) {
         self.inner.restore_dynamic();
+    }
+
+    pub(crate) fn create_handle(&mut self) -> RigidBodyHandle {
+        RigidBodyHandle::new(self)
     }
 }
 
@@ -117,7 +123,11 @@ impl RigidBodyHandle {
         }
     }
 
-    pub(crate) fn rigidbody(&self) -> &RigidBody {
+    pub(crate) fn get(&self) -> &RigidBody {
+        self.rigidbody
+    }
+
+    pub(crate) fn get_mut(&mut self) -> &mut RigidBody {
         self.rigidbody
     }
 
@@ -133,6 +143,14 @@ impl Drop for RigidBodyHandle {
     }
 }
 
+impl PartialEq for RigidBodyHandle {
+    fn eq(&self, other: &Self) -> bool {
+        self.rigidbody as *const RigidBody == other.rigidbody as *const RigidBody
+    }
+}
+
+impl Eq for RigidBodyHandle {}
+
 pub(crate) struct RigidBodyBundle {
     bodies: Box<[bind::rigidbody::RigidBody]>,
     motion_state_bundle: bind::motion_state::MotionStateBundle,
@@ -140,7 +158,7 @@ pub(crate) struct RigidBodyBundle {
     ref_count: u32,
     #[cfg(debug_assertions)]
     #[allow(dead_code)]
-    shape_handle_vec: Vec<bind::collision_shape::CollisionShapeHandle>,
+    shape_handle_vec: Vec<CollisionShapeHandle>,
 }
 
 impl RigidBodyBundle {
@@ -194,6 +212,10 @@ impl RigidBodyBundle {
     pub(crate) fn restore_dynamic(&mut self, index: usize) {
         self.bodies[index].restore_dynamic();
     }
+
+    pub(crate) fn create_handle(&mut self) -> RigidBodyBundleHandle {
+        RigidBodyBundleHandle::new(self)
+    }
 }
 
 #[cfg(debug_assertions)]
@@ -204,6 +226,14 @@ impl Drop for RigidBodyBundle {
         }
     }
 }
+
+impl PartialEq for RigidBodyBundle {
+    fn eq(&self, other: &Self) -> bool {
+        self as *const RigidBodyBundle == other as *const RigidBodyBundle
+    }
+}
+
+impl Eq for RigidBodyBundle {}
 
 pub(crate) struct RigidBodyBundleHandle {
     bundle: &'static mut RigidBodyBundle,
@@ -225,7 +255,11 @@ impl RigidBodyBundleHandle {
         }
     }
 
-    pub(crate) fn bundle(&self) -> &RigidBodyBundle {
+    pub(crate) fn get(&self) -> &RigidBodyBundle {
+        self.bundle
+    }
+
+    pub(crate) fn get_mut(&mut self) -> &mut RigidBodyBundle {
         self.bundle
     }
 
@@ -240,6 +274,14 @@ impl Drop for RigidBodyBundleHandle {
         self.bundle.ref_count -= 1;
     }
 }
+
+impl PartialEq for RigidBodyBundleHandle {
+    fn eq(&self, other: &Self) -> bool {
+        self.bundle as *const RigidBodyBundle == other.bundle as *const RigidBodyBundle
+    }
+}
+
+impl Eq for RigidBodyBundleHandle {}
 
 #[wasm_bindgen(js_name = "createRigidBody")]
 pub fn create_rigidbody(info: *mut usize) -> *mut usize {

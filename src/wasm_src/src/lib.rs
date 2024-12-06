@@ -45,7 +45,7 @@ pub fn init() {
     let world_transform = mation_state_bundle.get_transform(1);
     web_sys::console::log_1(&format!("world_transform: {:?}", world_transform).into());
 
-    let shape = bind::collision_shape::CollisionShape::Box(bind::collision_shape::BoxShape::new(glam::Vec3::new(1.0, 1.0, 1.0)));
+    let shape = runtime::collision_shape::CollisionShape::Box(runtime::collision_shape::BoxShape::new(glam::Vec3::new(1.0, 1.0, 1.0)));
     let mut shape = Box::new(shape);
 
     let mut rigidbody_info = runtime::rigidbody::RigidBodyConstructionInfo {

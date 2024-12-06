@@ -1,4 +1,4 @@
-use super::{constraint::Constraint, rigidbody::RigidBody};
+use super::rigidbody::RigidBody;
 
 #[link(name = "bullet")]
 extern "C" {
@@ -46,12 +46,12 @@ impl PhysicsWorld {
         unsafe { bw_world_remove_rigidbody(self.ptr, rigidbody.ptr_mut()) };
     }
 
-    pub(crate) fn add_constraint(&mut self, constraint: &mut Constraint, disable_collisions_between_linked_bodies: bool) {
-        unsafe { bw_world_add_constraint(self.ptr, constraint.ptr_mut(), disable_collisions_between_linked_bodies as u8) };
+    pub(crate) fn add_constraint(&mut self, constraint: *mut std::ffi::c_void, disable_collisions_between_linked_bodies: bool) {
+        unsafe { bw_world_add_constraint(self.ptr, constraint, disable_collisions_between_linked_bodies as u8) };
     }
 
-    pub(crate) fn remove_constraint(&mut self, constraint: &mut Constraint) {
-        unsafe { bw_world_remove_constraint(self.ptr, constraint.ptr_mut()) };
+    pub(crate) fn remove_constraint(&mut self, constraint: *mut std::ffi::c_void) {
+        unsafe { bw_world_remove_constraint(self.ptr, constraint) };
     }
 }
 

@@ -41,7 +41,7 @@ impl Generic6DofConstraint {
         }
     }
 
-    pub(super) fn ptr_mut(&self) -> *mut std::ffi::c_void {
+    pub(crate) fn ptr_mut(&self) -> *mut std::ffi::c_void {
         self.ptr
     }
 
@@ -92,7 +92,7 @@ impl Generic6DofSpringConstraint {
         }
     }
 
-    pub(super) fn ptr_mut(&self) -> *mut std::ffi::c_void {
+    pub(crate) fn ptr_mut(&self) -> *mut std::ffi::c_void {
         self.ptr
     }
 
@@ -137,23 +137,6 @@ impl Drop for Generic6DofSpringConstraint {
         #[cfg(debug_assertions)]
         {
             self.ptr = std::ptr::null_mut();
-        }
-    }
-}
-
-pub(crate) enum Constraint {
-    Generic6Dof(Generic6DofConstraint),
-    Generic6DofSpring(Generic6DofSpringConstraint),
-    #[allow(dead_code)]
-    Unknown,
-}
-
-impl Constraint {
-    pub(super) fn ptr_mut(&self) -> *mut std::ffi::c_void {
-        match self {
-            Constraint::Generic6Dof(constraint) => constraint.ptr_mut(),
-            Constraint::Generic6DofSpring(constraint) => constraint.ptr_mut(),
-            Constraint::Unknown => panic!("Unknown constraint"),
         }
     }
 }

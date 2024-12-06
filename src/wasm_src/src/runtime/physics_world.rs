@@ -1,10 +1,19 @@
 use wasm_bindgen::prelude::*;
 use crate::bind;
 
-use super::rigidbody::{RigidBody, RigidBodyBundle};
+use super::{constraint::{Constraint, ConstraintHandle}, rigidbody::{RigidBody, RigidBodyBundle, RigidBodyBundleHandle, RigidBodyHandle}};
+
+#[cfg(debug_assertions)]
+struct PhysicsWorldHandleInfo {
+    bodies: Vec<RigidBodyHandle>,
+    body_bundles: Vec<RigidBodyBundleHandle>,
+    constraints: Vec<ConstraintHandle>,
+}
 
 pub(crate) struct PhysicsWorld {
     inner: bind::physics_world::PhysicsWorld,
+    #[cfg(debug_assertions)]
+    handle_info: PhysicsWorldHandleInfo,
 }
 
 impl PhysicsWorld {
@@ -12,6 +21,12 @@ impl PhysicsWorld {
         let inner = bind::physics_world::PhysicsWorld::new();
         Self {
             inner,
+            #[cfg(debug_assertions)]
+            handle_info: PhysicsWorldHandleInfo {
+                bodies: Vec::new(),
+                body_bundles: Vec::new(),
+                constraints: Vec::new(),
+            },
         }
     }
 
@@ -23,32 +38,59 @@ impl PhysicsWorld {
         self.inner.step_simulation(time_step, max_sub_steps, fixed_time_step);
     }
 
-    pub(crate) fn add_rigidbody(&mut self, rigidbody: &mut RigidBody) {
-        self.inner.add_rigidbody(rigidbody.get_inner_mut());
+    pub(crate) fn add_rigidbody(&mut self, mut rigidbody: RigidBodyHandle) {
+        self.inner.add_rigidbody(rigidbody.get_mut().get_inner_mut());
+
+        #[cfg(debug_assertions)]
+        self.handle_info.bodies.push(rigidbody);
     }
 
-    pub(crate) fn remove_rigidbody(&mut self, rigidbody: &mut RigidBody) {
-        self.inner.remove_rigidbody(rigidbody.get_inner_mut());
-    }
+    pub(crate) fn remove_rigidbody(&mut self, mut rigidbody: RigidBodyHandle) {
+        self.inner.remove_rigidbody(rigidbody.get_mut().get_inner_mut());
 
-    pub (crate) fn add_rigidbody_bundle(&mut self, bundle: &mut RigidBodyBundle) {
-        for i in 0..bundle.bodies().len() {
-            self.inner.add_rigidbody(&mut bundle.bodies_mut()[i]);
+        #[cfg(debug_assertions)]
+        {
+            let index = self.handle_info.bodies.iter().position(|b| *b == rigidbody).unwrap();
+            self.handle_info.bodies.remove(index);
         }
     }
 
-    pub(crate) fn remove_rigidbody_bundle(&mut self, bundle: &mut RigidBodyBundle) {
-        for i in 0..bundle.bodies().len() {
-            self.inner.remove_rigidbody(&mut bundle.bodies_mut()[i]);
+    pub (crate) fn add_rigidbody_bundle(&mut self, mut bundle: RigidBodyBundleHandle) {
+        for i in 0..bundle.get().bodies().len() {
+            self.inner.add_rigidbody(&mut bundle.get_mut().bodies_mut()[i]);
+        }
+
+        #[cfg(debug_assertions)]
+        self.handle_info.body_bundles.push(bundle);
+    }
+
+    pub(crate) fn remove_rigidbody_bundle(&mut self, mut bundle: RigidBodyBundleHandle) {
+        for i in 0..bundle.get().bodies().len() {
+            self.inner.remove_rigidbody(&mut bundle.get_mut().bodies_mut()[i]);
+        }
+
+        #[cfg(debug_assertions)]
+        {
+            let index = self.handle_info.body_bundles.iter().position(|b| *b == bundle).unwrap();
+            self.handle_info.body_bundles.remove(index);
         }
     }
 
-    pub(crate) fn add_constraint(&mut self, constraint: &mut bind::constraint::Constraint, disable_collisions_between_linked_bodies: bool) {
-        self.inner.add_constraint(constraint, disable_collisions_between_linked_bodies);
+    pub(crate) fn add_constraint(&mut self, mut constraint: ConstraintHandle, disable_collisions_between_linked_bodies: bool) {
+        self.inner.add_constraint(constraint.get_mut().ptr_mut(), disable_collisions_between_linked_bodies);
+
+        #[cfg(debug_assertions)]
+        self.handle_info.constraints.push(constraint);
     }
 
-    pub(crate) fn remove_constraint(&mut self, constraint: &mut bind::constraint::Constraint) {
-        self.inner.remove_constraint(constraint);
+    pub(crate) fn remove_constraint(&mut self, mut constraint: ConstraintHandle) {
+        self.inner.remove_constraint(constraint.get_mut().ptr_mut());
+
+        #[cfg(debug_assertions)]
+        {
+            let index = self.handle_info.constraints.iter().position(|c| *c == constraint).unwrap();
+            self.handle_info.constraints.remove(index);
+        }
     }
 }
 
@@ -82,40 +124,40 @@ pub fn physics_world_step_simulation(world: *mut usize, time_step: f32, max_sub_
 pub fn physics_world_add_rigidbody(world: *mut usize, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
-    world.add_rigidbody(rigidbody);
+    world.add_rigidbody(rigidbody.create_handle());
 }
 
 #[wasm_bindgen(js_name = "physicsWorldRemoveRigidBody")]
 pub fn physics_world_remove_rigidbody(world: *mut usize, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
-    world.remove_rigidbody(rigidbody);
+    world.remove_rigidbody(rigidbody.create_handle());
 }
 
 #[wasm_bindgen(js_name = "physicsWorldAddRigidBodyBundle")]
 pub fn physics_world_add_rigidbody_bundle(world: *mut usize, bundle: *mut usize) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
-    world.add_rigidbody_bundle(bundle);
+    world.add_rigidbody_bundle(bundle.create_handle());
 }
 
 #[wasm_bindgen(js_name = "physicsWorldRemoveRigidBodyBundle")]
 pub fn physics_world_remove_rigidbody_bundle(world: *mut usize, bundle: *mut usize) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
-    world.remove_rigidbody_bundle(bundle);
+    world.remove_rigidbody_bundle(bundle.create_handle());
 }
 
 #[wasm_bindgen(js_name = "physicsWorldAddConstraint")]
 pub fn physics_world_add_constraint(world: *mut usize, constraint: *mut usize, disable_collisions_between_linked_bodies: bool) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
-    let constraint = unsafe { &mut *(constraint as *mut bind::constraint::Constraint) };
-    world.add_constraint(constraint, disable_collisions_between_linked_bodies);
+    let constraint = unsafe { &mut *(constraint as *mut Constraint) };
+    world.add_constraint(constraint.create_handle(), disable_collisions_between_linked_bodies);
 }
 
 #[wasm_bindgen(js_name = "physicsWorldRemoveConstraint")]
 pub fn physics_world_remove_constraint(world: *mut usize, constraint: *mut usize) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
-    let constraint = unsafe { &mut *(constraint as *mut bind::constraint::Constraint) };
-    world.remove_constraint(constraint);
+    let constraint = unsafe { &mut *(constraint as *mut Constraint) };
+    world.remove_constraint(constraint.create_handle());
 }
