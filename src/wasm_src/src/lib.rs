@@ -69,11 +69,6 @@ pub fn init() {
     let _rigidbody = runtime::rigidbody::RigidBody::new(&mut rigidbody_info);
 }
 
-#[wasm_bindgen(js_name = "createBulletRuntime")]
-pub fn create_bullet_runtime() -> runtime::Runtime {
-    runtime::Runtime::new()
-}
-
 #[wasm_bindgen(js_name = "allocateBuffer")]
 pub fn allocate_buffer(size: usize) -> *mut u8 {
     let layout = std::alloc::Layout::from_size_align(size, 16).unwrap();
