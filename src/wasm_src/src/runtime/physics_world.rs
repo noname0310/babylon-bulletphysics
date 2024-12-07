@@ -1,3 +1,4 @@
+use glam::Vec3;
 use wasm_bindgen::prelude::*;
 use crate::bind;
 
@@ -30,8 +31,8 @@ impl PhysicsWorld {
         }
     }
 
-    pub(crate) fn set_gravity(&mut self, x: f32, y: f32, z: f32) {
-        self.inner.set_gravity(x, y, z);
+    pub(crate) fn set_gravity(&mut self, force: Vec3) {
+        self.inner.set_gravity(force.x, force.y, force.z);
     }
 
     pub(crate) fn step_simulation(&mut self, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
@@ -111,7 +112,7 @@ pub fn destroy_physics_world(world: *mut usize) {
 #[wasm_bindgen(js_name = "physicsWorldSetGravity")]
 pub fn physics_world_set_gravity(world: *mut usize, x: f32, y: f32, z: f32) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
-    world.set_gravity(x, y, z);
+    world.set_gravity(Vec3::new(x, y, z));
 }
 
 #[wasm_bindgen(js_name = "physicsWorldStepSimulation")]
