@@ -133,11 +133,11 @@ __webpack_require__.d(md_namespaceObject, {
   initSync: () => (initSync),
   initThreadPool: () => (initThreadPool),
   multiPhysicsWorldAddConstraint: () => (multiPhysicsWorldAddConstraint),
-  multiPhysicsWorldAddRigidBody: () => (multiPhysicsWorldAddRigidBody),
-  multiPhysicsWorldAddRigidBodyBundle: () => (multiPhysicsWorldAddRigidBodyBundle),
+  multiPhysicsWorldAddRigidbody: () => (multiPhysicsWorldAddRigidbody),
+  multiPhysicsWorldAddRigidbodyBundle: () => (multiPhysicsWorldAddRigidbodyBundle),
   multiPhysicsWorldRemoveConstraint: () => (multiPhysicsWorldRemoveConstraint),
-  multiPhysicsWorldRemoveRigidBody: () => (multiPhysicsWorldRemoveRigidBody),
-  multiPhysicsWorldRemoveRigidBodyBundle: () => (multiPhysicsWorldRemoveRigidBodyBundle),
+  multiPhysicsWorldRemoveRigidbody: () => (multiPhysicsWorldRemoveRigidbody),
+  multiPhysicsWorldRemoveRigidbodyBundle: () => (multiPhysicsWorldRemoveRigidbodyBundle),
   multiPhysicsWorldSetGravity: () => (multiPhysicsWorldSetGravity),
   multiPhysicsWorldStepSimulation: () => (multiPhysicsWorldStepSimulation),
   physicsWorldAddConstraint: () => (physicsWorldAddConstraint),
@@ -646,64 +646,76 @@ function multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_
 
 /**
 * @param {number} world
+* @param {number} world_id
 * @param {number} rigidbody
 */
-function multiPhysicsWorldAddRigidBody(world, rigidbody) {
+function multiPhysicsWorldAddRigidbody(world, world_id, rigidbody) {
     _assertNum(world);
+    _assertNum(world_id);
     _assertNum(rigidbody);
-    wasm.multiPhysicsWorldAddRigidBody(world, rigidbody);
+    wasm.multiPhysicsWorldAddRigidbody(world, world_id, rigidbody);
 }
 
 /**
 * @param {number} world
+* @param {number} world_id
 * @param {number} rigidbody
 */
-function multiPhysicsWorldRemoveRigidBody(world, rigidbody) {
+function multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody) {
     _assertNum(world);
+    _assertNum(world_id);
     _assertNum(rigidbody);
-    wasm.multiPhysicsWorldRemoveRigidBody(world, rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody);
 }
 
 /**
 * @param {number} world
+* @param {number} world_id
 * @param {number} bundle
 */
-function multiPhysicsWorldAddRigidBodyBundle(world, bundle) {
+function multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle) {
     _assertNum(world);
+    _assertNum(world_id);
     _assertNum(bundle);
-    wasm.multiPhysicsWorldAddRigidBodyBundle(world, bundle);
+    wasm.multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle);
 }
 
 /**
 * @param {number} world
+* @param {number} world_id
 * @param {number} bundle
 */
-function multiPhysicsWorldRemoveRigidBodyBundle(world, bundle) {
+function multiPhysicsWorldRemoveRigidbodyBundle(world, world_id, bundle) {
     _assertNum(world);
+    _assertNum(world_id);
     _assertNum(bundle);
-    wasm.multiPhysicsWorldRemoveRigidBodyBundle(world, bundle);
+    wasm.multiPhysicsWorldRemoveRigidbodyBundle(world, world_id, bundle);
 }
 
 /**
 * @param {number} world
+* @param {number} world_id
 * @param {number} constraint
 * @param {boolean} disable_collisions_between_linked_bodies
 */
-function multiPhysicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies) {
+function multiPhysicsWorldAddConstraint(world, world_id, constraint, disable_collisions_between_linked_bodies) {
     _assertNum(world);
+    _assertNum(world_id);
     _assertNum(constraint);
     _assertBoolean(disable_collisions_between_linked_bodies);
-    wasm.multiPhysicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies);
+    wasm.multiPhysicsWorldAddConstraint(world, world_id, constraint, disable_collisions_between_linked_bodies);
 }
 
 /**
 * @param {number} world
+* @param {number} world_id
 * @param {number} constraint
 */
-function multiPhysicsWorldRemoveConstraint(world, constraint) {
+function multiPhysicsWorldRemoveConstraint(world, world_id, constraint) {
     _assertNum(world);
+    _assertNum(world_id);
     _assertNum(constraint);
-    wasm.multiPhysicsWorldRemoveConstraint(world, constraint);
+    wasm.multiPhysicsWorldRemoveConstraint(world, world_id, constraint);
 }
 
 /**
@@ -2814,7 +2826,7 @@ class SceneBuilder {
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "fe463e4d8d161c425968.wasm";
+module.exports = __webpack_require__.p + "609d2f900ec10b98d64c.wasm";
 
 /***/ })
 
