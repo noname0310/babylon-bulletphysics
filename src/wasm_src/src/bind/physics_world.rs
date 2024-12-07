@@ -1,4 +1,4 @@
-use super::rigidbody::RigidBody;
+use super::rigidbody::{RigidBody, RigidBodyShadow};
 
 #[link(name = "bullet")]
 extern "C" {
@@ -13,6 +13,10 @@ extern "C" {
     fn bw_world_add_rigidbody(world: *mut std::ffi::c_void, rigidbody: *mut std::ffi::c_void);
 
     fn bw_world_remove_rigidbody(world: *mut std::ffi::c_void, rigidbody: *mut std::ffi::c_void);
+
+    fn bw_world_add_rigidbody_shadow(world: *mut std::ffi::c_void, rigidbody_shadow: *mut std::ffi::c_void);
+
+    fn bw_world_remove_rigidbody_shadow(world: *mut std::ffi::c_void, rigidbody_shadow: *mut std::ffi::c_void);
 
     fn bw_world_add_constraint(world: *mut std::ffi::c_void, constraint: *mut std::ffi::c_void, disable_collisions_between_linked_bodies: u8);
 
@@ -44,6 +48,14 @@ impl PhysicsWorld {
 
     pub(crate) fn remove_rigidbody(&mut self, rigidbody: &mut RigidBody) {
         unsafe { bw_world_remove_rigidbody(self.ptr, rigidbody.ptr_mut()) };
+    }
+
+    pub(crate) fn add_rigidbody_shadow(&mut self, rigidbody_shadow: &mut RigidBodyShadow) {
+        unsafe { bw_world_add_rigidbody_shadow(self.ptr, rigidbody_shadow.ptr_mut()) };
+    }
+
+    pub(crate) fn remove_rigidbody_shadow(&mut self, rigidbody_shadow: &mut RigidBodyShadow) {
+        unsafe { bw_world_remove_rigidbody_shadow(self.ptr, rigidbody_shadow.ptr_mut()) };
     }
 
     pub(crate) fn add_constraint(&mut self, constraint: *mut std::ffi::c_void, disable_collisions_between_linked_bodies: bool) {

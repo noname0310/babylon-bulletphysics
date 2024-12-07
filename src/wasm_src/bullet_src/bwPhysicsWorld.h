@@ -54,6 +54,16 @@ public:
         m_world->removeRigidBody(body->getBody());
     }
 
+    void addRigidBodyShadow(bwRigidBodyShadow* shadow)
+    {
+        m_world->addRigidBody(shadow->getBody(), shadow->getCollisionGroup(), shadow->getCollisionMask());
+    }
+
+    void removeRigidBodyShadow(bwRigidBodyShadow* shadow)
+    {
+        m_world->removeRigidBody(shadow->getBody());
+    }
+
     void addConstraint(btTypedConstraint* constraint, bool disableCollisionsBetweenLinkedBodies)
     {
         m_world->addConstraint(constraint, disableCollisionsBetweenLinkedBodies);
@@ -101,6 +111,20 @@ extern "C" void bw_world_remove_rigidbody(void* world, void* body)
     bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     w->removeRigidBody(b);
+}
+
+extern "C" void bw_world_add_rigidbody_shadow(void* world, void* shadow)
+{
+    bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
+    bwRigidBodyShadow* s = static_cast<bwRigidBodyShadow*>(shadow);
+    w->addRigidBodyShadow(s);
+}
+
+extern "C" void bw_world_remove_rigidbody_shadow(void* world, void* shadow)
+{
+    bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
+    bwRigidBodyShadow* s = static_cast<bwRigidBodyShadow*>(shadow);
+    w->removeRigidBodyShadow(s);
 }
 
 extern "C" void bw_world_add_constraint(void* world, void* constraint, uint8_t disableCollisionsBetweenLinkedBodies)

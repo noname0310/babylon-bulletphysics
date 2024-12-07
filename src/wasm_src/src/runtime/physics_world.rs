@@ -95,6 +95,8 @@ impl PhysicsWorld {
     }
 }
 
+unsafe impl Send for PhysicsWorld {}
+
 #[wasm_bindgen(js_name = "createPhysicsWorld")]
 pub fn create_physics_world() -> *mut usize {
     let world = PhysicsWorld::new();

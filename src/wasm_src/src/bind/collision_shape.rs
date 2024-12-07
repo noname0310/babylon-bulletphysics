@@ -138,7 +138,7 @@ impl Drop for StaticPlaneShape {
             panic!("StaticPlaneShape already dropped");
         }
 
-        unsafe { bw_destroy_staticplaneshape(self.ptr); }
+        unsafe { bw_destroy_staticplaneshape(self.ptr) };
 
         #[cfg(debug_assertions)]
         {

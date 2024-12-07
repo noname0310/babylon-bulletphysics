@@ -10,6 +10,10 @@ extern "C" {
     fn bw_rigidbody_make_kinematic(body: *mut std::ffi::c_void);
 
     fn bw_rigidbody_restore_dynamic(body: *mut std::ffi::c_void);
+
+    fn bw_create_rigidbody_shadow(body: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
+
+    fn bw_destroy_rigidbody_shadow(shadow: *mut std::ffi::c_void);
 }
 
 pub(crate) enum MotionType {
@@ -215,11 +219,11 @@ impl RigidBody {
     }
 
     pub(crate) fn make_kinematic(&mut self) {
-        unsafe { bw_rigidbody_make_kinematic(self.ptr) }
+        unsafe { bw_rigidbody_make_kinematic(self.ptr) };
     }
 
     pub(crate) fn restore_dynamic(&mut self) {
-        unsafe { bw_rigidbody_restore_dynamic(self.ptr) }
+        unsafe { bw_rigidbody_restore_dynamic(self.ptr) };
     }
 }
 
@@ -230,7 +234,43 @@ impl Drop for RigidBody {
             panic!("RigidBody already dropped");
         }
 
-        unsafe { bw_destroy_rigidbody(self.ptr) }
+        unsafe { bw_destroy_rigidbody(self.ptr) };
+
+        #[cfg(debug_assertions)]
+        {
+            self.ptr = std::ptr::null_mut();
+        }
+    }
+}
+
+pub(crate) struct RigidBodyShadow {
+    ptr: *mut std::ffi::c_void,
+}
+
+impl RigidBodyShadow {
+    pub(crate) fn new(body: &mut RigidBody) -> Self {
+        Self {
+            ptr: unsafe { bw_create_rigidbody_shadow(body.ptr_mut()) },
+        }
+    }
+
+    pub(super) fn ptr(&self) -> *const std::ffi::c_void {
+        self.ptr
+    }
+
+    pub(super) fn ptr_mut(&mut self) -> *mut std::ffi::c_void {
+        self.ptr
+    }
+}
+
+impl Drop for RigidBodyShadow {
+    fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        if self.ptr.is_null() {
+            panic!("RigidBodyShadow already dropped");
+        }
+
+        unsafe { bw_destroy_rigidbody_shadow(self.ptr) };
 
         #[cfg(debug_assertions)]
         {

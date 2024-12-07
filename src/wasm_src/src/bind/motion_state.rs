@@ -84,7 +84,7 @@ impl Drop for MotionState {
             panic!("MotionState already dropped");
         }
 
-        unsafe { bw_destroy_motion_state(self.ptr) }
+        unsafe { bw_destroy_motion_state(self.ptr) };
 
         #[cfg(debug_assertions)]
         {
@@ -160,7 +160,7 @@ impl Drop for MotionStateBundle {
             panic!("MotionStateBundle already dropped");
         }
 
-        unsafe { bw_destroy_motion_state_bundle(self.ptr) }
+        unsafe { bw_destroy_motion_state_bundle(self.ptr) };
 
         #[cfg(debug_assertions)]
         {

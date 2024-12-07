@@ -41,6 +41,36 @@ struct bwRigidBodyConstructionInfo final
     uint8_t m_disableDeactivation; // bool
 };
 
+class bwRigidBody;
+
+class bwRigidBodyShadow final
+{
+private:
+    bwRigidBody* m_source;
+    btRigidBody m_body;
+
+    btRigidBody::btRigidBodyConstructionInfo createRigidBodyConstructionInfo(bwRigidBody* source);
+
+public:
+    bwRigidBodyShadow(bwRigidBody* source) : m_source(source), m_body(createRigidBodyConstructionInfo(source))
+    {
+    }
+
+    btRigidBody* getBody()
+    {
+        return &m_body;
+    }
+
+    const btRigidBody* getBody() const
+    {
+        return &m_body;
+    }
+
+    uint16_t getCollisionGroup() const;
+
+    uint16_t getCollisionMask() const;
+};
+
 class bwRigidBody final
 {
 private:
@@ -78,6 +108,17 @@ private:
         return rbInfo;
     }
 
+    // use user pointer to store bwRigidBodyShadow array
+    // btAlignedObjectArray<bwRigidBodyShadow>& getShadowArray()
+    // {
+    //     if (m_body.getUserPointer() == nullptr)
+    //     {
+    //         m_body.setUserPointer(new btAlignedObjectArray<bwRigidBodyShadow>());
+    //     }
+
+    //     return *static_cast<btAlignedObjectArray<bwRigidBodyShadow>*>(m_body.getUserPointer());
+    // }
+
 public:
     bwRigidBody(bwRigidBodyConstructionInfo* info):
         m_shape(static_cast<btCollisionShape*>(info->m_shape)),
@@ -112,10 +153,14 @@ public:
     bwRigidBody(bwRigidBody const&) = delete;
     bwRigidBody& operator=(bwRigidBody const&) = delete;
 
-    // ~bwRigidBody()
-    // {
-        // noting to do
-    // }
+    ~bwRigidBody()
+    {
+        // btAlignedObjectArray<bwRigidBodyShadow>* ptr = static_cast<btAlignedObjectArray<bwRigidBodyShadow>*>(m_body.getUserPointer());
+        // if (ptr != nullptr)
+        // {
+        //     delete ptr;
+        // }
+    }
 
     btRigidBody* getBody()
     {
@@ -148,7 +193,44 @@ public:
         m_body.setAngularVelocity(btVector3(0.0f, 0.0f, 0.0f));
         m_body.setCollisionFlags(m_body.getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
     }
+
+    bwRigidBodyShadow* createShadow()
+    {
+        // btAlignedObjectArray<bwRigidBodyShadow>& shadows = getShadowArray();
+        // shadows.push_back(bwRigidBodyShadow(this));
+        // return &shadows[shadows.size() - 1];
+        return new bwRigidBodyShadow(this);
+    }
 };
+
+btRigidBody::btRigidBodyConstructionInfo bwRigidBodyShadow::createRigidBodyConstructionInfo(bwRigidBody* source)
+{
+    btRigidBody* sourceBody = source->getBody();
+    btRigidBody::btRigidBodyConstructionInfo info(
+        sourceBody->getMass(),
+        sourceBody->getMotionState(),
+        sourceBody->getCollisionShape(),
+        sourceBody->getLocalInertia()
+    );
+    // because shadow is always non-dynamic we don't need to copy damping values
+    // info.m_linearDamping = sourceBody->getLinearDamping();
+    // info.m_angularDamping = sourceBody->getAngularDamping();
+    info.m_friction = sourceBody->getFriction();
+    info.m_restitution = sourceBody->getRestitution();
+    // info.m_additionalDamping = sourceBody->m_additionalDamping;
+
+    return info;
+}
+
+uint16_t bwRigidBodyShadow::getCollisionGroup() const
+{
+    return m_source->getCollisionGroup();
+}
+
+uint16_t bwRigidBodyShadow::getCollisionMask() const
+{
+    return m_source->getCollisionMask();
+}
 
 extern "C" void* bw_create_rigidbody(void* info)
 {
@@ -173,4 +255,17 @@ extern "C" void bw_rigidbody_restore_dynamic(void* body)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     b->restoreDynamic();
+}
+
+extern "C" void* bw_create_rigidbody_shadow(void* body)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    bwRigidBodyShadow* shadow = new bwRigidBodyShadow(b);
+    return shadow;
+}
+
+extern "C" void bw_destroy_rigidbody_shadow(void* shadow)
+{
+    bwRigidBodyShadow* s = static_cast<bwRigidBodyShadow*>(shadow);
+    delete s;
 }
