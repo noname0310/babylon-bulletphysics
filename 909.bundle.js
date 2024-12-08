@@ -5,7 +5,7 @@
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "b8391c3d76f67df13158.wasm";
+module.exports = __webpack_require__.p + "80339c2ac28736b046dc.wasm";
 
 /***/ }),
 
@@ -369,11 +369,11 @@ function multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_
 * @param {number} world_id
 * @param {number} rigidbody
 */
-function multiPhysicsWorldAddRigidbody(world, world_id, rigidbody) {
+function multiPhysicsWorldAddRigidBody(world, world_id, rigidbody) {
     _assertNum(world);
     _assertNum(world_id);
     _assertNum(rigidbody);
-    wasm.multiPhysicsWorldAddRigidbody(world, world_id, rigidbody);
+    wasm.multiPhysicsWorldAddRigidBody(world, world_id, rigidbody);
 }
 
 /**
@@ -381,11 +381,11 @@ function multiPhysicsWorldAddRigidbody(world, world_id, rigidbody) {
 * @param {number} world_id
 * @param {number} rigidbody
 */
-function multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody) {
+function multiPhysicsWorldRemoveRigidBody(world, world_id, rigidbody) {
     _assertNum(world);
     _assertNum(world_id);
     _assertNum(rigidbody);
-    wasm.multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidBody(world, world_id, rigidbody);
 }
 
 /**
@@ -393,11 +393,11 @@ function multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody) {
 * @param {number} world_id
 * @param {number} bundle
 */
-function multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle) {
+function multiPhysicsWorldAddRigidBodyBundle(world, world_id, bundle) {
     _assertNum(world);
     _assertNum(world_id);
     _assertNum(bundle);
-    wasm.multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle);
+    wasm.multiPhysicsWorldAddRigidBodyBundle(world, world_id, bundle);
 }
 
 /**
@@ -405,63 +405,51 @@ function multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle) {
 * @param {number} world_id
 * @param {number} bundle
 */
-function multiPhysicsWorldRemoveRigidbodyBundle(world, world_id, bundle) {
+function multiPhysicsWorldRemoveRigidBodyBundle(world, world_id, bundle) {
     _assertNum(world);
     _assertNum(world_id);
     _assertNum(bundle);
-    wasm.multiPhysicsWorldRemoveRigidbodyBundle(world, world_id, bundle);
+    wasm.multiPhysicsWorldRemoveRigidBodyBundle(world, world_id, bundle);
 }
 
 /**
 * @param {number} world
 * @param {number} rigidbody
 */
-function multiPhysicsWorldAddRigidbodyToGlobal(world, rigidbody) {
+function multiPhysicsWorldAddRigidBodyToGlobal(world, rigidbody) {
     _assertNum(world);
     _assertNum(rigidbody);
-    wasm.multiPhysicsWorldAddRigidbodyToGlobal(world, rigidbody);
+    wasm.multiPhysicsWorldAddRigidBodyToGlobal(world, rigidbody);
 }
 
 /**
 * @param {number} world
 * @param {number} rigidbody
 */
-function multiPhysicsWorldRemoveRigidbodyFromGlobal(world, rigidbody) {
+function multiPhysicsWorldRemoveRigidBodyFromGlobal(world, rigidbody) {
     _assertNum(world);
     _assertNum(rigidbody);
-    wasm.multiPhysicsWorldRemoveRigidbodyFromGlobal(world, rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidBodyFromGlobal(world, rigidbody);
 }
 
 /**
 * @param {number} world
 * @param {number} bundle
 */
-function multiPhysicsWorldAddRigidbodyBundleToGlobal(world, bundle) {
+function multiPhysicsWorldAddRigidBodyBundleToGlobal(world, bundle) {
     _assertNum(world);
     _assertNum(bundle);
-    wasm.multiPhysicsWorldAddRigidbodyBundleToGlobal(world, bundle);
+    wasm.multiPhysicsWorldAddRigidBodyBundleToGlobal(world, bundle);
 }
 
 /**
 * @param {number} world
 * @param {number} bundle
 */
-function multiPhysicsWorldRemoveRigidbodyBundleFromGlobal(world, bundle) {
+function multiPhysicsWorldRemoveRigidBodyBundleFromGlobal(world, bundle) {
     _assertNum(world);
     _assertNum(bundle);
-    wasm.multiPhysicsWorldRemoveRigidbodyBundleFromGlobal(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} rigidbody
-*/
-function multiPhysicsWorldAddRigidbodyShadow(world, world_id, rigidbody) {
-    _assertNum(world);
-    _assertNum(world_id);
-    _assertNum(rigidbody);
-    wasm.multiPhysicsWorldAddRigidbodyShadow(world, world_id, rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidBodyBundleFromGlobal(world, bundle);
 }
 
 /**
@@ -469,11 +457,23 @@ function multiPhysicsWorldAddRigidbodyShadow(world, world_id, rigidbody) {
 * @param {number} world_id
 * @param {number} rigidbody
 */
-function multiPhysicsWorldRemoveRigidbodyShadow(world, world_id, rigidbody) {
+function multiPhysicsWorldAddRigidBodyShadow(world, world_id, rigidbody) {
     _assertNum(world);
     _assertNum(world_id);
     _assertNum(rigidbody);
-    wasm.multiPhysicsWorldRemoveRigidbodyShadow(world, world_id, rigidbody);
+    wasm.multiPhysicsWorldAddRigidBodyShadow(world, world_id, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldRemoveRigidBodyShadow(world, world_id, rigidbody) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidBodyShadow(world, world_id, rigidbody);
 }
 
 /**
@@ -481,11 +481,11 @@ function multiPhysicsWorldRemoveRigidbodyShadow(world, world_id, rigidbody) {
 * @param {number} world_id
 * @param {number} bundle
 */
-function multiPhysicsWorldAddRigidbodyBundleShadow(world, world_id, bundle) {
+function multiPhysicsWorldAddRigidBodyBundleShadow(world, world_id, bundle) {
     _assertNum(world);
     _assertNum(world_id);
     _assertNum(bundle);
-    wasm.multiPhysicsWorldAddRigidbodyBundleShadow(world, world_id, bundle);
+    wasm.multiPhysicsWorldAddRigidBodyBundleShadow(world, world_id, bundle);
 }
 
 /**
@@ -493,11 +493,11 @@ function multiPhysicsWorldAddRigidbodyBundleShadow(world, world_id, bundle) {
 * @param {number} world_id
 * @param {number} bundle
 */
-function multiPhysicsWorldRemoveRigidbodyBundleShadow(world, world_id, bundle) {
+function multiPhysicsWorldRemoveRigidBodyBundleShadow(world, world_id, bundle) {
     _assertNum(world);
     _assertNum(world_id);
     _assertNum(bundle);
-    wasm.multiPhysicsWorldRemoveRigidbodyBundleShadow(world, world_id, bundle);
+    wasm.multiPhysicsWorldRemoveRigidBodyBundleShadow(world, world_id, bundle);
 }
 
 /**
