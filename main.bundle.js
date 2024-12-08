@@ -2920,7 +2920,6 @@ class RigidBodyConstructionInfoList {
 
 
 
-// import { Inspector } from "@babylonjs/inspector";
 
 
 
@@ -2936,7 +2935,7 @@ class SceneBuilder {
         scene.clearColor = new math_color/* Color4 */.ov(0.95, 0.95, 0.95, 1.0);
         const camera = new arcRotateCamera/* ArcRotateCamera */.L("arcRotateCamera", 0, 0, 500, new math_vector/* Vector3 */.Pq(0, 0, 0), scene);
         camera.minZ = 1;
-        camera.maxZ = 1000;
+        camera.maxZ = 3000;
         camera.setPosition(new math_vector/* Vector3 */.Pq(60, 40, -50).scaleInPlace(10));
         camera.attachControl(undefined, false);
         camera.inertia = 0.8;
@@ -2947,7 +2946,7 @@ class SceneBuilder {
         hemisphericLight.groundColor = new math_color/* Color3 */.v9(1, 1, 1);
         const directionalLight = new Lights_directionalLight/* DirectionalLight */.Z("directionalLight", new math_vector/* Vector3 */.Pq(0.5, -1, 1), scene);
         directionalLight.intensity = 0.5;
-        const shadowBound = 60;
+        const shadowBound = 250;
         directionalLight.shadowMaxZ = shadowBound;
         directionalLight.shadowMinZ = -shadowBound;
         directionalLight.autoCalcShadowZBounds = false;
@@ -2968,7 +2967,7 @@ class SceneBuilder {
         const world = new MultiPhysicsWorld(wasmInstance);
         const matrix = new math_vector/* Matrix */.uq();
         {
-            const ground = (0,planeBuilder/* CreatePlane */.x)("ground", { size: 120 }, scene);
+            const ground = (0,planeBuilder/* CreatePlane */.x)("ground", { size: 500 }, scene);
             ground.rotationQuaternion = math_vector/* Quaternion */.PT.RotationAxis(new math_vector/* Vector3 */.Pq(1, 0, 0), Math.PI / 2);
             shadowGenerator.addShadowCaster(ground);
             ground.receiveShadows = true;
@@ -2981,43 +2980,59 @@ class SceneBuilder {
             const groundRigidBody = new RigidBody(wasmInstance, groundRbInfo);
             world.addRigidBodyToGlobal(groundRigidBody);
         }
-        const rbCount = 512 * 2;
+        const rbCount = 256 * 2;
         const baseBox = (0,boxBuilder/* CreateBox */.an)("box", { size: 2 }, scene);
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
-        const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16);
+        const rowCount = 4;
+        const columnCount = 8;
+        const margin = 60;
+        const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
         const boxShape = new PhysicsBoxShape(wasmInstance, new math_vector/* Vector3 */.Pq(1, 1, 1));
-        const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
-        for (let i = 0; i < rbCount; ++i) {
-            rbInfoList.setShape(i, boxShape);
-            const initialTransform = math_vector/* Matrix */.uq.TranslationToRef(0, 1 + i * 2, 0, matrix);
-            rbInfoList.setInitialTransform(i, initialTransform);
-            rbInfoList.setFriction(i, 1.0);
-            rbInfoList.setLinearDamping(i, 0.3);
-            rbInfoList.setAngularDamping(i, 0.3);
-        }
-        const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
-        world.addRigidBodyBundle(boxRigidBodyBundle, 0);
-        for (let i = 0; i < rbCount; i += 2) {
-            const indices = [i, i + 1];
-            const constraint = new Generic6DofSpringConstraint(wasmInstance, boxRigidBodyBundle, indices, math_vector/* Matrix */.uq.Translation(0, -1.2, 0), math_vector/* Matrix */.uq.Translation(0, 1.2, 0), true);
-            constraint.setLinearLowerLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
-            constraint.setLinearUpperLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
-            constraint.setAngularLowerLimit(new math_vector/* Vector3 */.Pq(Math.PI / 4, 0, 0));
-            constraint.setAngularUpperLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
-            for (let i = 0; i < 6; ++i) {
-                constraint.enableSpring(i, true);
-                constraint.setStiffness(i, 100);
-                constraint.setDamping(i, 1);
+        const bundles = [];
+        for (let i = 0; i < rowCount; ++i)
+            for (let j = 0; j < columnCount; ++j) {
+                const worldId = i * columnCount + j;
+                const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
+                const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
+                const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
+                for (let i = 0; i < rbCount; ++i) {
+                    rbInfoList.setShape(i, boxShape);
+                    const initialTransform = math_vector/* Matrix */.uq.TranslationToRef(xOffset, 1 + i * 2, zOffset, matrix);
+                    rbInfoList.setInitialTransform(i, initialTransform);
+                    rbInfoList.setFriction(i, 1.0);
+                    rbInfoList.setLinearDamping(i, 0.3);
+                    rbInfoList.setAngularDamping(i, 0.3);
+                }
+                const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
+                world.addRigidBodyBundle(boxRigidBodyBundle, worldId);
+                for (let i = 0; i < rbCount; i += 2) {
+                    const indices = [i, i + 1];
+                    const constraint = new Generic6DofSpringConstraint(wasmInstance, boxRigidBodyBundle, indices, math_vector/* Matrix */.uq.Translation(0, -1.2, 0), math_vector/* Matrix */.uq.Translation(0, 1.2, 0), true);
+                    constraint.setLinearLowerLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
+                    constraint.setLinearUpperLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
+                    constraint.setAngularLowerLimit(new math_vector/* Vector3 */.Pq(Math.PI / 4, 0, 0));
+                    constraint.setAngularUpperLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
+                    for (let i = 0; i < 6; ++i) {
+                        constraint.enableSpring(i, true);
+                        constraint.setStiffness(i, 100);
+                        constraint.setDamping(i, 1);
+                    }
+                    world.addConstraint(constraint, worldId, false);
+                }
+                bundles.push(boxRigidBodyBundle);
             }
-            world.addConstraint(constraint, 0, false);
-        }
+        console.log("Rigid body count:", rbCount * rowCount * columnCount);
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < rbCount; ++i) {
-                boxRigidBodyBundle.getTransformMatrixToRef(i, matrix);
-                matrix.copyToArray(rigidbodyMatrixBuffer, i * 16);
+            for (let i = 0; i < bundles.length; ++i) {
+                const bundle = bundles[i];
+                const startOffset = i * rbCount * 16;
+                for (let j = 0; j < rbCount; ++j) {
+                    bundle.getTransformMatrixToRef(j, matrix);
+                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
+                }
             }
             baseBox.thinInstanceBufferUpdated("matrix");
         });
