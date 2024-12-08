@@ -1521,27 +1521,35 @@ class BulletWasmInstanceTypeMD {
 class MultiPhysicsWorldInner {
     _wasmInstance;
     _ptr;
-    _rigidBodyReferences;
-    _rigidBodyBundleReferences;
+    _rigidBodyReferences; // [RigidBody, worldId]
+    _rigidBodyBundleReferences; // [RigidBodyBundle, worldId]
+    _rigidBodyGlobalReferences;
+    _rigidBodyBundleGlobalReferences;
+    _rigidBodyShadowReferences; // [worldId, Set<RigidBody>]
+    _rigidBodyBundleShadowReferences; // [worldId, Set<RigidBodyBundle>]
     _constraintReferences;
     constructor(wasmInstance, ptr) {
         this._wasmInstance = wasmInstance;
         this._ptr = ptr;
-        this._rigidBodyReferences = new Set();
-        this._rigidBodyBundleReferences = new Set();
+        this._rigidBodyReferences = new Map();
+        this._rigidBodyBundleReferences = new Map();
+        this._rigidBodyGlobalReferences = new Set();
+        this._rigidBodyBundleGlobalReferences = new Set();
+        this._rigidBodyShadowReferences = new Map();
+        this._rigidBodyBundleShadowReferences = new Map();
         this._constraintReferences = new Set();
     }
     dispose() {
         if (this._ptr === 0) {
             return;
         }
-        this._wasmInstance.deref()?.destroyPhysicsWorld(this._ptr);
+        this._wasmInstance.deref()?.destroyMultiPhysicsWorld(this._ptr);
         this._ptr = 0;
-        for (const rigidBody of this._rigidBodyReferences) {
+        for (const [rigidBody, _] of this._rigidBodyReferences) {
             rigidBody.setWorldReference(null);
         }
         this._rigidBodyReferences.clear();
-        for (const rigidBodyBundle of this._rigidBodyBundleReferences) {
+        for (const [rigidBodyBundle, _] of this._rigidBodyBundleReferences) {
             rigidBodyBundle.setWorldReference(null);
         }
         this._rigidBodyBundleReferences.clear();
@@ -1553,12 +1561,19 @@ class MultiPhysicsWorldInner {
     get ptr() {
         return this._ptr;
     }
-    addRigidBodyReference(rigidBody) {
+    addRigidBodyReference(rigidBody, worldId) {
+        if (this._rigidBodyGlobalReferences.has(rigidBody)) {
+            throw new Error("Rigid body is already added to the world as a global reference");
+        }
+        const shadowReferences = this._rigidBodyShadowReferences.get(worldId);
+        if (shadowReferences !== undefined && shadowReferences.has(rigidBody)) {
+            throw new Error("Rigid body is already added to the world as a shadow reference");
+        }
         if (this._rigidBodyReferences.has(rigidBody)) {
             return false;
         }
         rigidBody.setWorldReference(this);
-        this._rigidBodyReferences.add(rigidBody);
+        this._rigidBodyReferences.set(rigidBody, worldId);
         return true;
     }
     removeRigidBodyReference(rigidBody) {
@@ -1568,12 +1583,19 @@ class MultiPhysicsWorldInner {
         }
         return false;
     }
-    addRigidBodyBundleReference(rigidBodyBundle) {
+    addRigidBodyBundleReference(rigidBodyBundle, worldId) {
+        if (this._rigidBodyBundleGlobalReferences.has(rigidBodyBundle)) {
+            throw new Error("Rigid body bundle is already added to the world as a global reference");
+        }
+        const shadowReferences = this._rigidBodyBundleShadowReferences.get(worldId);
+        if (shadowReferences !== undefined && shadowReferences.has(rigidBodyBundle)) {
+            throw new Error("Rigid body bundle is already added to the world as a shadow reference");
+        }
         if (this._rigidBodyBundleReferences.has(rigidBodyBundle)) {
             return false;
         }
         rigidBodyBundle.setWorldReference(this);
-        this._rigidBodyBundleReferences.add(rigidBodyBundle);
+        this._rigidBodyBundleReferences.set(rigidBodyBundle, worldId);
         return true;
     }
     removeRigidBodyBundleReference(rigidBodyBundle) {
@@ -1584,34 +1606,106 @@ class MultiPhysicsWorldInner {
         return false;
     }
     addRigidBodyGlobalReference(rigidBody) {
-        if (this._rigidBodyReferences.has(rigidBody)) {
+        if (rigidBody.getWorldReference() !== null) {
+            throw new Error("Rigid body is already added to the world as a strong reference");
+        }
+        // we are not handling the case where the rigid body is added as a shadow reference
+        // wasm side should handle this case
+        if (this._rigidBodyGlobalReferences.has(rigidBody)) {
             return false;
         }
         rigidBody.addReference();
-        this._rigidBodyReferences.add(rigidBody);
+        this._rigidBodyGlobalReferences.add(rigidBody);
         return true;
     }
     removeRigidBodyGlobalReference(rigidBody) {
-        if (this._rigidBodyReferences.delete(rigidBody)) {
+        if (this._rigidBodyGlobalReferences.delete(rigidBody)) {
             rigidBody.removeReference();
             return true;
         }
         return false;
     }
     addRigidBodyBundleGlobalReference(rigidBodyBundle) {
-        if (this._rigidBodyBundleReferences.has(rigidBodyBundle)) {
+        if (rigidBodyBundle.getWorldReference() !== null) {
+            throw new Error("Rigid body bundle is already added to the world as a strong reference");
+        }
+        // we are not handling the case where the rigid body bundle is added as a shadow reference
+        // wasm side should handle this case
+        if (this._rigidBodyBundleGlobalReferences.has(rigidBodyBundle)) {
             return false;
         }
         rigidBodyBundle.addReference();
-        this._rigidBodyBundleReferences.add(rigidBodyBundle);
+        this._rigidBodyBundleGlobalReferences.add(rigidBodyBundle);
         return true;
     }
     removeRigidBodyBundleGlobalReference(rigidBodyBundle) {
-        if (this._rigidBodyBundleReferences.delete(rigidBodyBundle)) {
+        if (this._rigidBodyBundleGlobalReferences.delete(rigidBodyBundle)) {
             rigidBodyBundle.removeReference();
             return true;
         }
         return false;
+    }
+    addRigidBodyShadowReference(rigidBody, worldId) {
+        const currentWorldId = this._rigidBodyReferences.get(rigidBody);
+        if (currentWorldId !== undefined && currentWorldId === worldId) {
+            return false;
+        }
+        if (this._rigidBodyGlobalReferences.has(rigidBody)) {
+            throw new Error("Rigid body is already added to the world as a global reference");
+        }
+        let shadowReferences = this._rigidBodyShadowReferences.get(worldId);
+        if (shadowReferences === undefined) {
+            shadowReferences = new Set();
+            this._rigidBodyShadowReferences.set(worldId, shadowReferences);
+        }
+        if (shadowReferences.has(rigidBody)) {
+            return false;
+        }
+        rigidBody.addReference();
+        shadowReferences.add(rigidBody);
+        return true;
+    }
+    removeRigidBodyShadowReference(rigidBody, worldId) {
+        const shadowReferences = this._rigidBodyShadowReferences.get(worldId);
+        if (shadowReferences === undefined || !shadowReferences.delete(rigidBody)) {
+            return false;
+        }
+        if (shadowReferences.size === 0) {
+            this._rigidBodyShadowReferences.delete(worldId);
+        }
+        rigidBody.removeReference();
+        return true;
+    }
+    addRigidBodyBundleShadowReference(rigidBodyBundle, worldId) {
+        const currentWorldId = this._rigidBodyBundleReferences.get(rigidBodyBundle);
+        if (currentWorldId !== undefined && currentWorldId === worldId) {
+            return false;
+        }
+        if (this._rigidBodyBundleGlobalReferences.has(rigidBodyBundle)) {
+            throw new Error("Rigid body bundle is already added to the world as a global reference");
+        }
+        let shadowReferences = this._rigidBodyBundleShadowReferences.get(worldId);
+        if (shadowReferences === undefined) {
+            shadowReferences = new Set();
+            this._rigidBodyBundleShadowReferences.set(worldId, shadowReferences);
+        }
+        if (shadowReferences.has(rigidBodyBundle)) {
+            return false;
+        }
+        rigidBodyBundle.addReference();
+        shadowReferences.add(rigidBodyBundle);
+        return true;
+    }
+    removeRigidBodyBundleShadowReference(rigidBodyBundle, worldId) {
+        const shadowReferences = this._rigidBodyBundleShadowReferences.get(worldId);
+        if (shadowReferences === undefined || !shadowReferences.delete(rigidBodyBundle)) {
+            return false;
+        }
+        if (shadowReferences.size === 0) {
+            this._rigidBodyBundleShadowReferences.delete(worldId);
+        }
+        rigidBodyBundle.removeReference();
+        return true;
     }
     addConstraintReference(constraint) {
         if (this._constraintReferences.has(constraint)) {
@@ -1673,7 +1767,7 @@ class MultiPhysicsWorld {
     }
     addRigidBody(rigidBody, worldId) {
         this._nullCheck();
-        if (this._inner.addRigidBodyReference(rigidBody)) {
+        if (this._inner.addRigidBodyReference(rigidBody, worldId)) {
             this._wasmInstance.multiPhysicsWorldAddRigidBody(this._inner.ptr, worldId, rigidBody.ptr);
             return true;
         }
@@ -1689,7 +1783,7 @@ class MultiPhysicsWorld {
     }
     addRigidBodyBundle(rigidBodyBundle, worldId) {
         this._nullCheck();
-        if (this._inner.addRigidBodyBundleReference(rigidBodyBundle)) {
+        if (this._inner.addRigidBodyBundleReference(rigidBodyBundle, worldId)) {
             this._wasmInstance.multiPhysicsWorldAddRigidBodyBundle(this._inner.ptr, worldId, rigidBodyBundle.ptr);
             return true;
         }
@@ -1715,6 +1809,22 @@ class MultiPhysicsWorld {
         this._nullCheck();
         if (this._inner.removeRigidBodyGlobalReference(rigidBody)) {
             this._wasmInstance.multiPhysicsWorldRemoveRigidBodyFromGlobal(this._inner.ptr, rigidBody.ptr);
+            return true;
+        }
+        return false;
+    }
+    addRigidBodyShadow(rigidBody, worldId) {
+        this._nullCheck();
+        if (this._inner.addRigidBodyShadowReference(rigidBody, worldId)) {
+            this._wasmInstance.multiPhysicsWorldAddRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            return true;
+        }
+        return false;
+    }
+    removeRigidBodyShadow(rigidBody, worldId) {
+        this._nullCheck();
+        if (this._inner.removeRigidBodyShadowReference(rigidBody, worldId)) {
+            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
             return true;
         }
         return false;
