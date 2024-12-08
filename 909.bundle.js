@@ -5,7 +5,7 @@
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "609d2f900ec10b98d64c.wasm";
+module.exports = __webpack_require__.p + "1a0a2368cedbbd0fd2ce.wasm";
 
 /***/ }),
 
@@ -76,6 +76,26 @@ async function startWorkers(module, memory, builder) {
 
 let wasm;
 
+const heap = new Array(128).fill(undefined);
+
+heap.push(undefined, null, true, false);
+
+function getObject(idx) { return heap[idx]; }
+
+let heap_next = heap.length;
+
+function dropObject(idx) {
+    if (idx < 132) return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
+}
+
 const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
 
 if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
@@ -94,12 +114,6 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8ArrayMemory0().slice(ptr, ptr + len));
 }
 
-const heap = new Array(128).fill(undefined);
-
-heap.push(undefined, null, true, false);
-
-let heap_next = heap.length;
-
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);
     const idx = heap_next;
@@ -111,220 +125,15 @@ function addHeapObject(obj) {
     return idx;
 }
 
-function getObject(idx) { return heap[idx]; }
-
-function dropObject(idx) {
-    if (idx < 132) return;
-    heap[idx] = heap_next;
-    heap_next = idx;
-}
-
-function takeObject(idx) {
-    const ret = getObject(idx);
-    dropObject(idx);
-    return ret;
-}
-
 function _assertBoolean(n) {
     if (typeof(n) !== 'boolean') {
         throw new Error(`expected a boolean argument, found ${typeof(n)}`);
     }
 }
-/**
-*/
-function init() {
-    wasm.init();
-}
 
 function _assertNum(n) {
     if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
 }
-/**
-* @param {number} size
-* @returns {number}
-*/
-function allocateBuffer(size) {
-    _assertNum(size);
-    const ret = wasm.allocateBuffer(size);
-    return ret >>> 0;
-}
-
-/**
-* Deallocate a buffer allocated by `allocateBuffer`.
-* # Safety
-* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
-* @param {number} ptr
-* @param {number} size
-*/
-function deallocateBuffer(ptr, size) {
-    _assertNum(ptr);
-    _assertNum(size);
-    wasm.deallocateBuffer(ptr, size);
-}
-
-/**
-* @returns {number}
-*/
-function createMultiPhysicsWorld() {
-    const ret = wasm.createMultiPhysicsWorld();
-    return ret >>> 0;
-}
-
-/**
-* @param {number} world
-*/
-function destroyMultiPhysicsWorld(world) {
-    _assertNum(world);
-    wasm.destroyMultiPhysicsWorld(world);
-}
-
-/**
-* @param {number} world
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function multiPhysicsWorldSetGravity(world, x, y, z) {
-    _assertNum(world);
-    wasm.multiPhysicsWorldSetGravity(world, x, y, z);
-}
-
-/**
-* @param {number} world
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
-    _assertNum(world);
-    _assertNum(max_sub_steps);
-    wasm.multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} rigidbody
-*/
-function multiPhysicsWorldAddRigidbody(world, world_id, rigidbody) {
-    _assertNum(world);
-    _assertNum(world_id);
-    _assertNum(rigidbody);
-    wasm.multiPhysicsWorldAddRigidbody(world, world_id, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} rigidbody
-*/
-function multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody) {
-    _assertNum(world);
-    _assertNum(world_id);
-    _assertNum(rigidbody);
-    wasm.multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} bundle
-*/
-function multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle) {
-    _assertNum(world);
-    _assertNum(world_id);
-    _assertNum(bundle);
-    wasm.multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} bundle
-*/
-function multiPhysicsWorldRemoveRigidbodyBundle(world, world_id, bundle) {
-    _assertNum(world);
-    _assertNum(world_id);
-    _assertNum(bundle);
-    wasm.multiPhysicsWorldRemoveRigidbodyBundle(world, world_id, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} constraint
-* @param {boolean} disable_collisions_between_linked_bodies
-*/
-function multiPhysicsWorldAddConstraint(world, world_id, constraint, disable_collisions_between_linked_bodies) {
-    _assertNum(world);
-    _assertNum(world_id);
-    _assertNum(constraint);
-    _assertBoolean(disable_collisions_between_linked_bodies);
-    wasm.multiPhysicsWorldAddConstraint(world, world_id, constraint, disable_collisions_between_linked_bodies);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} constraint
-*/
-function multiPhysicsWorldRemoveConstraint(world, world_id, constraint) {
-    _assertNum(world);
-    _assertNum(world_id);
-    _assertNum(constraint);
-    wasm.multiPhysicsWorldRemoveConstraint(world, world_id, constraint);
-}
-
-/**
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @returns {number}
-*/
-function createBoxShape(x, y, z) {
-    const ret = wasm.createBoxShape(x, y, z);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @returns {number}
-*/
-function createSphereShape(radius) {
-    const ret = wasm.createSphereShape(radius);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @param {number} height
-* @returns {number}
-*/
-function createCapsuleShape(radius, height) {
-    const ret = wasm.createCapsuleShape(radius, height);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} normal_x
-* @param {number} normal_y
-* @param {number} normal_z
-* @param {number} plane_constant
-* @returns {number}
-*/
-function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
-    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyShape(ptr) {
-    _assertNum(ptr);
-    wasm.destroyShape(ptr);
-}
-
 /**
 * @param {number} body_a
 * @param {number} body_b
@@ -488,6 +297,236 @@ function constraintSetDamping(ptr, index, damping) {
 }
 
 /**
+*/
+function init() {
+    wasm.init();
+}
+
+/**
+* @param {number} size
+* @returns {number}
+*/
+function allocateBuffer(size) {
+    _assertNum(size);
+    const ret = wasm.allocateBuffer(size);
+    return ret >>> 0;
+}
+
+/**
+* Deallocate a buffer allocated by `allocateBuffer`.
+* # Safety
+* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
+* @param {number} ptr
+* @param {number} size
+*/
+function deallocateBuffer(ptr, size) {
+    _assertNum(ptr);
+    _assertNum(size);
+    wasm.deallocateBuffer(ptr, size);
+}
+
+/**
+* @returns {number}
+*/
+function createMultiPhysicsWorld() {
+    const ret = wasm.createMultiPhysicsWorld();
+    return ret >>> 0;
+}
+
+/**
+* @param {number} world
+*/
+function destroyMultiPhysicsWorld(world) {
+    _assertNum(world);
+    wasm.destroyMultiPhysicsWorld(world);
+}
+
+/**
+* @param {number} world
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function multiPhysicsWorldSetGravity(world, x, y, z) {
+    _assertNum(world);
+    wasm.multiPhysicsWorldSetGravity(world, x, y, z);
+}
+
+/**
+* @param {number} world
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
+    _assertNum(world);
+    _assertNum(max_sub_steps);
+    wasm.multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldAddRigidbody(world, world_id, rigidbody) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldAddRigidbody(world, world_id, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidbody(world, world_id, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} bundle
+*/
+function multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(bundle);
+    wasm.multiPhysicsWorldAddRigidbodyBundle(world, world_id, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} bundle
+*/
+function multiPhysicsWorldRemoveRigidbodyBundle(world, world_id, bundle) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(bundle);
+    wasm.multiPhysicsWorldRemoveRigidbodyBundle(world, world_id, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldAddRigidbodyToGlobal(world, rigidbody) {
+    _assertNum(world);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldAddRigidbodyToGlobal(world, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldRemoveRigidbodyFromGlobal(world, rigidbody) {
+    _assertNum(world);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidbodyFromGlobal(world, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} bundle
+*/
+function multiPhysicsWorldAddRigidbodyBundleToGlobal(world, bundle) {
+    _assertNum(world);
+    _assertNum(bundle);
+    wasm.multiPhysicsWorldAddRigidbodyBundleToGlobal(world, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} bundle
+*/
+function multiPhysicsWorldRemoveRigidbodyBundleFromGlobal(world, bundle) {
+    _assertNum(world);
+    _assertNum(bundle);
+    wasm.multiPhysicsWorldRemoveRigidbodyBundleFromGlobal(world, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldAddRigidbodyShadow(world, world_id, rigidbody) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldAddRigidbodyShadow(world, world_id, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} rigidbody
+*/
+function multiPhysicsWorldRemoveRigidbodyShadow(world, world_id, rigidbody) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(rigidbody);
+    wasm.multiPhysicsWorldRemoveRigidbodyShadow(world, world_id, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} bundle
+*/
+function multiPhysicsWorldAddRigidbodyBundleShadow(world, world_id, bundle) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(bundle);
+    wasm.multiPhysicsWorldAddRigidbodyBundleShadow(world, world_id, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} bundle
+*/
+function multiPhysicsWorldRemoveRigidbodyBundleShadow(world, world_id, bundle) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(bundle);
+    wasm.multiPhysicsWorldRemoveRigidbodyBundleShadow(world, world_id, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} constraint
+* @param {boolean} disable_collisions_between_linked_bodies
+*/
+function multiPhysicsWorldAddConstraint(world, world_id, constraint, disable_collisions_between_linked_bodies) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(constraint);
+    _assertBoolean(disable_collisions_between_linked_bodies);
+    wasm.multiPhysicsWorldAddConstraint(world, world_id, constraint, disable_collisions_between_linked_bodies);
+}
+
+/**
+* @param {number} world
+* @param {number} world_id
+* @param {number} constraint
+*/
+function multiPhysicsWorldRemoveConstraint(world, world_id, constraint) {
+    _assertNum(world);
+    _assertNum(world_id);
+    _assertNum(constraint);
+    wasm.multiPhysicsWorldRemoveConstraint(world, world_id, constraint);
+}
+
+/**
 * @param {number} info
 * @returns {number}
 */
@@ -579,6 +618,56 @@ function rigidBodyBundleRestoreDynamic(ptr, index) {
     _assertNum(ptr);
     _assertNum(index);
     wasm.rigidBodyBundleRestoreDynamic(ptr, index);
+}
+
+/**
+* @param {number} x
+* @param {number} y
+* @param {number} z
+* @returns {number}
+*/
+function createBoxShape(x, y, z) {
+    const ret = wasm.createBoxShape(x, y, z);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @returns {number}
+*/
+function createSphereShape(radius) {
+    const ret = wasm.createSphereShape(radius);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @param {number} height
+* @returns {number}
+*/
+function createCapsuleShape(radius, height) {
+    const ret = wasm.createCapsuleShape(radius, height);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} normal_x
+* @param {number} normal_y
+* @param {number} normal_z
+* @param {number} plane_constant
+* @returns {number}
+*/
+function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
+    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyShape(ptr) {
+    _assertNum(ptr);
+    wasm.destroyShape(ptr);
 }
 
 /**
@@ -877,12 +966,12 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
+    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+        takeObject(arg0);
+    };
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
         const ret = getStringFromWasm0(arg0, arg1);
         return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-        takeObject(arg0);
     };
     imports.wbg.__wbg_new_abda76e883ba8a5f = function() { return logError(function () {
         const ret = new Error();
