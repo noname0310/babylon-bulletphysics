@@ -6,8 +6,8 @@
 enum class bwRigidBodyMotionType : uint8_t
 {
     DYNAMIC = 0,
-    KINEMATIC = 1,
-    STATIC = 2
+    STATIC = 1,
+    KINEMATIC = 2
 };
 
 struct bwRigidBodyConstructionInfo final
@@ -194,6 +194,11 @@ public:
         m_body.setCollisionFlags(m_body.getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
     }
 
+    int getCollisionFlags() const
+    {
+        return m_body.getCollisionFlags();
+    }
+
     bwRigidBodyShadow* createShadow()
     {
         // btAlignedObjectArray<bwRigidBodyShadow>& shadows = getShadowArray();
@@ -255,6 +260,12 @@ extern "C" void bw_rigidbody_restore_dynamic(void* body)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     b->restoreDynamic();
+}
+
+extern "C" int bw_rigidbody_get_collision_flags(void* body)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    return b->getCollisionFlags();
 }
 
 extern "C" void* bw_create_rigidbody_shadow(void* body)

@@ -134,6 +134,10 @@ impl RigidBodyHandle {
     pub(crate) fn clone(&mut self) -> Self {
         Self::new(self.rigidbody)
     }
+
+    pub(crate) fn create_shadow(&mut self) -> RigidBodyShadow {
+        RigidBodyShadow::new(self.rigidbody)
+    }
 }
 
 #[cfg(debug_assertions)]
@@ -145,11 +149,45 @@ impl Drop for RigidBodyHandle {
 
 impl PartialEq for RigidBodyHandle {
     fn eq(&self, other: &Self) -> bool {
-        self.rigidbody as *const RigidBody == other.rigidbody as *const RigidBody
+        std::ptr::eq(self.rigidbody as *const RigidBody, other.rigidbody as *const RigidBody)
     }
 }
 
 impl Eq for RigidBodyHandle {}
+
+pub(crate) struct RigidBodyShadow {
+    inner: bind::rigidbody::RigidBodyShadow,
+    #[cfg(debug_assertions)]
+    #[allow(dead_code)]
+    body_handle: RigidBodyHandle,
+}
+
+impl RigidBodyShadow {
+    pub(super) fn new(rigidbody: &mut RigidBody) -> Self {
+        if !rigidbody.get_inner().is_static_or_kinematic() {
+            panic!("Cannot create shadow for dynamic rigidbody");
+        }
+
+        let inner = bind::rigidbody::RigidBodyShadow::new(rigidbody.get_inner_mut());
+
+        #[cfg(debug_assertions)]
+        let body_handle = rigidbody.create_handle();
+
+        Self {
+            inner,
+            #[cfg(debug_assertions)]
+            body_handle,
+        }
+    }
+
+    pub(super) fn get_inner(&self) -> &bind::rigidbody::RigidBodyShadow {
+        &self.inner
+    }
+
+    pub(super) fn get_inner_mut(&mut self) -> &mut bind::rigidbody::RigidBodyShadow {
+        &mut self.inner
+    }
+}
 
 pub(crate) struct RigidBodyBundle {
     bodies: Box<[bind::rigidbody::RigidBody]>,
@@ -227,14 +265,6 @@ impl Drop for RigidBodyBundle {
     }
 }
 
-impl PartialEq for RigidBodyBundle {
-    fn eq(&self, other: &Self) -> bool {
-        self as *const RigidBodyBundle == other as *const RigidBodyBundle
-    }
-}
-
-impl Eq for RigidBodyBundle {}
-
 pub(crate) struct RigidBodyBundleHandle {
     bundle: &'static mut RigidBodyBundle,
 }
@@ -266,6 +296,10 @@ impl RigidBodyBundleHandle {
     pub(crate) fn clone(&mut self) -> Self {
         Self::new(self.bundle)
     }
+
+    pub(crate) fn create_shadow(&mut self) -> RigidBodyBundleShadow {
+        RigidBodyBundleShadow::new(self.bundle)
+    }
 }
 
 #[cfg(debug_assertions)]
@@ -277,11 +311,43 @@ impl Drop for RigidBodyBundleHandle {
 
 impl PartialEq for RigidBodyBundleHandle {
     fn eq(&self, other: &Self) -> bool {
-        self.bundle as *const RigidBodyBundle == other.bundle as *const RigidBodyBundle
+        std::ptr::eq(self.bundle as *const RigidBodyBundle, other.bundle as *const RigidBodyBundle)
     }
 }
 
 impl Eq for RigidBodyBundleHandle {}
+
+pub(crate) struct RigidBodyBundleShadow {
+    shadows: Box<[bind::rigidbody::RigidBodyShadow]>,
+    #[cfg(debug_assertions)]
+    #[allow(dead_code)]
+    bundle_handle: RigidBodyBundleHandle,
+}
+
+impl RigidBodyBundleShadow {
+    pub(crate) fn new(bundle: &mut RigidBodyBundle) -> Self {
+        let mut shadows = Vec::with_capacity(bundle.bodies.len());
+        for body in bundle.bodies.iter_mut() {
+            if body.is_static_or_kinematic() {
+                shadows.push(bind::rigidbody::RigidBodyShadow::new(body));
+            }
+        }
+
+        Self {
+            shadows: shadows.into_boxed_slice(),
+            #[cfg(debug_assertions)]
+            bundle_handle: bundle.create_handle(),
+        }
+    }
+
+    pub(super) fn shadows(&self) -> &[bind::rigidbody::RigidBodyShadow] {
+        &self.shadows
+    }
+
+    pub(super) fn shadows_mut(&mut self) -> &mut [bind::rigidbody::RigidBodyShadow] {
+        &mut self.shadows
+    }
+}
 
 #[wasm_bindgen(js_name = "createRigidBody")]
 pub fn create_rigidbody(info: *mut usize) -> *mut usize {

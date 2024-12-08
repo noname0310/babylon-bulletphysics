@@ -2,7 +2,8 @@ use glam::Vec3;
 use wasm_bindgen::prelude::*;
 use crate::bind;
 
-use super::{constraint::{Constraint, ConstraintHandle}, rigidbody::{RigidBody, RigidBodyBundle, RigidBodyBundleHandle, RigidBodyHandle}};
+use super::constraint::{Constraint, ConstraintHandle};
+use super::rigidbody::{RigidBody, RigidBodyBundle, RigidBodyBundleHandle, RigidBodyBundleShadow, RigidBodyHandle, RigidBodyShadow};
 
 #[cfg(debug_assertions)]
 struct PhysicsWorldHandleInfo {
@@ -15,6 +16,8 @@ pub(crate) struct PhysicsWorld {
     inner: bind::physics_world::PhysicsWorld,
     #[cfg(debug_assertions)]
     handle_info: PhysicsWorldHandleInfo,
+    shadow_bodies: Vec<RigidBodyShadow>,
+    shadow_body_bundles: Vec<RigidBodyBundleShadow>,
 }
 
 impl PhysicsWorld {
@@ -28,6 +31,8 @@ impl PhysicsWorld {
                 body_bundles: Vec::new(),
                 constraints: Vec::new(),
             },
+            shadow_bodies: Vec::new(),
+            shadow_body_bundles: Vec::new(),
         }
     }
 
@@ -40,6 +45,13 @@ impl PhysicsWorld {
     }
 
     pub(crate) fn add_rigidbody(&mut self, mut rigidbody: RigidBodyHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if self.handle_info.bodies.iter().any(|b| *b == rigidbody) {
+                panic!("RigidBody already added to the world");
+            }
+        }
+
         self.inner.add_rigidbody(rigidbody.get_mut().get_inner_mut());
 
         #[cfg(debug_assertions)]
@@ -47,6 +59,13 @@ impl PhysicsWorld {
     }
 
     pub(crate) fn remove_rigidbody(&mut self, mut rigidbody: RigidBodyHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if !self.handle_info.bodies.iter().any(|b| *b == rigidbody) {
+                panic!("RigidBody not found in the world");
+            }
+        }
+
         self.inner.remove_rigidbody(rigidbody.get_mut().get_inner_mut());
 
         #[cfg(debug_assertions)]
@@ -57,6 +76,13 @@ impl PhysicsWorld {
     }
 
     pub (crate) fn add_rigidbody_bundle(&mut self, mut bundle: RigidBodyBundleHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if self.handle_info.body_bundles.iter().any(|b| *b == bundle) {
+                panic!("RigidBodyBundle already added to the world");
+            }
+        }
+
         for i in 0..bundle.get().bodies().len() {
             self.inner.add_rigidbody(&mut bundle.get_mut().bodies_mut()[i]);
         }
@@ -66,6 +92,13 @@ impl PhysicsWorld {
     }
 
     pub(crate) fn remove_rigidbody_bundle(&mut self, mut bundle: RigidBodyBundleHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if !self.handle_info.body_bundles.iter().any(|b| *b == bundle) {
+                panic!("RigidBodyBundle not found in the world");
+            }
+        }
+
         for i in 0..bundle.get().bodies().len() {
             self.inner.remove_rigidbody(&mut bundle.get_mut().bodies_mut()[i]);
         }
@@ -77,7 +110,88 @@ impl PhysicsWorld {
         }
     }
 
-    pub(crate) fn add_constraint(&mut self, mut constraint: ConstraintHandle, disable_collisions_between_linked_bodies: bool) {
+    pub(super) fn add_rigidbody_shadow(&mut self, mut rigidbody: RigidBodyHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if self.handle_info.bodies.iter().any(|b| *b == rigidbody) {
+                panic!("RigidBody already added to the world");
+            }
+        }
+
+        let mut shadow = rigidbody.create_shadow();
+        self.inner.add_rigidbody_shadow(shadow.get_inner_mut());
+        self.shadow_bodies.push(shadow);
+
+        #[cfg(debug_assertions)]
+        self.handle_info.bodies.push(rigidbody);
+    }
+
+    pub(super) fn remove_rigidbody_shadow(&mut self, rigidbody: RigidBodyHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if !self.handle_info.bodies.iter().any(|b| *b == rigidbody) {
+                panic!("RigidBody not found in the world");
+            }
+        }
+
+        // let index = self.shadow_bodies.iter().position(|b| *b == rigidbody).unwrap();
+        // let shadow = self.shadow_bodies.remove(index);
+        // self.inner.remove_rigidbody_shadow(shadow.get_inner_mut());
+
+        #[cfg(debug_assertions)]
+        {
+            let index = self.handle_info.bodies.iter().position(|b| *b == rigidbody).unwrap();
+            self.handle_info.bodies.remove(index);
+        }
+    }
+
+    pub(super) fn add_rigidbody_bundle_shadow(&mut self, mut bundle: RigidBodyBundleHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if self.handle_info.body_bundles.iter().any(|b| *b == bundle) {
+                panic!("RigidBodyBundle already added to the world");
+            }
+        }
+
+        let mut shadow = bundle.create_shadow();
+        for i in 0..shadow.shadows().len() {
+            self.inner.add_rigidbody_shadow(&mut shadow.shadows_mut()[i]);
+        }
+        self.shadow_body_bundles.push(shadow);
+
+        #[cfg(debug_assertions)]
+        self.handle_info.body_bundles.push(bundle);
+    }
+
+    pub(super) fn remove_rigidbody_bundle_shadow(&mut self, bundle: RigidBodyBundleHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if !self.handle_info.body_bundles.iter().any(|b| *b == bundle) {
+                panic!("RigidBodyBundle not found in the world");
+            }
+        }
+
+        // let index = self.shadow_body_bundles.iter().position(|b| *b.get() == bundle).unwrap();
+        // let shadow = self.shadow_body_bundles.remove(index);
+        // for i in 0..shadow.get().bodies().len() {
+        //     self.inner.remove_rigidbody_shadow(&mut shadow.get_mut().bodies_mut()[i]);
+        // }
+
+        #[cfg(debug_assertions)]
+        {
+            let index = self.handle_info.body_bundles.iter().position(|b| *b == bundle).unwrap();
+            self.handle_info.body_bundles.remove(index);
+        }
+    }
+
+    pub(super) fn add_constraint(&mut self, mut constraint: ConstraintHandle, disable_collisions_between_linked_bodies: bool) {
+        #[cfg(debug_assertions)]
+        {
+            if self.handle_info.constraints.iter().any(|c| *c == constraint) {
+                panic!("Constraint already added to the world");
+            }
+        }
+
         self.inner.add_constraint(constraint.get_mut().ptr_mut(), disable_collisions_between_linked_bodies);
 
         #[cfg(debug_assertions)]
@@ -85,6 +199,13 @@ impl PhysicsWorld {
     }
 
     pub(crate) fn remove_constraint(&mut self, mut constraint: ConstraintHandle) {
+        #[cfg(debug_assertions)]
+        {
+            if !self.handle_info.constraints.iter().any(|c| *c == constraint) {
+                panic!("Constraint not found in the world");
+            }
+        }
+
         self.inner.remove_constraint(constraint.get_mut().ptr_mut());
 
         #[cfg(debug_assertions)]

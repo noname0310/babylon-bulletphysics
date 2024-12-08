@@ -114,6 +114,9 @@ pub(crate) struct Generic6DofSpringConstraint {
     inner: bind::constraint::Generic6DofSpringConstraint,
     #[cfg(debug_assertions)]
     ref_count: u32,
+    #[allow(dead_code)]
+    #[cfg(debug_assertions)]
+    body_handle: ConstraintRigidBodyHandleInfo,
 }
 
 impl Generic6DofSpringConstraint {
@@ -137,6 +140,8 @@ impl Generic6DofSpringConstraint {
             inner,
             #[cfg(debug_assertions)]
             ref_count: 0,
+            #[cfg(debug_assertions)]
+            body_handle,
         }
     }
 
@@ -287,7 +292,7 @@ impl Drop for ConstraintHandle {
 
 impl PartialEq for ConstraintHandle {
     fn eq(&self, other: &Self) -> bool {
-        self.constraint as *const Constraint == other.constraint as *const Constraint
+        std::ptr::eq(self.constraint as *const Constraint, other.constraint as *const Constraint)
     }
 }
 

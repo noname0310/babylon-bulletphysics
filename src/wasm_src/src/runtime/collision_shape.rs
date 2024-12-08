@@ -181,7 +181,7 @@ impl Drop for CollisionShapeHandle {
 
 impl PartialEq for CollisionShapeHandle {
     fn eq(&self, other: &Self) -> bool {
-        self.shape as *const CollisionShape == other.shape as *const CollisionShape
+        std::ptr::eq(self.shape as *const CollisionShape, other.shape as *const CollisionShape)
     }
 }
 

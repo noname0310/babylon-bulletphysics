@@ -11,6 +11,8 @@ extern "C" {
 
     fn bw_rigidbody_restore_dynamic(body: *mut std::ffi::c_void);
 
+    fn bw_rigidbody_get_collision_flags(body: *mut std::ffi::c_void) -> i32;
+
     fn bw_create_rigidbody_shadow(body: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
 
     fn bw_destroy_rigidbody_shadow(shadow: *mut std::ffi::c_void);
@@ -18,8 +20,8 @@ extern "C" {
 
 pub(crate) enum MotionType {
     Dynamic = 0,
-    Kinematic = 1,
-    Static = 2,
+    Static = 1,
+    Kinematic = 2,
 }
 
 #[repr(C)]
@@ -92,8 +94,8 @@ impl RigidBodyConstructionInfo {
     pub(crate) fn get_motion_type(&self) -> MotionType {
         match self.motion_type {
             0 => MotionType::Dynamic,
-            1 => MotionType::Kinematic,
-            2 => MotionType::Static,
+            1 => MotionType::Static,
+            2 => MotionType::Kinematic,
             _ => panic!("Invalid motion type"),
         }
     }
@@ -224,6 +226,14 @@ impl RigidBody {
 
     pub(crate) fn restore_dynamic(&mut self) {
         unsafe { bw_rigidbody_restore_dynamic(self.ptr) };
+    }
+
+    pub(crate) fn get_collision_flags(&self) -> i32 {
+        unsafe { bw_rigidbody_get_collision_flags(self.ptr) }
+    }
+
+    pub(crate) fn is_static_or_kinematic(&self) -> bool {
+        self.get_collision_flags() & (MotionType::Static as i32 | MotionType::Kinematic as i32) != 0
     }
 }
 
