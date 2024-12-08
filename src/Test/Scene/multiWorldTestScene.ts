@@ -35,7 +35,7 @@ export class SceneBuilder implements ISceneBuilder {
         const camera = new ArcRotateCamera("arcRotateCamera", 0, 0, 500, new Vector3(0, 0, 0), scene);
         camera.minZ = 1;
         camera.maxZ = 1000;
-        camera.setPosition(new Vector3(60, 40, -50));
+        camera.setPosition(new Vector3(60, 40, -50).scaleInPlace(10));
         camera.attachControl(undefined, false);
         camera.inertia = 0.8;
         camera.speed = 10;
@@ -86,7 +86,7 @@ export class SceneBuilder implements ISceneBuilder {
             groundRbInfo.motionType = MotionType.Static;
 
             const groundRigidBody = new RigidBody(wasmInstance, groundRbInfo);
-            world.addRigidBody(groundRigidBody, 0);
+            world.addRigidBodyToGlobal(groundRigidBody);
         }
 
         const rbCount = 512 * 2;

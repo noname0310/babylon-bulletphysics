@@ -373,6 +373,24 @@ export class MultiPhysicsWorld {
         return false;
     }
 
+    public addRigidBodyBundleToGlobal(rigidBodyBundle: RigidBodyBundle): boolean {
+        this._nullCheck();
+        if (this._inner.addRigidBodyBundleGlobalReference(rigidBodyBundle)) {
+            this._wasmInstance.multiPhysicsWorldAddRigidBodyBundleToGlobal(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+
+    public removeRigidBodyBundleFromGlobal(rigidBodyBundle: RigidBodyBundle): boolean {
+        this._nullCheck();
+        if (this._inner.removeRigidBodyBundleGlobalReference(rigidBodyBundle)) {
+            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleFromGlobal(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+
     public addRigidBodyShadow(rigidBody: RigidBody, worldId: number): boolean {
         this._nullCheck();
         if (this._inner.addRigidBodyShadowReference(rigidBody, worldId)) {
@@ -386,6 +404,24 @@ export class MultiPhysicsWorld {
         this._nullCheck();
         if (this._inner.removeRigidBodyShadowReference(rigidBody, worldId)) {
             this._wasmInstance.multiPhysicsWorldRemoveRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            return true;
+        }
+        return false;
+    }
+
+    public addRigidBodyBundleShadow(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
+        this._nullCheck();
+        if (this._inner.addRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
+            this._wasmInstance.multiPhysicsWorldAddRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+
+    public removeRigidBodyBundleShadow(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
+        this._nullCheck();
+        if (this._inner.removeRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
+            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
             return true;
         }
         return false;
