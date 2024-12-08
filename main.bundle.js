@@ -1813,6 +1813,22 @@ class MultiPhysicsWorld {
         }
         return false;
     }
+    addRigidBodyBundleToGlobal(rigidBodyBundle) {
+        this._nullCheck();
+        if (this._inner.addRigidBodyBundleGlobalReference(rigidBodyBundle)) {
+            this._wasmInstance.multiPhysicsWorldAddRigidBodyBundleToGlobal(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+    removeRigidBodyBundleFromGlobal(rigidBodyBundle) {
+        this._nullCheck();
+        if (this._inner.removeRigidBodyBundleGlobalReference(rigidBodyBundle)) {
+            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleFromGlobal(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
     addRigidBodyShadow(rigidBody, worldId) {
         this._nullCheck();
         if (this._inner.addRigidBodyShadowReference(rigidBody, worldId)) {
@@ -1825,6 +1841,22 @@ class MultiPhysicsWorld {
         this._nullCheck();
         if (this._inner.removeRigidBodyShadowReference(rigidBody, worldId)) {
             this._wasmInstance.multiPhysicsWorldRemoveRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            return true;
+        }
+        return false;
+    }
+    addRigidBodyBundleShadow(rigidBodyBundle, worldId) {
+        this._nullCheck();
+        if (this._inner.addRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
+            this._wasmInstance.multiPhysicsWorldAddRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+    removeRigidBodyBundleShadow(rigidBodyBundle, worldId) {
+        this._nullCheck();
+        if (this._inner.removeRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
+            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
             return true;
         }
         return false;
@@ -2905,7 +2937,7 @@ class SceneBuilder {
         const camera = new arcRotateCamera/* ArcRotateCamera */.L("arcRotateCamera", 0, 0, 500, new math_vector/* Vector3 */.Pq(0, 0, 0), scene);
         camera.minZ = 1;
         camera.maxZ = 1000;
-        camera.setPosition(new math_vector/* Vector3 */.Pq(60, 40, -50));
+        camera.setPosition(new math_vector/* Vector3 */.Pq(60, 40, -50).scaleInPlace(10));
         camera.attachControl(undefined, false);
         camera.inertia = 0.8;
         camera.speed = 10;
@@ -2947,7 +2979,7 @@ class SceneBuilder {
             groundRbInfo.setInitialTransform(matrix);
             groundRbInfo.motionType = 1 /* MotionType.Static */;
             const groundRigidBody = new RigidBody(wasmInstance, groundRbInfo);
-            world.addRigidBody(groundRigidBody, 0);
+            world.addRigidBodyToGlobal(groundRigidBody);
         }
         const rbCount = 512 * 2;
         const baseBox = (0,boxBuilder/* CreateBox */.an)("box", { size: 2 }, scene);
