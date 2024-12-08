@@ -25,7 +25,7 @@ import { RigidBodyBundle } from "@/Runtime/rigidBodyBundle";
 import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
 import { RigidBodyConstructionInfoList } from "@/Runtime/rigidBodyConstructionInfoList";
 
-import type { ISceneBuilder } from "./baseRuntime";
+import type { ISceneBuilder } from "../baseRuntime";
 
 export class SceneBuilder implements ISceneBuilder {
     public async build(_canvas: HTMLCanvasElement, engine: AbstractEngine): Promise<Scene> {

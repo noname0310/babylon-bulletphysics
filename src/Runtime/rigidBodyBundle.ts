@@ -143,6 +143,10 @@ export class RigidBodyBundle {
         }
     }
 
+    public getWorldReference(): Nullable<object> {
+        return this._worldReference;
+    }
+
     private _nullCheck(): void {
         if (this._inner.ptr === 0) {
             throw new Error("Cannot access disposed rigid body bundle");

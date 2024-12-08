@@ -43,13 +43,25 @@ impl MultiPhysicsWorld {
         self.worlds.entry(id).or_insert_with(|| {
             let mut world = PhysicsWorld::new();
             for body in self.global_bodies.iter_mut() {
-                world.add_rigidbody_shadow(body.clone());
+                world.add_rigidbody_shadow(body.clone(), true);
             }
             for bundle in self.global_body_bundles.iter_mut() {
-                world.add_rigidbody_bundle_shadow(bundle.clone());
+                world.add_rigidbody_bundle_shadow(bundle.clone(), true);
             }
             world
         })
+    }
+
+    fn get_world(&mut self, id: PhysicsWorldId) -> Option<&mut PhysicsWorld> {
+        self.worlds.get_mut(&id)
+    }
+
+    fn remove_world_if_empty(&mut self, id: PhysicsWorldId) {
+        if let Some(world) = self.worlds.get(&id) {
+            if world.is_empty() {
+                self.worlds.remove(&id);
+            }
+        }
     }
 
     pub(crate) fn set_gravity(&mut self, force: Vec3) {
@@ -95,7 +107,6 @@ impl MultiPhysicsWorld {
         }
 
         self.get_or_create_world(world_id).add_rigidbody(rigidbody);
-
     }
 
     pub(crate) fn remove_rigidbody(&mut self, world_id: PhysicsWorldId, rigidbody: RigidBodyHandle) {
@@ -108,7 +119,8 @@ impl MultiPhysicsWorld {
             self.handle_info.bodies.remove(index);
         }
 
-        self.get_or_create_world(world_id).remove_rigidbody(rigidbody);
+        self.get_world(world_id).map(|world| world.remove_rigidbody(rigidbody));
+        self.remove_world_if_empty(world_id);
     }
 
     pub(crate) fn add_rigidbody_bundle(
@@ -140,7 +152,8 @@ impl MultiPhysicsWorld {
             self.handle_info.body_bundles.remove(index);
         }
 
-        self.get_or_create_world(world_id).remove_rigidbody_bundle(bundle);
+        self.get_world(world_id).map(|world| world.remove_rigidbody_bundle(bundle));
+        self.remove_world_if_empty(world_id);
     }
 
     pub(crate) fn add_rigidbody_to_global(&mut self, mut rigidbody: RigidBodyHandle) {
@@ -152,7 +165,7 @@ impl MultiPhysicsWorld {
         }
 
         for (_, world) in self.worlds.iter_mut() {
-            world.add_rigidbody_shadow(rigidbody.clone());
+            world.add_rigidbody_shadow(rigidbody.clone(), true);
         }
         self.global_bodies.push(rigidbody);
     }
@@ -165,8 +178,11 @@ impl MultiPhysicsWorld {
             }
         }
 
-        for (_, world) in self.worlds.iter_mut() {
-            world.remove_rigidbody_shadow(rigidbody.clone());
+        for i in 0..self.worlds.len() {
+            let (id, world) = self.worlds.iter_mut().nth(i).unwrap();
+            let id = *id;
+            world.remove_rigidbody_shadow(rigidbody.clone(), true);
+            self.remove_world_if_empty(id);
         }
         let index: usize = self.global_bodies.iter().position(|r| *r == rigidbody).unwrap();
         self.global_bodies.remove(index);
@@ -181,7 +197,7 @@ impl MultiPhysicsWorld {
         }
 
         for (_, world) in self.worlds.iter_mut() {
-            world.add_rigidbody_bundle_shadow(bundle.clone());
+            world.add_rigidbody_bundle_shadow(bundle.clone(), true);
         }
         self.global_body_bundles.push(bundle);
     }
@@ -194,27 +210,32 @@ impl MultiPhysicsWorld {
             }
         }
 
-        for (_, world) in self.worlds.iter_mut() {
-            world.remove_rigidbody_bundle_shadow(bundle.clone());
+        for i in 0..self.worlds.len() {
+            let (id, world) = self.worlds.iter_mut().nth(i).unwrap();
+            let id = *id;
+            world.remove_rigidbody_bundle_shadow(bundle.clone(), true);
+            self.remove_world_if_empty(id);
         }
         let index: usize = self.global_body_bundles.iter().position(|r| *r == bundle).unwrap();
         self.global_body_bundles.remove(index);
     }
 
     pub(crate) fn add_rigidbody_shadow(&mut self, world_id: PhysicsWorldId, rigidbody: RigidBodyHandle) {
-        self.get_or_create_world(world_id).add_rigidbody_shadow(rigidbody);
+        self.get_or_create_world(world_id).add_rigidbody_shadow(rigidbody, false);
     }
 
     pub(crate) fn remove_rigidbody_shadow(&mut self, world_id: PhysicsWorldId, rigidbody: RigidBodyHandle) {
-        self.get_or_create_world(world_id).remove_rigidbody_shadow(rigidbody);
+        self.get_world(world_id).map(|world| world.remove_rigidbody_shadow(rigidbody, false));
+        self.remove_world_if_empty(world_id);
     }
 
     pub(crate) fn add_rigidbody_bundle_shadow(&mut self, world_id: PhysicsWorldId, bundle: RigidBodyBundleHandle) {
-        self.get_or_create_world(world_id).add_rigidbody_bundle_shadow(bundle);
+        self.get_or_create_world(world_id).add_rigidbody_bundle_shadow(bundle, false);
     }
 
     pub(crate) fn remove_rigidbody_bundle_shadow(&mut self, world_id: PhysicsWorldId, bundle: RigidBodyBundleHandle) {
-        self.get_or_create_world(world_id).remove_rigidbody_bundle_shadow(bundle);
+        self.get_world(world_id).map(|world| world.remove_rigidbody_bundle_shadow(bundle, false));
+        self.remove_world_if_empty(world_id);
     }
 
     pub(crate) fn add_constraint(&mut self, world_id: PhysicsWorldId, constraint: ConstraintHandle, disable_collisions_between_linked_bodies: bool) {
@@ -222,7 +243,8 @@ impl MultiPhysicsWorld {
     }
 
     pub(crate) fn remove_constraint(&mut self, world_id: PhysicsWorldId, constraint: ConstraintHandle) {
-        self.get_or_create_world(world_id).remove_constraint(constraint);
+        self.get_world(world_id).map(|world| world.remove_constraint(constraint));
+        self.remove_world_if_empty(world_id);
     }
 }
 
@@ -252,84 +274,84 @@ pub fn multi_physics_world_step_simulation(world: *mut usize, time_step: f32, ma
     world.step_simulation(time_step, max_sub_steps, fixed_time_step);
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidbody")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidBody")]
 pub fn multi_physics_world_add_rigidbody(world: *mut usize, world_id: PhysicsWorldId, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
     world.add_rigidbody(world_id, rigidbody.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidbody")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidBody")]
 pub fn multi_physics_world_remove_rigidbody(world: *mut usize, world_id: PhysicsWorldId, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
     world.remove_rigidbody(world_id, rigidbody.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidbodyBundle")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidBodyBundle")]
 pub fn multi_physics_world_add_rigidbody_bundle(world: *mut usize, world_id: PhysicsWorldId, bundle: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
     world.add_rigidbody_bundle(world_id, bundle.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidbodyBundle")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidBodyBundle")]
 pub fn multi_physics_world_remove_rigidbody_bundle(world: *mut usize, world_id: PhysicsWorldId, bundle: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
     world.remove_rigidbody_bundle(world_id, bundle.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidbodyToGlobal")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidBodyToGlobal")]
 pub fn multi_physics_world_add_rigidbody_to_global(world: *mut usize, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
     world.add_rigidbody_to_global(rigidbody.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidbodyFromGlobal")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidBodyFromGlobal")]
 pub fn multi_physics_world_remove_rigidbody_from_global(world: *mut usize, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
     world.remove_rigidbody_from_global(rigidbody.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidbodyBundleToGlobal")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidBodyBundleToGlobal")]
 pub fn multi_physics_world_add_rigidbody_bundle_to_global(world: *mut usize, bundle: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
     world.add_rigidbody_bundle_to_global(bundle.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidbodyBundleFromGlobal")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidBodyBundleFromGlobal")]
 pub fn multi_physics_world_remove_rigidbody_bundle_from_global(world: *mut usize, bundle: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
     world.remove_rigidbody_bundle_from_global(bundle.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidbodyShadow")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidBodyShadow")]
 pub fn multi_physics_world_add_rigidbody_shadow(world: *mut usize, world_id: PhysicsWorldId, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
     world.add_rigidbody_shadow(world_id, rigidbody.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidbodyShadow")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidBodyShadow")]
 pub fn multi_physics_world_remove_rigidbody_shadow(world: *mut usize, world_id: PhysicsWorldId, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
     world.remove_rigidbody_shadow(world_id, rigidbody.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidbodyBundleShadow")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldAddRigidBodyBundleShadow")]
 pub fn multi_physics_world_add_rigidbody_bundle_shadow(world: *mut usize, world_id: PhysicsWorldId, bundle: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };
     world.add_rigidbody_bundle_shadow(world_id, bundle.create_handle());
 }
 
-#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidbodyBundleShadow")]
+#[wasm_bindgen(js_name = "multiPhysicsWorldRemoveRigidBodyBundleShadow")]
 pub fn multi_physics_world_remove_rigidbody_bundle_shadow(world: *mut usize, world_id: PhysicsWorldId, bundle: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let bundle = unsafe { &mut *(bundle as *mut RigidBodyBundle) };

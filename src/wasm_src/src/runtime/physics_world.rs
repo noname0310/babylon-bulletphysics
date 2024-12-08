@@ -18,6 +18,7 @@ pub(crate) struct PhysicsWorld {
     handle_info: PhysicsWorldHandleInfo,
     shadow_bodies: Vec<RigidBodyShadow>,
     shadow_body_bundles: Vec<RigidBodyBundleShadow>,
+    object_count: i32,
 }
 
 impl PhysicsWorld {
@@ -33,6 +34,7 @@ impl PhysicsWorld {
             },
             shadow_bodies: Vec::new(),
             shadow_body_bundles: Vec::new(),
+            object_count: 0,
         }
     }
 
@@ -53,6 +55,7 @@ impl PhysicsWorld {
         }
 
         self.inner.add_rigidbody(rigidbody.get_mut().get_inner_mut());
+        self.object_count += 1;
 
         #[cfg(debug_assertions)]
         self.handle_info.bodies.push(rigidbody);
@@ -67,6 +70,7 @@ impl PhysicsWorld {
         }
 
         self.inner.remove_rigidbody(rigidbody.get_mut().get_inner_mut());
+        self.object_count -= 1;
 
         #[cfg(debug_assertions)]
         {
@@ -86,6 +90,7 @@ impl PhysicsWorld {
         for i in 0..bundle.get().bodies().len() {
             self.inner.add_rigidbody(&mut bundle.get_mut().bodies_mut()[i]);
         }
+        self.object_count += 1;
 
         #[cfg(debug_assertions)]
         self.handle_info.body_bundles.push(bundle);
@@ -102,6 +107,7 @@ impl PhysicsWorld {
         for i in 0..bundle.get().bodies().len() {
             self.inner.remove_rigidbody(&mut bundle.get_mut().bodies_mut()[i]);
         }
+        self.object_count -= 1;
 
         #[cfg(debug_assertions)]
         {
@@ -110,7 +116,7 @@ impl PhysicsWorld {
         }
     }
 
-    pub(super) fn add_rigidbody_shadow(&mut self, mut rigidbody: RigidBodyHandle) {
+    pub(super) fn add_rigidbody_shadow(&mut self, mut rigidbody: RigidBodyHandle, weak: bool) {
         #[cfg(debug_assertions)]
         {
             if self.handle_info.bodies.iter().any(|b| *b == rigidbody) {
@@ -121,12 +127,15 @@ impl PhysicsWorld {
         let mut shadow = rigidbody.create_shadow();
         self.inner.add_rigidbody_shadow(shadow.get_inner_mut());
         self.shadow_bodies.push(shadow);
+        if !weak {
+            self.object_count += 1;
+        }
 
         #[cfg(debug_assertions)]
         self.handle_info.bodies.push(rigidbody);
     }
 
-    pub(super) fn remove_rigidbody_shadow(&mut self, rigidbody: RigidBodyHandle) {
+    pub(super) fn remove_rigidbody_shadow(&mut self, rigidbody: RigidBodyHandle, weak: bool) {
         #[cfg(debug_assertions)]
         {
             if !self.handle_info.bodies.iter().any(|b| *b == rigidbody) {
@@ -137,6 +146,9 @@ impl PhysicsWorld {
         let index = self.shadow_bodies.iter().position(|s| *s.handle() == rigidbody).unwrap();
         let mut shadow = self.shadow_bodies.remove(index);
         self.inner.remove_rigidbody_shadow(shadow.get_inner_mut());
+        if !weak {
+            self.object_count -= 1;
+        }
 
         #[cfg(debug_assertions)]
         {
@@ -145,7 +157,7 @@ impl PhysicsWorld {
         }
     }
 
-    pub(super) fn add_rigidbody_bundle_shadow(&mut self, mut bundle: RigidBodyBundleHandle) {
+    pub(super) fn add_rigidbody_bundle_shadow(&mut self, mut bundle: RigidBodyBundleHandle, weak: bool) {
         #[cfg(debug_assertions)]
         {
             if self.handle_info.body_bundles.iter().any(|b| *b == bundle) {
@@ -158,12 +170,15 @@ impl PhysicsWorld {
             self.inner.add_rigidbody_shadow(&mut shadow.shadows_mut()[i]);
         }
         self.shadow_body_bundles.push(shadow);
+        if !weak {
+            self.object_count += 1;
+        }
 
         #[cfg(debug_assertions)]
         self.handle_info.body_bundles.push(bundle);
     }
 
-    pub(super) fn remove_rigidbody_bundle_shadow(&mut self, bundle: RigidBodyBundleHandle) {
+    pub(super) fn remove_rigidbody_bundle_shadow(&mut self, bundle: RigidBodyBundleHandle, weak: bool) {
         #[cfg(debug_assertions)]
         {
             if !self.handle_info.body_bundles.iter().any(|b| *b == bundle) {
@@ -175,6 +190,9 @@ impl PhysicsWorld {
         let mut shadow = self.shadow_body_bundles.remove(index);
         for i in 0..shadow.shadows().len() {
             self.inner.remove_rigidbody_shadow(&mut shadow.shadows_mut()[i]);
+        }
+        if !weak {
+            self.object_count -= 1;
         }
 
         #[cfg(debug_assertions)]
@@ -193,6 +211,7 @@ impl PhysicsWorld {
         }
 
         self.inner.add_constraint(constraint.get_mut().ptr_mut(), disable_collisions_between_linked_bodies);
+        self.object_count += 1;
 
         #[cfg(debug_assertions)]
         self.handle_info.constraints.push(constraint);
@@ -207,12 +226,17 @@ impl PhysicsWorld {
         }
 
         self.inner.remove_constraint(constraint.get_mut().ptr_mut());
+        self.object_count -= 1;
 
         #[cfg(debug_assertions)]
         {
             let index = self.handle_info.constraints.iter().position(|c| *c == constraint).unwrap();
             self.handle_info.constraints.remove(index);
         }
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.object_count == 0
     }
 }
 

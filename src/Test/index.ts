@@ -1,7 +1,7 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 
 import { BaseRuntime } from "./baseRuntime";
-import { SceneBuilder } from "./sceneBuilder";
+import { SceneBuilder } from "./Scene/multiWorldTestScene";
 
 await new Promise(resolve => window.onload = resolve);
 
