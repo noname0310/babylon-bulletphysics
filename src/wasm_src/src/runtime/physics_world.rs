@@ -134,9 +134,9 @@ impl PhysicsWorld {
             }
         }
 
-        // let index = self.shadow_bodies.iter().position(|b| *b == rigidbody).unwrap();
-        // let shadow = self.shadow_bodies.remove(index);
-        // self.inner.remove_rigidbody_shadow(shadow.get_inner_mut());
+        let index = self.shadow_bodies.iter().position(|s| *s.handle() == rigidbody).unwrap();
+        let mut shadow = self.shadow_bodies.remove(index);
+        self.inner.remove_rigidbody_shadow(shadow.get_inner_mut());
 
         #[cfg(debug_assertions)]
         {
@@ -171,11 +171,11 @@ impl PhysicsWorld {
             }
         }
 
-        // let index = self.shadow_body_bundles.iter().position(|b| *b.get() == bundle).unwrap();
-        // let shadow = self.shadow_body_bundles.remove(index);
-        // for i in 0..shadow.get().bodies().len() {
-        //     self.inner.remove_rigidbody_shadow(&mut shadow.get_mut().bodies_mut()[i]);
-        // }
+        let index = self.shadow_body_bundles.iter().position(|s| *s.handle() == bundle).unwrap();
+        let mut shadow = self.shadow_body_bundles.remove(index);
+        for i in 0..shadow.shadows().len() {
+            self.inner.remove_rigidbody_shadow(&mut shadow.shadows_mut()[i]);
+        }
 
         #[cfg(debug_assertions)]
         {

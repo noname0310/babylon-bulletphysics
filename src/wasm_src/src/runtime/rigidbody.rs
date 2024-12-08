@@ -157,9 +157,7 @@ impl Eq for RigidBodyHandle {}
 
 pub(crate) struct RigidBodyShadow {
     inner: bind::rigidbody::RigidBodyShadow,
-    #[cfg(debug_assertions)]
-    #[allow(dead_code)]
-    body_handle: RigidBodyHandle,
+    handle: RigidBodyHandle,
 }
 
 impl RigidBodyShadow {
@@ -170,13 +168,9 @@ impl RigidBodyShadow {
 
         let inner = bind::rigidbody::RigidBodyShadow::new(rigidbody.get_inner_mut());
 
-        #[cfg(debug_assertions)]
-        let body_handle = rigidbody.create_handle();
-
         Self {
             inner,
-            #[cfg(debug_assertions)]
-            body_handle,
+            handle: rigidbody.create_handle(),
         }
     }
 
@@ -186,6 +180,14 @@ impl RigidBodyShadow {
 
     pub(super) fn get_inner_mut(&mut self) -> &mut bind::rigidbody::RigidBodyShadow {
         &mut self.inner
+    }
+
+    pub(super) fn handle(&self) -> &RigidBodyHandle {
+        &self.handle
+    }
+
+    pub(super) fn handle_mut(&mut self) -> &mut RigidBodyHandle {
+        &mut self.handle
     }
 }
 
@@ -319,9 +321,7 @@ impl Eq for RigidBodyBundleHandle {}
 
 pub(crate) struct RigidBodyBundleShadow {
     shadows: Box<[bind::rigidbody::RigidBodyShadow]>,
-    #[cfg(debug_assertions)]
-    #[allow(dead_code)]
-    bundle_handle: RigidBodyBundleHandle,
+    handle: RigidBodyBundleHandle,
 }
 
 impl RigidBodyBundleShadow {
@@ -335,8 +335,7 @@ impl RigidBodyBundleShadow {
 
         Self {
             shadows: shadows.into_boxed_slice(),
-            #[cfg(debug_assertions)]
-            bundle_handle: bundle.create_handle(),
+            handle: bundle.create_handle(),
         }
     }
 
@@ -346,6 +345,14 @@ impl RigidBodyBundleShadow {
 
     pub(super) fn shadows_mut(&mut self) -> &mut [bind::rigidbody::RigidBodyShadow] {
         &mut self.shadows
+    }
+
+    pub(super) fn handle(&self) -> &RigidBodyBundleHandle {
+        &self.handle
+    }
+
+    pub(super) fn handle_mut(&mut self) -> &mut RigidBodyBundleHandle {
+        &mut self.handle
     }
 }
 
