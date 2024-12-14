@@ -67,48 +67,6 @@ export class SceneBuilder implements ISceneBuilder {
         // Inspector.Show(scene, { enablePopup: false });
 
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
-
-        function f1(): number {
-            let sum = 0;
-            for (let i = 0; i < 100; ++i) {
-                const bufferPtr = wasmInstance.allocateBuffer(1024 * 1024 * 16);
-                const bufferArray = wasmInstance.createTypedArray(Uint8Array, bufferPtr, 1024 * 1024 * 16).array;
-                const now = performance.now();
-                for (let j = 0; j < 1024 * 1024 * 16; ++j) {
-                    bufferArray[j] = j;
-                }
-                const end = performance.now();
-                console.log("Buffer fill time:", end - now);
-                sum += end - now;
-                wasmInstance.deallocateBuffer(bufferPtr, 1024 * 1024 * 16);
-            }
-            return sum / 100;
-        }
-
-        function f2(): number {
-            let sum = 0;
-            for (let i = 0; i < 100; ++i) {
-                const bufferPtr = wasmInstance.allocateBuffer(1024 * 1024 * 16);
-                const now = performance.now();
-                for (let j = 0; j < 1024 * 1024 * 16; ++j) {
-                    wasmInstance.setValue(bufferPtr + j, j);
-                }
-                const end = performance.now();
-                console.log("Buffer fill time:", end - now);
-                sum += end - now;
-                wasmInstance.deallocateBuffer(bufferPtr, 1024 * 1024 * 16);
-            }
-            return sum / 100;
-        }
-
-        //warmup
-        f1();
-        f2();
-        console.log("Buffer fill time (typed array):", f1());
-        console.log("Buffer fill time (set value):", f2());
-
-
-
         const world = new MultiPhysicsWorld(wasmInstance);
 
         const matrix = new Matrix();
@@ -183,19 +141,19 @@ export class SceneBuilder implements ISceneBuilder {
 
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
 
-        // scene.onBeforeRenderObservable.add(() => {
-        //     world.stepSimulation(1 / 60, 10, 1 / 60);
+        scene.onBeforeRenderObservable.add(() => {
+            world.stepSimulation(1 / 60, 10, 1 / 60);
 
-        //     for (let i = 0; i < bundles.length; ++i) {
-        //         const bundle = bundles[i];
-        //         const startOffset = i * rbCount * 16;
-        //         for (let j = 0; j < rbCount; ++j) {
-        //             bundle.getTransformMatrixToRef(j, matrix);
-        //             matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
-        //         }
-        //     }
-        //     baseBox.thinInstanceBufferUpdated("matrix");
-        // });
+            for (let i = 0; i < bundles.length; ++i) {
+                const bundle = bundles[i];
+                const startOffset = i * rbCount * 16;
+                for (let j = 0; j < rbCount; ++j) {
+                    bundle.getTransformMatrixToRef(j, matrix);
+                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
+                }
+            }
+            baseBox.thinInstanceBufferUpdated("matrix");
+        });
 
         return scene;
     }

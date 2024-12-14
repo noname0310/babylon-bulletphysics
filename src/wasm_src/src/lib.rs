@@ -89,10 +89,3 @@ pub unsafe fn deallocate_buffer(ptr: *mut u8, size: usize) {
         std::alloc::dealloc(ptr, layout);
     }
 }
-
-#[wasm_bindgen(js_name = "setValue")]
-pub fn set_buffer(ptr: *mut u8, value: u8) {
-    unsafe {
-        ptr.write(value);
-    }
-}
