@@ -54,6 +54,30 @@ class MultiPhysicsWorldInner {
         }
         this._rigidBodyBundleReferences.clear();
 
+        for (const rigidBody of this._rigidBodyGlobalReferences) {
+            rigidBody.removeReference();
+        }
+        this._rigidBodyGlobalReferences.clear();
+
+        for (const rigidBodyBundle of this._rigidBodyBundleGlobalReferences) {
+            rigidBodyBundle.removeReference();
+        }
+        this._rigidBodyBundleGlobalReferences.clear();
+
+        for (const shadowReferences of this._rigidBodyShadowReferences.values()) {
+            for (const rigidBody of shadowReferences) {
+                rigidBody.removeReference();
+            }
+        }
+        this._rigidBodyShadowReferences.clear();
+
+        for (const shadowReferences of this._rigidBodyBundleShadowReferences.values()) {
+            for (const rigidBodyBundle of shadowReferences) {
+                rigidBodyBundle.removeReference();
+            }
+        }
+        this._rigidBodyBundleShadowReferences.clear();
+
         for (const constraint of this._constraintReferences) {
             constraint.setWorldReference(null);
         }
