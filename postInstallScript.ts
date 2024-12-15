@@ -1,5 +1,6 @@
 import { execSync } from "child_process";
 import * as fs from "fs";
+import https from "https";
 
 async function download(url: string, dest: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
