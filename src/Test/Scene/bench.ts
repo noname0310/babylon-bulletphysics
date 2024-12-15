@@ -15,7 +15,8 @@ import { Scene } from "@babylonjs/core/scene";
 
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
-import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
+import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
+// import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
 import { MotionType } from "@/Runtime/motionType";
 import { MultiPhysicsWorld } from "@/Runtime/multiPhysicsWorld";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
@@ -66,7 +67,7 @@ export class SceneBuilder implements ISceneBuilder {
 
         // Inspector.Show(scene, { enablePopup: false });
 
-        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), 2);
         const world = new MultiPhysicsWorld(wasmInstance);
 
         const matrix = new Matrix();
@@ -94,7 +95,7 @@ export class SceneBuilder implements ISceneBuilder {
         baseBox.receiveShadows = true;
 
         const rowCount = 4;
-        const columnCount = 8;
+        const columnCount = 2;
         const margin = 60;
 
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
@@ -141,30 +142,37 @@ export class SceneBuilder implements ISceneBuilder {
 
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
 
-        if ((globalThis as any).benchmark) {
-            let fpsSum = 0;
-            const sampleCount = 600;
-            for (let i = 0; i < sampleCount; ++i) {
-                const start = performance.now();
-                world.stepSimulation(1 / 60, 10, 1 / 60);
-                for (let i = 0; i < bundles.length; ++i) {
-                    const bundle = bundles[i];
-                    const startOffset = i * rbCount * 16;
-                    for (let j = 0; j < rbCount; ++j) {
-                        bundle.getTransformMatrixToRef(j, matrix);
-                        matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
-                    }
+        const sampledFps: number[] = [];
+        const sampleCount = 100;
+        for (let i = 0; i < sampleCount; ++i) {
+            const start = performance.now();
+            world.stepSimulation(1 / 60, 10, 1 / 60);
+            for (let i = 0; i < bundles.length; ++i) {
+                const bundle = bundles[i];
+                const startOffset = i * rbCount * 16;
+                for (let j = 0; j < rbCount; ++j) {
+                    bundle.getTransformMatrixToRef(j, matrix);
+                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
                 }
-                baseBox.thinInstanceBufferUpdated("matrix");
-                scene.render();
-                const end = performance.now();
-                const fps = 1000 / (end - start);
-                fpsSum += fps;
-                console.log("FPS:", fps);
             }
-            console.log("Average FPS:", fpsSum / sampleCount);
-            document.write(`Average FPS: ${fpsSum / sampleCount}`);
+            baseBox.thinInstanceBufferUpdated("matrix");
+            scene.render();
+            const end = performance.now();
+            const fps = 1000 / (end - start);
+            sampledFps.push(fps);
         }
+        let averageFps = 0;
+        let result = "";
+        for (let i = 0; i < sampleCount; ++i) {
+            result += `(${i}, ${sampledFps[i]})`;
+            if (i !== sampleCount - 1) {
+                result += ", ";
+            }
+            averageFps += sampledFps[i];
+        }
+        console.log(`Result: ${result}, Average: ${averageFps / sampleCount}`);
+
+        document.write(`Result: ${result}, Average: ${averageFps / sampleCount}`);
 
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
