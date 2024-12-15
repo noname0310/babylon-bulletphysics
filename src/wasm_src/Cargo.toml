@@ -15,9 +15,11 @@ parallel = ["rayon", "wasm-bindgen-rayon"]
 
 [profile.release]
 opt-level = 3
+lto = true
 
 [profile.dev]
 opt-level = 3
+lto = true
 
 [dependencies]
 wasm-bindgen = "=0.2.93"
@@ -41,3 +43,6 @@ wasm-bindgen-test = "0.3.43"
 
 [build-dependencies]
 cc = "=1.1.31"
+
+[lints.rust]
+unexpected_cfgs = { level = "allow" }
