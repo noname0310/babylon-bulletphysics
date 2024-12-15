@@ -1,0 +1,44 @@
+diff --git a/ammo.wasm.js b/ammo.wasm.js
+index 0923a98..8a2f287 100644
+--- a/ammo.wasm.js
++++ b/ammo.wasm.js
+@@ -1,19 +1,16 @@
+ // This is ammo.js, a port of Bullet Physics to JavaScript. zlib licensed.
+ 
+-var Ammo = (() => {
+-  var _scriptName = typeof document != 'undefined' ? document.currentScript?.src : undefined;
+-  if (typeof __filename != 'undefined') _scriptName ||= __filename;
+-  return (
+-function(moduleArg = {}) {
++
++export default function(moduleArg = {}) {
+   var moduleRtn;
+ 
+ var c=moduleArg,aa,ba,ca=new Promise((a,b)=>{aa=a;ba=b}),da="object"==typeof window,ea="function"==typeof importScripts,fa="object"==typeof process&&"object"==typeof process.versions&&"string"==typeof process.versions.node,ha=Object.assign({},c),ia="",ja,ka;
+-if(fa){var fs=require("fs"),la=require("path");ia=__dirname+"/";ka=a=>{a=ma(a)?new URL(a):la.normalize(a);return fs.readFileSync(a)};ja=a=>{a=ma(a)?new URL(a):la.normalize(a);return new Promise((b,e)=>{fs.readFile(a,void 0,(f,g)=>{f?e(f):b(g.buffer)})})};!c.thisProgram&&1<process.argv.length&&process.argv[1].replace(/\\/g,"/");process.argv.slice(2)}else if(da||ea)ea?ia=self.location.href:"undefined"!=typeof document&&document.currentScript&&(ia=document.currentScript.src),_scriptName&&(ia=_scriptName),
++if(fa){var fs=require("fs"),la=require("path");ia=__dirname+"/";ka=a=>{a=ma(a)?new URL(a):la.normalize(a);return fs.readFileSync(a)};ja=a=>{a=ma(a)?new URL(a):la.normalize(a);return new Promise((b,e)=>{fs.readFile(a,void 0,(f,g)=>{f?e(f):b(g.buffer)})})};!c.thisProgram&&1<process.argv.length&&process.argv[1].replace(/\\/g,"/");process.argv.slice(2)}else if(da||ea)ea?ia=self.location.href:"undefined"!=typeof document&&document.currentScript&&(ia=document.currentScript.src),
+ ia=ia.startsWith("blob:")?"":ia.substr(0,ia.replace(/[?#].*/,"").lastIndexOf("/")+1),ea&&(ka=a=>{var b=new XMLHttpRequest;b.open("GET",a,!1);b.responseType="arraybuffer";b.send(null);return new Uint8Array(b.response)}),ja=a=>ma(a)?new Promise((b,e)=>{var f=new XMLHttpRequest;f.open("GET",a,!0);f.responseType="arraybuffer";f.onload=()=>{(200==f.status||0==f.status&&f.response)&&e(f.response);b(f.status)};f.onerror=b;f.send(null)}):fetch(a,{credentials:"same-origin"}).then(b=>b.ok?b.arrayBuffer():Promise.reject(Error(b.status+
+ " : "+b.url)));c.print||console.log.bind(console);var na=c.printErr||console.error.bind(console);Object.assign(c,ha);ha=null;var oa;c.wasmBinary&&(oa=c.wasmBinary);var pa,qa=!1,ra,sa,ta,va,wa,xa;function ya(){var a=pa.buffer;c.HEAP8=ra=new Int8Array(a);c.HEAP16=new Int16Array(a);c.HEAPU8=sa=new Uint8Array(a);c.HEAPU16=new Uint16Array(a);c.HEAP32=ta=new Int32Array(a);c.HEAPU32=va=new Uint32Array(a);c.HEAPF32=wa=new Float32Array(a);c.HEAPF64=xa=new Float64Array(a)}var za=[],Aa=[],Ba=[],Ca=!1;
+ function Da(){var a=c.preRun.shift();za.unshift(a)}var Ea=0,Fa=null,Ga=null;function Ha(a){c.onAbort?.(a);a="Aborted("+a+")";na(a);qa=!0;a=new WebAssembly.RuntimeError(a+". Build with -sASSERTIONS for more info.");ba(a);throw a;}var Ia=a=>a.startsWith("data:application/octet-stream;base64,"),ma=a=>a.startsWith("file://"),Ja;function Ka(a){if(a==Ja&&oa)return new Uint8Array(oa);if(ka)return ka(a);throw"both async and sync fetching of the wasm failed";}
+ function La(a){return oa?Promise.resolve().then(()=>Ka(a)):ja(a).then(b=>new Uint8Array(b),()=>Ka(a))}function Ma(a,b,e){return La(a).then(f=>WebAssembly.instantiate(f,b)).then(e,f=>{na(`failed to asynchronously prepare wasm: ${f}`);Ha(f)})}
+-function Na(a,b){var e=Ja;return oa||"function"!=typeof WebAssembly.instantiateStreaming||Ia(e)||ma(e)||fa||"function"!=typeof fetch?Ma(e,a,b):fetch(e,{credentials:"same-origin"}).then(f=>WebAssembly.instantiateStreaming(f,a).then(b,function(g){na(`wasm streaming compile failed: ${g}`);na("falling back to ArrayBuffer instantiation");return Ma(e,a,b)}))}
++function Na(a,b){var e=Ja;return oa||"function"!=typeof WebAssembly.instantiateStreaming||Ia(e)||ma(e)||fa||"function"!=typeof fetch?Ma(e,a,b):fetch(new URL("ammo.wasm.wasm", import.meta.url),{credentials:"same-origin"}).then(f=>WebAssembly.instantiateStreaming(f,a).then(b,function(g){na(`wasm streaming compile failed: ${g}`);na("falling back to ArrayBuffer instantiation");return Ma(e,a,b)}))}
+ var Oa={29271:(a,b,e,f)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("drawLine"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::drawLine.";a.drawLine(b,e,f)},29491:(a,b,e,f,g,q)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("drawContactPoint"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::drawContactPoint.";a.drawContactPoint(b,e,f,g,q)},29741:(a,b)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("reportErrorWarning"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::reportErrorWarning.";
+ a.reportErrorWarning(b)},29985:(a,b,e)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("draw3dText"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::draw3dText.";a.draw3dText(b,e)},30208:(a,b)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("setDebugMode"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::setDebugMode.";a.setDebugMode(b)},30434:a=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("getDebugMode"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::getDebugMode.";
+ return a.getDebugMode()},30665:(a,b)=>{a=c.getCache(c.MotionState)[a];if(!a.hasOwnProperty("getWorldTransform"))throw"a JSImplementation must implement all functions, you forgot MotionState::getWorldTransform.";a.getWorldTransform(b)},30906:(a,b)=>{a=c.getCache(c.MotionState)[a];if(!a.hasOwnProperty("setWorldTransform"))throw"a JSImplementation must implement all functions, you forgot MotionState::setWorldTransform.";a.setWorldTransform(b)},31147:(a,b,e,f,g,q,C,Q)=>{a=c.getCache(c.ConcreteContactResultCallback)[a];
+@@ -1001,14 +998,8 @@ FM.prototype.CreateFromTriMesh=function(a,b,e,f,g){var q=this.OH;yK();a&&"object
+ FM.prototype.CreateFromConvexHull=function(a,b,e,f){var g=this.OH;a&&"object"===typeof a&&(a=a.OH);b&&"object"===typeof b&&(b=b.OH);e&&"object"===typeof e&&(e=e.OH);f&&"object"===typeof f&&(f=f.OH);return l(UJ(g,a,b,e,f),Y)};FM.prototype.__destroy__=function(){VJ(this.OH)};function GM(){throw"cannot construct a btTransformUtil, no constructor in IDL";}GM.prototype=Object.create(h.prototype);GM.prototype.constructor=GM;GM.prototype.PH=GM;GM.QH={};c.btTransformUtil=GM;
+ GM.prototype.integrateTransform=function(a,b,e,f,g){a&&"object"===typeof a&&(a=a.OH);b&&"object"===typeof b&&(b=b.OH);e&&"object"===typeof e&&(e=e.OH);f&&"object"===typeof f&&(f=f.OH);g&&"object"===typeof g&&(g=g.OH);WJ(a,b,e,f,g)};GM.prototype.__destroy__=function(){XJ(this.OH)};
+ (function(){function a(){c.PHY_FLOAT=YJ();c.PHY_DOUBLE=ZJ();c.PHY_INTEGER=$J();c.PHY_SHORT=aK();c.PHY_FIXEDPOINT88=bK();c.PHY_UCHAR=cK();c.CONST_GIMPACT_COMPOUND_SHAPE=dK();c.CONST_GIMPACT_TRIMESH_SHAPE_PART=eK();c.CONST_GIMPACT_TRIMESH_SHAPE=fK();c.BT_CONSTRAINT_ERP=gK();c.BT_CONSTRAINT_STOP_ERP=hK();c.BT_CONSTRAINT_CFM=iK();c.BT_CONSTRAINT_STOP_CFM=jK();c.RO_XYZ=kK();c.RO_XZY=lK();c.RO_YXZ=mK();c.RO_YZX=nK();c.RO_ZXY=oK();c.RO_ZYX=pK()}Ca?a():Aa.unshift(a)})();
+-c.CONTACT_ADDED_CALLBACK_SIGNATURE="iiiiiiii";c.CONTACT_DESTROYED_CALLBACK_SIGNATURE="ii";c.CONTACT_PROCESSED_CALLBACK_SIGNATURE="iiii";c.INTERNAL_TICK_CALLBACK_SIGNATURE="vif";this.Ammo=c;moduleRtn=ca;
++c.CONTACT_ADDED_CALLBACK_SIGNATURE="iiiiiiii";c.CONTACT_DESTROYED_CALLBACK_SIGNATURE="ii";c.CONTACT_PROCESSED_CALLBACK_SIGNATURE="iiii";c.INTERNAL_TICK_CALLBACK_SIGNATURE="vif";moduleRtn=ca;
+ 
+ 
+   return moduleRtn;
+ }
+-);
+-})();
+-if (typeof exports === 'object' && typeof module === 'object')
+-  module.exports = Ammo;
+-else if (typeof define === 'function' && define['amd'])
+-  define([], () => Ammo);

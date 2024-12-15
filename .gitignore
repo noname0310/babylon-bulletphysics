@@ -132,5 +132,8 @@ dist
 src/wasm_src/bullet_src/BulletCollision
 src/wasm_src/bullet_src/BulletDynamics
 src/wasm_src/bullet_src/LinearMath
+src/External/ammo.wasm.d.ts
+src/External/ammo.wasm.js
+src/External/ammo.wasm.wasm
 
 test_dist
