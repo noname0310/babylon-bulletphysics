@@ -61,7 +61,7 @@ export class SceneBuilder implements ISceneBuilder {
         const ammo = await Ammo();
 
         const worlds: Ammo.btDiscreteDynamicsWorld[] = [];
-        for (let i = 0; i < 8; ++i) {
+        for (let i = 0; i < 32; ++i) {
             const collisionConfiguration = new ammo.btDefaultCollisionConfiguration();
             const dispatcher = new ammo.btCollisionDispatcher(collisionConfiguration);
             const overlappingPairCache = new ammo.btDbvtBroadphase();
@@ -97,6 +97,8 @@ export class SceneBuilder implements ISceneBuilder {
                 groundRigidBody.setCollisionFlags(groundRigidBody.getCollisionFlags() | 2);
                 worlds[i].addRigidBody(groundRigidBody);
             }
+
+            ammo.destroy(groundRbInfo);
         }
 
         const rbCount = 256 * 2;
@@ -105,7 +107,7 @@ export class SceneBuilder implements ISceneBuilder {
         baseBox.receiveShadows = true;
 
         const rowCount = 4;
-        const columnCount = 2;
+        const columnCount = 8;
         const margin = 60;
 
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
@@ -179,7 +181,7 @@ export class SceneBuilder implements ISceneBuilder {
         const quaternion = new Quaternion();
 
         const sampledFps: number[] = [];
-        const sampleCount = 100;
+        const sampleCount = 600;
         for (let i = 0; i < sampleCount; ++i) {
             const start = performance.now();
             for (let i = 0; i < worlds.length; ++i) {
