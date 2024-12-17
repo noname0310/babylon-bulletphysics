@@ -21,11 +21,11 @@ async function installAmmo(): Promise<void> {
     if (fs.existsSync("./src/External/ammo.wasm.d.ts")) return;
 
     await download(
-        "https://github.com/regnaio/ammo.js/tree/37cff85841b7ee79180114c9da7a32ed8d2ae549/dist/ammo.wasm.js",
+        "https://raw.githubusercontent.com/regnaio/ammo.js/37cff85841b7ee79180114c9da7a32ed8d2ae549/dist/ammo.wasm.js",
         "./src/External/ammo.wasm.js"
     );
     await download(
-        "https://github.com/regnaio/ammo.js/tree/37cff85841b7ee79180114c9da7a32ed8d2ae549/dist/ammo.wasm.wasm",
+        "https://raw.githubusercontent.com/regnaio/ammo.js/37cff85841b7ee79180114c9da7a32ed8d2ae549/dist/ammo.wasm.wasm",
         "./src/External/ammo.wasm.wasm"
     );
     await download(
