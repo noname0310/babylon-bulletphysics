@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 5362:
+/***/ 5061:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -2684,175 +2684,6 @@ class RigidBody {
     }
 }
 
-;// ./src/Runtime/rigidBodyBundle.ts
-const motionStateSize = 80;
-class RigidBodyBundleInner {
-    _wasmInstance;
-    _ptr;
-    _shapeReferences;
-    _referenceCount;
-    constructor(wasmInstance, ptr, shapeReferences) {
-        this._wasmInstance = wasmInstance;
-        this._ptr = ptr;
-        this._shapeReferences = shapeReferences;
-        for (const shape of shapeReferences) {
-            shape.addReference();
-        }
-        this._referenceCount = 0;
-    }
-    dispose() {
-        if (this._referenceCount > 0) {
-            throw new Error("Cannot dispose rigid body bundle while it still has references");
-        }
-        if (this._ptr === 0) {
-            return;
-        }
-        this._wasmInstance.deref()?.destroyRigidBodyBundle(this._ptr);
-        this._ptr = 0;
-        for (const shape of this._shapeReferences) {
-            shape.removeReference();
-        }
-        this._shapeReferences.clear();
-    }
-    get ptr() {
-        return this._ptr;
-    }
-    addReference() {
-        this._referenceCount += 1;
-    }
-    removeReference() {
-        this._referenceCount -= 1;
-    }
-}
-function rigidBodyBundleFinalizer(inner) {
-    inner.dispose();
-}
-const physicsRigidBodyBundleRegistryMap = new WeakMap();
-class RigidBodyBundle {
-    _wasmInstance;
-    _motionStatesPtr;
-    _inner;
-    _count;
-    _worldReference;
-    constructor(wasmInstance, info) {
-        if (info.ptr === 0) {
-            throw new Error("Cannot create rigid body bundle with null pointer");
-        }
-        const count = info.count;
-        const shapeReferences = new Set();
-        for (let i = 0; i < count; ++i) {
-            const shape = info.getShape(i);
-            if (shape === null) {
-                throw new Error("Cannot create rigid body bundle with null shape");
-            }
-            shapeReferences.add(shape);
-        }
-        this._wasmInstance = wasmInstance;
-        const ptr = wasmInstance.createRigidBodyBundle(info.ptr, count);
-        const motionStatesPtr = wasmInstance.rigidBodyBundleGetMotionStatesPtr(ptr);
-        this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * motionStateSize / Float32Array.BYTES_PER_ELEMENT);
-        this._inner = new RigidBodyBundleInner(new WeakRef(wasmInstance), ptr, shapeReferences);
-        this._count = count;
-        this._worldReference = null;
-        let registry = physicsRigidBodyBundleRegistryMap.get(wasmInstance);
-        if (registry === undefined) {
-            registry = new FinalizationRegistry(rigidBodyBundleFinalizer);
-            physicsRigidBodyBundleRegistryMap.set(wasmInstance, registry);
-        }
-        registry.register(this, this._inner, this);
-    }
-    dispose() {
-        if (this._inner.ptr === 0) {
-            return;
-        }
-        this._inner.dispose();
-        const registry = physicsRigidBodyBundleRegistryMap.get(this._wasmInstance);
-        registry?.unregister(this);
-    }
-    get ptr() {
-        return this._inner.ptr;
-    }
-    get count() {
-        return this._count;
-    }
-    addReference() {
-        this._inner.addReference();
-    }
-    removeReference() {
-        this._inner.removeReference();
-    }
-    setWorldReference(worldReference) {
-        if (this._worldReference !== null && worldReference !== null) {
-            throw new Error("Cannot add rigid body bundle to multiple worlds");
-        }
-        if (this._worldReference === worldReference) {
-            return;
-        }
-        this._worldReference = worldReference;
-        if (worldReference !== null) {
-            this._inner.addReference();
-        }
-        else {
-            this._inner.removeReference();
-        }
-    }
-    getWorldReference() {
-        return this._worldReference;
-    }
-    _nullCheck() {
-        if (this._inner.ptr === 0) {
-            throw new Error("Cannot access disposed rigid body bundle");
-        }
-    }
-    makeKinematic(index) {
-        this._nullCheck();
-        if (index < 0 || this._count <= index) {
-            throw new RangeError("Index out of range");
-        }
-        this._wasmInstance.rigidBodyBundleMakeKinematic(this._inner.ptr, index);
-    }
-    restoreDynamic(index) {
-        this._nullCheck();
-        if (index < 0 || this._count <= index) {
-            throw new RangeError("Index out of range");
-        }
-        this._wasmInstance.rigidBodyBundleRestoreDynamic(this._inner.ptr, index);
-    }
-    getTransformMatrixToRef(index, result) {
-        this._nullCheck();
-        if (index < 0 || this._count <= index) {
-            throw new RangeError("Index out of range");
-        }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-        result.setRowFromFloats(0, motionStatesPtr[offset + 4], motionStatesPtr[offset + 8], motionStatesPtr[offset + 12], 0);
-        result.setRowFromFloats(1, motionStatesPtr[offset + 5], motionStatesPtr[offset + 9], motionStatesPtr[offset + 13], 0);
-        result.setRowFromFloats(2, motionStatesPtr[offset + 6], motionStatesPtr[offset + 10], motionStatesPtr[offset + 14], 0);
-        result.setRowFromFloats(3, motionStatesPtr[offset + 16], motionStatesPtr[offset + 17], motionStatesPtr[offset + 18], 1);
-        return result;
-    }
-    setTransformMatrix(index, matrix) {
-        this._nullCheck();
-        if (index < 0 || this._count <= index) {
-            throw new RangeError("Index out of range");
-        }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-        motionStatesPtr[offset + 4] = matrix.m[0];
-        motionStatesPtr[offset + 8] = matrix.m[1];
-        motionStatesPtr[offset + 12] = matrix.m[2];
-        motionStatesPtr[offset + 5] = matrix.m[4];
-        motionStatesPtr[offset + 9] = matrix.m[5];
-        motionStatesPtr[offset + 13] = matrix.m[6];
-        motionStatesPtr[offset + 6] = matrix.m[8];
-        motionStatesPtr[offset + 10] = matrix.m[9];
-        motionStatesPtr[offset + 14] = matrix.m[10];
-        motionStatesPtr[offset + 16] = matrix.m[12];
-        motionStatesPtr[offset + 17] = matrix.m[13];
-        motionStatesPtr[offset + 18] = matrix.m[14];
-    }
-}
-
 ;// ./src/Runtime/rigidBodyConstructionInfo.ts
 /**
  * RigidBodyConstructionInfo representations
@@ -3143,319 +2974,6 @@ class RigidBodyConstructionInfo {
     }
 }
 
-;// ./src/Runtime/rigidBodyConstructionInfoList.ts
-const rigidBodyConstructionInfoList_size = 128;
-class RigidBodyConstructionInfoListInner {
-    _wasmInstance;
-    _ptr;
-    _count;
-    _shapeReferences;
-    constructor(wasmInstance, ptr, count) {
-        this._wasmInstance = wasmInstance;
-        this._ptr = ptr;
-        this._count = count;
-        this._shapeReferences = new Array(count).fill(null);
-    }
-    dispose() {
-        if (this._ptr === 0) {
-            return;
-        }
-        this._wasmInstance.deref()?.deallocateBuffer(this._ptr, rigidBodyConstructionInfoList_size * this._count);
-        this._ptr = 0;
-        for (let i = 0; i < this._shapeReferences.length; ++i) {
-            const shape = this._shapeReferences[i];
-            shape?.removeReference();
-        }
-        this._shapeReferences.fill(null);
-    }
-    get ptr() {
-        return this._ptr;
-    }
-    get count() {
-        return this._count;
-    }
-    getShape(n) {
-        return this._shapeReferences[n] ?? null;
-    }
-    setShape(n, value) {
-        if (n < 0 || this._count <= n) {
-            throw new RangeError("Index out of range");
-        }
-        const previousShape = this._shapeReferences[n];
-        if (previousShape) {
-            previousShape.removeReference();
-        }
-        this._shapeReferences[n] = value;
-        if (value) {
-            value.addReference();
-        }
-    }
-}
-function rigidBodyConstructionInfoListFinalizer(inner) {
-    inner.dispose();
-}
-const rigidBodyConstructionInfoListRegistryMap = new WeakMap();
-class RigidBodyConstructionInfoList {
-    _wasmInstance;
-    _uint32Ptr;
-    _float32Ptr;
-    _uint8Ptr;
-    _uint16Ptr;
-    _inner;
-    constructor(wasmInstance, count) {
-        this._wasmInstance = wasmInstance;
-        const uint32Bytes = Uint32Array.BYTES_PER_ELEMENT;
-        const float32Bytes = Float32Array.BYTES_PER_ELEMENT;
-        const uint8Bytes = Uint8Array.BYTES_PER_ELEMENT;
-        const uint16Bytes = Uint16Array.BYTES_PER_ELEMENT;
-        // Allocate buffer
-        const ptr = wasmInstance.allocateBuffer(rigidBodyConstructionInfoList_size * count);
-        this._uint32Ptr = wasmInstance.createTypedArray(Uint32Array, ptr, rigidBodyConstructionInfoList_size / uint32Bytes * count);
-        this._float32Ptr = wasmInstance.createTypedArray(Float32Array, ptr, rigidBodyConstructionInfoList_size / float32Bytes * count);
-        this._uint8Ptr = wasmInstance.createTypedArray(Uint8Array, ptr, rigidBodyConstructionInfoList_size / uint8Bytes * count);
-        this._uint16Ptr = wasmInstance.createTypedArray(Uint16Array, ptr, rigidBodyConstructionInfoList_size / uint16Bytes * count);
-        this._inner = new RigidBodyConstructionInfoListInner(new WeakRef(wasmInstance), ptr, count);
-        // Initialize to default values
-        const uint32Ptr = this._uint32Ptr.array;
-        const float32Ptr = this._float32Ptr.array;
-        const uint8Ptr = this._uint8Ptr.array;
-        const uint16Ptr = this._uint16Ptr.array;
-        for (let i = 0; i < count; ++i) {
-            const offset = i * rigidBodyConstructionInfoList_size;
-            // shape
-            uint32Ptr[(offset + 0x0) / uint32Bytes] = 0;
-            // initial_transform
-            float32Ptr[(offset + 0x10) / float32Bytes] = 1;
-            float32Ptr[(offset + 0x14) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x18) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x1C) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x20) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x24) / float32Bytes] = 1;
-            float32Ptr[(offset + 0x28) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x2C) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x30) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x34) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x38) / float32Bytes] = 1;
-            float32Ptr[(offset + 0x3C) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x40) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x44) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x48) / float32Bytes] = 0;
-            float32Ptr[(offset + 0x4C) / float32Bytes] = 1;
-            // motionType
-            uint8Ptr[(offset + 0x50) / uint8Bytes] = 0 /* MotionType.Dynamic */;
-            // mass
-            float32Ptr[(offset + 0x54) / float32Bytes] = 1.0;
-            // linearDamping
-            float32Ptr[(offset + 0x58) / float32Bytes] = 0;
-            // angularDamping
-            float32Ptr[(offset + 0x5C) / float32Bytes] = 0;
-            // friction
-            float32Ptr[(offset + 0x60) / float32Bytes] = 0.5;
-            // restitution
-            float32Ptr[(offset + 0x64) / float32Bytes] = 0.0;
-            // linearSleepingThreshold
-            float32Ptr[(offset + 0x68) / float32Bytes] = 0.0;
-            // angularSleepingThreshold
-            float32Ptr[(offset + 0x6C) / float32Bytes] = 1.0;
-            // collisionGroup
-            uint16Ptr[(offset + 0x70) / uint16Bytes] = 1 << 0;
-            // collisionMask
-            uint16Ptr[(offset + 0x72) / uint16Bytes] = 0xFFFF;
-            // additionalDamping
-            uint8Ptr[(offset + 0x74) / uint8Bytes] = +false;
-            // noContactResponse
-            uint8Ptr[(offset + 0x75) / uint8Bytes] = +false;
-            // disableDeactivation
-            uint8Ptr[(offset + 0x76) / uint8Bytes] = +false;
-        }
-        // finalization registry
-        let registry = rigidBodyConstructionInfoListRegistryMap.get(wasmInstance);
-        if (registry === undefined) {
-            registry = new FinalizationRegistry(rigidBodyConstructionInfoListFinalizer);
-            rigidBodyConstructionInfoListRegistryMap.set(wasmInstance, registry);
-        }
-        registry.register(this, this._inner, this);
-    }
-    dispose() {
-        if (this._inner.ptr === 0) {
-            return;
-        }
-        this._inner.dispose();
-        const registry = rigidBodyConstructionInfoListRegistryMap.get(this._wasmInstance);
-        registry?.unregister(this);
-    }
-    get ptr() {
-        return this._inner.ptr;
-    }
-    get count() {
-        return this._inner.count;
-    }
-    getPtr(n) {
-        this._nullCheck();
-        return this._inner.ptr + n * rigidBodyConstructionInfoList_size;
-    }
-    _nullCheck() {
-        if (this._inner.ptr === 0) {
-            throw new Error("Cannot access disposed RigidBodyConstructionInfo");
-        }
-    }
-    getShape(n) {
-        this._nullCheck();
-        return this._inner.getShape(n);
-    }
-    setShape(n, value) {
-        this._nullCheck();
-        this._inner.setShape(n, value);
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._uint32Ptr.array[(offset + 0x0) / Uint32Array.BYTES_PER_ELEMENT] = value ? value.ptr : 0;
-    }
-    getInitialTransformToRef(n, result) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        const float32Ptr = this._float32Ptr.array;
-        const float32Bytes = Float32Array.BYTES_PER_ELEMENT;
-        result.set(float32Ptr[(offset + 0x10) / float32Bytes], float32Ptr[(offset + 0x14) / float32Bytes], float32Ptr[(offset + 0x18) / float32Bytes], float32Ptr[(offset + 0x1C) / float32Bytes], float32Ptr[(offset + 0x20) / float32Bytes], float32Ptr[(offset + 0x24) / float32Bytes], float32Ptr[(offset + 0x28) / float32Bytes], float32Ptr[(offset + 0x2C) / float32Bytes], float32Ptr[(offset + 0x30) / float32Bytes], float32Ptr[(offset + 0x34) / float32Bytes], float32Ptr[(offset + 0x38) / float32Bytes], float32Ptr[(offset + 0x3C) / float32Bytes], float32Ptr[(offset + 0x40) / float32Bytes], float32Ptr[(offset + 0x44) / float32Bytes], float32Ptr[(offset + 0x48) / float32Bytes], float32Ptr[(offset + 0x4C) / float32Bytes]);
-        return result;
-    }
-    setInitialTransform(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        const float32Ptr = this._float32Ptr.array;
-        const float32Bytes = Float32Array.BYTES_PER_ELEMENT;
-        value.copyToArray(float32Ptr, (offset + 0x10) / float32Bytes);
-    }
-    getMotionType(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._uint8Ptr.array[(offset + 0x50) / Uint8Array.BYTES_PER_ELEMENT];
-    }
-    setMotionType(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._uint8Ptr.array[(offset + 0x50) / Uint8Array.BYTES_PER_ELEMENT] = value;
-    }
-    getMass(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._float32Ptr.array[(offset + 0x54) / Float32Array.BYTES_PER_ELEMENT];
-    }
-    setMass(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._float32Ptr.array[(offset + 0x54) / Float32Array.BYTES_PER_ELEMENT] = value;
-    }
-    getLinearDamping(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._float32Ptr.array[(offset + 0x58) / Float32Array.BYTES_PER_ELEMENT];
-    }
-    setLinearDamping(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._float32Ptr.array[(offset + 0x58) / Float32Array.BYTES_PER_ELEMENT] = value;
-    }
-    getAngularDamping(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._float32Ptr.array[(offset + 0x5C) / Float32Array.BYTES_PER_ELEMENT];
-    }
-    setAngularDamping(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._float32Ptr.array[(offset + 0x5C) / Float32Array.BYTES_PER_ELEMENT] = value;
-    }
-    getFriction(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._float32Ptr.array[(offset + 0x60) / Float32Array.BYTES_PER_ELEMENT];
-    }
-    setFriction(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._float32Ptr.array[(offset + 0x60) / Float32Array.BYTES_PER_ELEMENT] = value;
-    }
-    getRestitution(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._float32Ptr.array[(offset + 0x64) / Float32Array.BYTES_PER_ELEMENT];
-    }
-    setRestitution(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._float32Ptr.array[(offset + 0x64) / Float32Array.BYTES_PER_ELEMENT] = value;
-    }
-    getLinearSleepingThreshold(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._float32Ptr.array[(offset + 0x68) / Float32Array.BYTES_PER_ELEMENT];
-    }
-    setLinearSleepingThreshold(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._float32Ptr.array[(offset + 0x68) / Float32Array.BYTES_PER_ELEMENT] = value;
-    }
-    getAngularSleepingThreshold(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._float32Ptr.array[(offset + 0x6C) / Float32Array.BYTES_PER_ELEMENT];
-    }
-    setAngularSleepingThreshold(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._float32Ptr.array[(offset + 0x6C) / Float32Array.BYTES_PER_ELEMENT] = value;
-    }
-    getCollisionGroup(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._uint16Ptr.array[(offset + 0x70) / Uint16Array.BYTES_PER_ELEMENT];
-    }
-    setCollisionGroup(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._uint16Ptr.array[(offset + 0x70) / Uint16Array.BYTES_PER_ELEMENT] = value;
-    }
-    getCollisionMask(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return this._uint16Ptr.array[(offset + 0x72) / Uint16Array.BYTES_PER_ELEMENT];
-    }
-    setCollisionMask(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._uint16Ptr.array[(offset + 0x72) / Uint16Array.BYTES_PER_ELEMENT] = value;
-    }
-    getAdditionalDamping(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return !!this._uint8Ptr.array[(offset + 0x74) / Uint8Array.BYTES_PER_ELEMENT];
-    }
-    setAdditionalDamping(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._uint8Ptr.array[(offset + 0x74) / Uint8Array.BYTES_PER_ELEMENT] = +value;
-    }
-    getNoContactResponse(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return !!this._uint8Ptr.array[(offset + 0x75) / Uint8Array.BYTES_PER_ELEMENT];
-    }
-    setNoContactResponse(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._uint8Ptr.array[(offset + 0x75) / Uint8Array.BYTES_PER_ELEMENT] = +value;
-    }
-    getDisableDeactivation(n) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        return !!this._uint8Ptr.array[(offset + 0x76) / Uint8Array.BYTES_PER_ELEMENT];
-    }
-    setDisableDeactivation(n, value) {
-        this._nullCheck();
-        const offset = n * rigidBodyConstructionInfoList_size;
-        this._uint8Ptr.array[(offset + 0x76) / Uint8Array.BYTES_PER_ELEMENT] = +value;
-    }
-}
-
 ;// ./src/Test/Util/benchHelper.ts
 class BenchHelper {
     sampleCount;
@@ -3495,9 +3013,7 @@ class BenchHelper {
     }
 }
 
-;// ./src/Test/Scene/threadCountBench.ts
-
-
+;// ./src/Test/Scene/multiWorld600BodyBench.ts
 
 
 
@@ -3579,69 +3095,69 @@ class SceneBuilder {
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
         const rowCount = 4;
-        const columnCount = 2;
+        const columnCount = 8;
         const margin = 60;
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
         const boxShape = new PhysicsBoxShape(wasmInstance, new math_vector/* Vector3 */.Pq(1, 1, 1));
-        const bundles = [];
+        const bodies = [];
         for (let i = 0; i < rowCount; ++i)
             for (let j = 0; j < columnCount; ++j) {
                 const worldId = i * columnCount + j;
                 const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
                 const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
-                const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
-                for (let i = 0; i < rbCount; ++i) {
-                    rbInfoList.setShape(i, boxShape);
-                    const initialTransform = math_vector/* Matrix */.uq.TranslationToRef(xOffset, 1 + i * 2, zOffset, matrix);
-                    rbInfoList.setInitialTransform(i, initialTransform);
-                    rbInfoList.setFriction(i, 1.0);
-                    rbInfoList.setLinearDamping(i, 0.3);
-                    rbInfoList.setAngularDamping(i, 0.3);
+                const rbInfoList = [];
+                for (let k = 0; k < rbCount; ++k) {
+                    const rbInfo = new RigidBodyConstructionInfo(wasmInstance);
+                    rbInfo.shape = boxShape;
+                    const initialTransform = math_vector/* Matrix */.uq.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
+                    rbInfo.setInitialTransform(initialTransform);
+                    rbInfo.friction = 1.0;
+                    rbInfo.linearDamping = 0.3;
+                    rbInfo.angularDamping = 0.3;
+                    rbInfoList.push(rbInfo);
                 }
-                const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
-                world.addRigidBodyBundle(boxRigidBodyBundle, worldId);
-                for (let i = 0; i < rbCount; i += 2) {
-                    const indices = [i, i + 1];
-                    const constraint = new Generic6DofSpringConstraint(wasmInstance, boxRigidBodyBundle, indices, math_vector/* Matrix */.uq.Translation(0, -1.2, 0), math_vector/* Matrix */.uq.Translation(0, 1.2, 0), true);
+                for (let k = 0; k < rbCount; ++k) {
+                    const rbInfo = rbInfoList[k];
+                    const rigidBody = new RigidBody(wasmInstance, rbInfo);
+                    world.addRigidBody(rigidBody, worldId);
+                    bodies.push(rigidBody);
+                }
+                for (let k = 0; k < rbCount; k += 2) {
+                    const indices = [worldId * rbCount + k, worldId * rbCount + k + 1];
+                    const constraint = new Generic6DofSpringConstraint(wasmInstance, bodies[indices[0]], bodies[indices[1]], math_vector/* Matrix */.uq.Translation(0, -1.2, 0), math_vector/* Matrix */.uq.Translation(0, 1.2, 0), true);
                     constraint.setLinearLowerLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
                     constraint.setLinearUpperLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
                     constraint.setAngularLowerLimit(new math_vector/* Vector3 */.Pq(Math.PI / 4, 0, 0));
                     constraint.setAngularUpperLimit(new math_vector/* Vector3 */.Pq(0, 0, 0));
-                    for (let i = 0; i < 6; ++i) {
-                        constraint.enableSpring(i, true);
-                        constraint.setStiffness(i, 100);
-                        constraint.setDamping(i, 1);
+                    for (let l = 0; l < 6; ++l) {
+                        constraint.enableSpring(l, true);
+                        constraint.setStiffness(l, 100);
+                        constraint.setDamping(l, 1);
                     }
                     world.addConstraint(constraint, worldId, false);
                 }
-                bundles.push(boxRigidBodyBundle);
             }
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
         const benchHelper = new BenchHelper(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bundles.length; ++i) {
-                const bundle = bundles[i];
-                const startOffset = i * rbCount * 16;
-                for (let j = 0; j < rbCount; ++j) {
-                    bundle.getTransformMatrixToRef(j, matrix);
-                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
-                }
+            for (let i = 0; i < bodies.length; ++i) {
+                const body = bodies[i];
+                const startOffset = i * 16;
+                body.getTransformMatrixToRef(matrix);
+                matrix.copyToArray(rigidbodyMatrixBuffer, startOffset);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
             scene.render();
         });
-        benchHelper.sampleCount = 100;
         benchHelper.runBench();
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bundles.length; ++i) {
-                const bundle = bundles[i];
-                const startOffset = i * rbCount * 16;
-                for (let j = 0; j < rbCount; ++j) {
-                    bundle.getTransformMatrixToRef(j, matrix);
-                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
-                }
+            for (let i = 0; i < bodies.length; ++i) {
+                const body = bodies[i];
+                const startOffset = i * 16;
+                body.getTransformMatrixToRef(matrix);
+                matrix.copyToArray(rigidbodyMatrixBuffer, startOffset);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
         });
@@ -3705,7 +3221,7 @@ class BaseRuntime {
 __webpack_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3720);
 /* harmony import */ var _baseRuntime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1478);
-/* harmony import */ var _Scene_threadCountBench__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5362);
+/* harmony import */ var _Scene_multiWorld600BodyBench__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5061);
 
 
 
@@ -3730,7 +3246,7 @@ const engine = new _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__/*
 _baseRuntime__WEBPACK_IMPORTED_MODULE_1__/* .BaseRuntime */ .y.Create({
     canvas,
     engine,
-    sceneBuilder: new _Scene_threadCountBench__WEBPACK_IMPORTED_MODULE_2__/* .SceneBuilder */ .u()
+    sceneBuilder: new _Scene_multiWorld600BodyBench__WEBPACK_IMPORTED_MODULE_2__/* .SceneBuilder */ .u()
 }).then(runtime => runtime.run());
 
 __webpack_async_result__();
