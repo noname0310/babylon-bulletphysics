@@ -1,4 +1,4 @@
-use glam::{Vec3, Vec3A};
+use glam::{Mat4, Vec3, Vec3A, Vec4};
 
 #[link(name = "bullet")]
 extern "C" {
@@ -43,24 +43,24 @@ pub(crate) struct MotionState {
 }
 
 impl MotionState {
-    pub(crate) fn new(transform: &glam::Mat4) -> Self {
+    pub(crate) fn new(transform: &Mat4) -> Self {
         let transform_buffer = transform.as_ref();
         Self {
             ptr: unsafe { bw_create_motion_state(transform_buffer.as_ptr()) },
         }
     }
 
-    pub(crate) fn get_transform(&self) -> glam::Mat4 {
+    pub(crate) fn get_transform(&self) -> Mat4 {
         let raw = unsafe { &*(self.ptr as *const MotionStateRawRead) };
-        glam::Mat4::from_cols(
-            glam::Vec4::new(raw.matrix_rowx.x, raw.matrix_rowy.x, raw.matrix_rowz.x, 0.0),
-            glam::Vec4::new(raw.matrix_rowx.y, raw.matrix_rowy.y, raw.matrix_rowz.y, 0.0),
-            glam::Vec4::new(raw.matrix_rowx.z, raw.matrix_rowy.z, raw.matrix_rowz.z, 0.0),
-            glam::Vec4::new(raw.translation.x, raw.translation.y, raw.translation.z, 1.0),
+        Mat4::from_cols(
+            Vec4::new(raw.matrix_rowx.x, raw.matrix_rowy.x, raw.matrix_rowz.x, 0.0),
+            Vec4::new(raw.matrix_rowx.y, raw.matrix_rowy.y, raw.matrix_rowz.y, 0.0),
+            Vec4::new(raw.matrix_rowx.z, raw.matrix_rowy.z, raw.matrix_rowz.z, 0.0),
+            Vec4::new(raw.translation.x, raw.translation.y, raw.translation.z, 1.0),
         )
     }
 
-    pub(crate) fn set_transform(&mut self, transform: &glam::Mat4) {
+    pub(crate) fn set_transform(&mut self, transform: &Mat4) {
         let raw = unsafe { &mut *(self.ptr as *mut MotionStateRawWrite) };
         raw.matrix_rowx = Vec3::new(transform.x_axis.x, transform.y_axis.x, transform.z_axis.x);
         raw.matrix_rowy = Vec3::new(transform.x_axis.y, transform.y_axis.y, transform.z_axis.y);
@@ -112,7 +112,7 @@ impl MotionStateBundle {
         unsafe { motion_states_ptr.add(index) as *const std::ffi::c_void }
     }
 
-    pub(crate) fn get_transform(&self, index: usize) -> glam::Mat4 {
+    pub(crate) fn get_transform(&self, index: usize) -> Mat4 {
         let motion_states_ptr = unsafe {
             bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut MotionStateRawRead
         };
@@ -120,15 +120,15 @@ impl MotionStateBundle {
         let motion_state_ptr = unsafe { motion_states_ptr.add(index) };
         let raw = unsafe { &*motion_state_ptr };
         
-        glam::Mat4::from_cols(
-            glam::Vec4::new(raw.matrix_rowx.x, raw.matrix_rowy.x, raw.matrix_rowz.x, 0.0),
-            glam::Vec4::new(raw.matrix_rowx.y, raw.matrix_rowy.y, raw.matrix_rowz.y, 0.0),
-            glam::Vec4::new(raw.matrix_rowx.z, raw.matrix_rowy.z, raw.matrix_rowz.z, 0.0),
-            glam::Vec4::new(raw.translation.x, raw.translation.y, raw.translation.z, 1.0),
+        Mat4::from_cols(
+            Vec4::new(raw.matrix_rowx.x, raw.matrix_rowy.x, raw.matrix_rowz.x, 0.0),
+            Vec4::new(raw.matrix_rowx.y, raw.matrix_rowy.y, raw.matrix_rowz.y, 0.0),
+            Vec4::new(raw.matrix_rowx.z, raw.matrix_rowy.z, raw.matrix_rowz.z, 0.0),
+            Vec4::new(raw.translation.x, raw.translation.y, raw.translation.z, 1.0),
         )
     }
 
-    pub(crate) fn set_transform(&mut self, index: usize, transform: &glam::Mat4) {
+    pub(crate) fn set_transform(&mut self, index: usize, transform: &Mat4) {
         let motion_states_ptr = unsafe {
             bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut MotionStateRawWrite
         };
