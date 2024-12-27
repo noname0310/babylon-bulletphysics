@@ -1,7 +1,7 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 
 import { BaseRuntime } from "./baseRuntime";
-import { SceneBuilder } from "./Scene/threadCountBench";
+import { SceneBuilder } from "./Scene/multiWorld600BodyBench";
 
 await new Promise(resolve => window.onload = resolve);
 
