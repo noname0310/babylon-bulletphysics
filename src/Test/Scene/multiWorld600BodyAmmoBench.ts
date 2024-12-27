@@ -80,7 +80,9 @@ export class SceneBuilder implements ISceneBuilder {
             shadowGenerator.addShadowCaster(ground);
             ground.receiveShadows = true;
 
-            const groundShape = new ammo.btStaticPlaneShape(new ammo.btVector3(0, 0, -1), 0);
+            const planeNormal = new ammo.btVector3(0, 0, -1);
+            const groundShape = new ammo.btStaticPlaneShape(planeNormal, 0);
+            ammo.destroy(planeNormal);
             const motionState = new ammo.btDefaultMotionState();
             const groundRbInfo = new ammo.btRigidBodyConstructionInfo(0, motionState, groundShape);
             Matrix.FromQuaternionToRef(ground.rotationQuaternion, matrix);
@@ -114,7 +116,9 @@ export class SceneBuilder implements ISceneBuilder {
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
 
-        const boxShape = new ammo.btBoxShape(new ammo.btVector3(1, 1, 1));
+        const boxHalfExtents = new ammo.btVector3(1, 1, 1);
+        const boxShape = new ammo.btBoxShape(boxHalfExtents);
+        ammo.destroy(boxHalfExtents);
 
         const bodies: Ammo.btRigidBody[] = [];
 
@@ -150,6 +154,7 @@ export class SceneBuilder implements ISceneBuilder {
                 world.addRigidBody(rigidBody);
                 bodies.push(rigidBody);
             }
+            for (let k = 0; k < rbInfoList.length; ++k) ammo.destroy(rbInfoList[k]);
 
             for (let k = 0; k < rbCount; k += 2) {
                 const indices = [worldId * rbCount + k, worldId * rbCount + k + 1] as const;
@@ -161,10 +166,16 @@ export class SceneBuilder implements ISceneBuilder {
                 ammo.destroy(transform1);
                 ammo.destroy(transform2);
 
-                constraint.setLinearLowerLimit(new ammo.btVector3(0, 0, 0));
-                constraint.setLinearUpperLimit(new ammo.btVector3(0, 0, 0));
-                constraint.setAngularLowerLimit(new ammo.btVector3(Math.PI / 4, 0, 0));
-                constraint.setAngularUpperLimit(new ammo.btVector3(0, 0, 0));
+                const limit = new ammo.btVector3(0, 0, 0);
+                limit.setValue(0, 0, 0);
+                constraint.setLinearLowerLimit(limit);
+                limit.setValue(0, 0, 0);
+                constraint.setLinearUpperLimit(limit);
+                limit.setValue(Math.PI / 4, 0, 0);
+                constraint.setAngularLowerLimit(limit);
+                limit.setValue(0, 0, 0);
+                constraint.setAngularUpperLimit(limit);
+                ammo.destroy(limit);
                 for (let l = 0; l < 6; ++l) {
                     constraint.enableSpring(l, true);
                     constraint.setStiffness(l, 100);
