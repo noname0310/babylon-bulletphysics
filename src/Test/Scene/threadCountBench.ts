@@ -15,7 +15,9 @@ import { Scene } from "@babylonjs/core/scene";
 
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
-import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
+import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
+import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
+// import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
 import { MotionType } from "@/Runtime/motionType";
 import { MultiPhysicsWorld } from "@/Runtime/multiPhysicsWorld";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
@@ -25,6 +27,7 @@ import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
 import { RigidBodyConstructionInfoList } from "@/Runtime/rigidBodyConstructionInfoList";
 
 import type { ISceneBuilder } from "../baseRuntime";
+import { BenchHelper } from "../Util/benchHelper";
 
 export class SceneBuilder implements ISceneBuilder {
     public async build(_canvas: HTMLCanvasElement, engine: AbstractEngine): Promise<Scene> {
@@ -66,7 +69,12 @@ export class SceneBuilder implements ISceneBuilder {
 
         // Inspector.Show(scene, { enablePopup: false });
 
-        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
+        const threadCount = parseInt(prompt("Thread count", "2")!);
+        console.log("Thread count:", threadCount);
+
+        const wasmInstance = threadCount === 1
+            ? await getBulletWasmInstance(new BulletWasmInstanceTypeSR())
+            : await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
         const world = new MultiPhysicsWorld(wasmInstance);
 
         const matrix = new Matrix();
@@ -94,7 +102,7 @@ export class SceneBuilder implements ISceneBuilder {
         baseBox.receiveShadows = true;
 
         const rowCount = 4;
-        const columnCount = 8;
+        const columnCount = 2;
         const margin = 60;
 
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
@@ -141,30 +149,21 @@ export class SceneBuilder implements ISceneBuilder {
 
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
 
-        if ((globalThis as any).benchmark) {
-            let fpsSum = 0;
-            const sampleCount = 600;
-            for (let i = 0; i < sampleCount; ++i) {
-                const start = performance.now();
-                world.stepSimulation(1 / 60, 10, 1 / 60);
-                for (let i = 0; i < bundles.length; ++i) {
-                    const bundle = bundles[i];
-                    const startOffset = i * rbCount * 16;
-                    for (let j = 0; j < rbCount; ++j) {
-                        bundle.getTransformMatrixToRef(j, matrix);
-                        matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
-                    }
+        const benchHelper = new BenchHelper(() => {
+            world.stepSimulation(1 / 60, 10, 1 / 60);
+            for (let i = 0; i < bundles.length; ++i) {
+                const bundle = bundles[i];
+                const startOffset = i * rbCount * 16;
+                for (let j = 0; j < rbCount; ++j) {
+                    bundle.getTransformMatrixToRef(j, matrix);
+                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
                 }
-                baseBox.thinInstanceBufferUpdated("matrix");
-                scene.render();
-                const end = performance.now();
-                const fps = 1000 / (end - start);
-                fpsSum += fps;
-                console.log("FPS:", fps);
             }
-            console.log("Average FPS:", fpsSum / sampleCount);
-            document.write(`Average FPS: ${fpsSum / sampleCount}`);
-        }
+            baseBox.thinInstanceBufferUpdated("matrix");
+            scene.render();
+        });
+        benchHelper.sampleCount = 100;
+        benchHelper.runBench();
 
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);

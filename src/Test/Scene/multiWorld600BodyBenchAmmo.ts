@@ -17,6 +17,7 @@ import { Scene } from "@babylonjs/core/scene";
 import Ammo from "@/External/ammo.wasm";
 
 import type { ISceneBuilder } from "../baseRuntime";
+import { BenchHelper } from "../Util/benchHelper";
 
 export class SceneBuilder implements ISceneBuilder {
     public async build(_canvas: HTMLCanvasElement, engine: AbstractEngine): Promise<Scene> {
@@ -164,10 +165,10 @@ export class SceneBuilder implements ISceneBuilder {
                 constraint.setLinearUpperLimit(new ammo.btVector3(0, 0, 0));
                 constraint.setAngularLowerLimit(new ammo.btVector3(Math.PI / 4, 0, 0));
                 constraint.setAngularUpperLimit(new ammo.btVector3(0, 0, 0));
-                for (let i = 0; i < 6; ++i) {
-                    constraint.enableSpring(i, true);
-                    constraint.setStiffness(i, 100);
-                    constraint.setDamping(i, 1);
+                for (let l = 0; l < 6; ++l) {
+                    constraint.enableSpring(l, true);
+                    constraint.setStiffness(l, 100);
+                    constraint.setDamping(l, 1);
                 }
                 world.addConstraint(constraint, true);
             }
@@ -180,13 +181,8 @@ export class SceneBuilder implements ISceneBuilder {
         const vector = new Vector3();
         const quaternion = new Quaternion();
 
-        const sampledFps: number[] = [];
-        const sampleCount = 600;
-        for (let i = 0; i < sampleCount; ++i) {
-            const start = performance.now();
-            for (let i = 0; i < worlds.length; ++i) {
-                worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
-            }
+        const benchHelper = new BenchHelper(() => {
+            for (let i = 0; i < worlds.length; ++i) worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
                 const body = bodies[i];
                 body.getMotionState().getWorldTransform(transform);
@@ -202,24 +198,8 @@ export class SceneBuilder implements ISceneBuilder {
             }
             baseBox.thinInstanceBufferUpdated("matrix");
             scene.render();
-            const end = performance.now();
-            const fps = 1000 / (end - start);
-            sampledFps.push(fps);
-        }
-        let averageFps = 0;
-        let result = "";
-        for (let i = 0; i < sampleCount; ++i) {
-            result += `(${i}, ${sampledFps[i]})`;
-            if (i !== sampleCount - 1) {
-                result += ", ";
-            }
-            averageFps += sampledFps[i];
-        }
-        console.log(`Result: ${result}, Average: ${averageFps / sampleCount}`);
-
-        document.write(`Result: ${result}, Average: ${averageFps / sampleCount}`);
-
-        // document.write(`Average FPS: [${result}]`);
+        });
+        benchHelper.runBench();
 
         scene.onBeforeRenderObservable.add(() => {
             for (let i = 0; i < worlds.length; ++i) {

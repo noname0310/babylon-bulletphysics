@@ -15,8 +15,7 @@ import { Scene } from "@babylonjs/core/scene";
 
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
-import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
-// import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
+import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { MotionType } from "@/Runtime/motionType";
 import { MultiPhysicsWorld } from "@/Runtime/multiPhysicsWorld";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
@@ -26,6 +25,7 @@ import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
 import { RigidBodyConstructionInfoList } from "@/Runtime/rigidBodyConstructionInfoList";
 
 import type { ISceneBuilder } from "../baseRuntime";
+import { BenchHelper } from "../Util/benchHelper";
 
 export class SceneBuilder implements ISceneBuilder {
     public async build(_canvas: HTMLCanvasElement, engine: AbstractEngine): Promise<Scene> {
@@ -67,7 +67,7 @@ export class SceneBuilder implements ISceneBuilder {
 
         // Inspector.Show(scene, { enablePopup: false });
 
-        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), 2);
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
         const world = new MultiPhysicsWorld(wasmInstance);
 
         const matrix = new Matrix();
@@ -95,7 +95,7 @@ export class SceneBuilder implements ISceneBuilder {
         baseBox.receiveShadows = true;
 
         const rowCount = 4;
-        const columnCount = 2;
+        const columnCount = 8;
         const margin = 60;
 
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
@@ -111,28 +111,28 @@ export class SceneBuilder implements ISceneBuilder {
             const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
 
             const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
-            for (let i = 0; i < rbCount; ++i) {
-                rbInfoList.setShape(i, boxShape);
-                const initialTransform = Matrix.TranslationToRef(xOffset, 1 + i * 2, zOffset, matrix);
-                rbInfoList.setInitialTransform(i, initialTransform);
-                rbInfoList.setFriction(i, 1.0);
-                rbInfoList.setLinearDamping(i, 0.3);
-                rbInfoList.setAngularDamping(i, 0.3);
+            for (let k = 0; k < rbCount; ++k) {
+                rbInfoList.setShape(k, boxShape);
+                const initialTransform = Matrix.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
+                rbInfoList.setInitialTransform(k, initialTransform);
+                rbInfoList.setFriction(k, 1.0);
+                rbInfoList.setLinearDamping(k, 0.3);
+                rbInfoList.setAngularDamping(k, 0.3);
             }
             const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
             world.addRigidBodyBundle(boxRigidBodyBundle, worldId);
 
-            for (let i = 0; i < rbCount; i += 2) {
-                const indices = [i, i + 1] as const;
+            for (let k = 0; k < rbCount; k += 2) {
+                const indices = [k, k + 1] as const;
                 const constraint = new Generic6DofSpringConstraint(wasmInstance, boxRigidBodyBundle, indices, Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
                 constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
                 constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
                 constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));
                 constraint.setAngularUpperLimit(new Vector3(0, 0, 0));
-                for (let i = 0; i < 6; ++i) {
-                    constraint.enableSpring(i, true);
-                    constraint.setStiffness(i, 100);
-                    constraint.setDamping(i, 1);
+                for (let l = 0; l < 6; ++l) {
+                    constraint.enableSpring(l, true);
+                    constraint.setStiffness(l, 100);
+                    constraint.setDamping(l, 1);
                 }
                 world.addConstraint(constraint, worldId, false);
             }
@@ -142,10 +142,7 @@ export class SceneBuilder implements ISceneBuilder {
 
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
 
-        const sampledFps: number[] = [];
-        const sampleCount = 100;
-        for (let i = 0; i < sampleCount; ++i) {
-            const start = performance.now();
+        const benchHelper = new BenchHelper(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bundles.length; ++i) {
                 const bundle = bundles[i];
@@ -157,22 +154,8 @@ export class SceneBuilder implements ISceneBuilder {
             }
             baseBox.thinInstanceBufferUpdated("matrix");
             scene.render();
-            const end = performance.now();
-            const fps = 1000 / (end - start);
-            sampledFps.push(fps);
-        }
-        let averageFps = 0;
-        let result = "";
-        for (let i = 0; i < sampleCount; ++i) {
-            result += `(${i}, ${sampledFps[i]})`;
-            if (i !== sampleCount - 1) {
-                result += ", ";
-            }
-            averageFps += sampledFps[i];
-        }
-        console.log(`Result: ${result}, Average: ${averageFps / sampleCount}`);
-
-        document.write(`Result: ${result}, Average: ${averageFps / sampleCount}`);
+        });
+        benchHelper.runBench();
 
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
