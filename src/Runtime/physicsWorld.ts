@@ -2,18 +2,19 @@ import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { Constraint } from "./constraint";
+import type { IRuntime } from "./IRuntime";
 import type { RigidBody } from "./rigidBody";
 import type { RigidBodyBundle } from "./rigidBodyBundle";
 
 class PhysicsWorldInner {
-    private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
+    private readonly _runtime: WeakRef<IRuntime>;
     private _ptr: number;
     private readonly _rigidBodyReferences: Set<RigidBody>;
     private readonly _rigidBodyBundleReferences: Set<RigidBodyBundle>;
     private readonly _constraintReferences: Set<Constraint>;
 
-    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number) {
-        this._wasmInstance = wasmInstance;
+    public constructor(runtime: WeakRef<IRuntime>, ptr: number) {
+        this._runtime = runtime;
         this._ptr = ptr;
         this._rigidBodyReferences = new Set<RigidBody>();
         this._rigidBodyBundleReferences = new Set<RigidBodyBundle>();
@@ -25,7 +26,11 @@ class PhysicsWorldInner {
             return;
         }
 
-        this._wasmInstance.deref()?.destroyPhysicsWorld(this._ptr);
+        const runtime = this._runtime.deref();
+        if (runtime !== undefined) {
+            runtime.lock.wait();
+            runtime.wasmInstance.destroyPhysicsWorld(this._ptr);
+        }
         this._ptr = 0;
 
         for (const rigidBody of this._rigidBodyReferences) {
@@ -110,21 +115,21 @@ function physicsWorldFinalizer(inner: PhysicsWorldInner): void {
 const physicsWorldRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<PhysicsWorldInner>>();
 
 export class PhysicsWorld {
-    private readonly _wasmInstance: BulletWasmInstance;
+    private readonly _runtime: IRuntime;
 
     private readonly _inner: PhysicsWorldInner;
 
-    public constructor(wasmInstance: BulletWasmInstance) {
-        this._wasmInstance = wasmInstance;
+    public constructor(runtime: IRuntime) {
+        this._runtime = runtime;
 
-        const ptr = wasmInstance.createPhysicsWorld();
+        const ptr = runtime.wasmInstance.createPhysicsWorld();
 
-        this._inner = new PhysicsWorldInner(new WeakRef(wasmInstance), ptr);
+        this._inner = new PhysicsWorldInner(new WeakRef(runtime), ptr);
 
-        let registry = physicsWorldRegistryMap.get(wasmInstance);
+        let registry = physicsWorldRegistryMap.get(runtime.wasmInstance);
         if (registry === undefined) {
             registry = new FinalizationRegistry(physicsWorldFinalizer);
-            physicsWorldRegistryMap.set(wasmInstance, registry);
+            physicsWorldRegistryMap.set(runtime.wasmInstance, registry);
         }
 
         registry.register(this, this._inner, this);
@@ -137,7 +142,7 @@ export class PhysicsWorld {
 
         this._inner.dispose();
 
-        const registry = physicsWorldRegistryMap.get(this._wasmInstance);
+        const registry = physicsWorldRegistryMap.get(this._runtime.wasmInstance);
         registry?.unregister(this);
     }
 
@@ -153,18 +158,18 @@ export class PhysicsWorld {
 
     public setGravity(gravity: Vector3): void {
         this._nullCheck();
-        this._wasmInstance.physicsWorldSetGravity(this._inner.ptr, gravity.x, gravity.y, gravity.z);
+        this._runtime.wasmInstance.physicsWorldSetGravity(this._inner.ptr, gravity.x, gravity.y, gravity.z);
     }
 
     public stepSimulation(timeStep: number, maxSubSteps: number, fixedTimeStep: number): void {
         this._nullCheck();
-        this._wasmInstance.physicsWorldStepSimulation(this._inner.ptr, timeStep, maxSubSteps, fixedTimeStep);
+        this._runtime.wasmInstance.physicsWorldStepSimulation(this._inner.ptr, timeStep, maxSubSteps, fixedTimeStep);
     }
 
     public addRigidBody(rigidBody: RigidBody): boolean {
         this._nullCheck();
         if (this._inner.addRigidBodyReference(rigidBody)) {
-            this._wasmInstance.physicsWorldAddRigidBody(this._inner.ptr, rigidBody.ptr);
+            this._runtime.wasmInstance.physicsWorldAddRigidBody(this._inner.ptr, rigidBody.ptr);
             return true;
         }
         return false;
@@ -173,7 +178,7 @@ export class PhysicsWorld {
     public removeRigidBody(rigidBody: RigidBody): boolean {
         this._nullCheck();
         if (this._inner.removeRigidBodyReference(rigidBody)) {
-            this._wasmInstance.physicsWorldRemoveRigidBody(this._inner.ptr, rigidBody.ptr);
+            this._runtime.wasmInstance.physicsWorldRemoveRigidBody(this._inner.ptr, rigidBody.ptr);
             return true;
         }
         return false;
@@ -182,7 +187,7 @@ export class PhysicsWorld {
     public addRigidBodyBundle(rigidBodyBundle: RigidBodyBundle): boolean {
         this._nullCheck();
         if (this._inner.addRigidBodyBundleReference(rigidBodyBundle)) {
-            this._wasmInstance.physicsWorldAddRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
+            this._runtime.wasmInstance.physicsWorldAddRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
             return true;
         }
         return false;
@@ -191,7 +196,7 @@ export class PhysicsWorld {
     public removeRigidBodyBundle(rigidBodyBundle: RigidBodyBundle): boolean {
         this._nullCheck();
         if (this._inner.removeRigidBodyBundleReference(rigidBodyBundle)) {
-            this._wasmInstance.physicsWorldRemoveRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
+            this._runtime.wasmInstance.physicsWorldRemoveRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
             return true;
         }
         return false;
@@ -200,7 +205,7 @@ export class PhysicsWorld {
     public addConstraint(constraint: Constraint, disableCollisionsBetweenLinkedBodies: boolean): boolean {
         this._nullCheck();
         if (this._inner.addConstraintReference(constraint)) {
-            this._wasmInstance.physicsWorldAddConstraint(this._inner.ptr, constraint.ptr, disableCollisionsBetweenLinkedBodies);
+            this._runtime.wasmInstance.physicsWorldAddConstraint(this._inner.ptr, constraint.ptr, disableCollisionsBetweenLinkedBodies);
             return true;
         }
         return false;
@@ -209,7 +214,7 @@ export class PhysicsWorld {
     public removeConstraint(constraint: Constraint): boolean {
         this._nullCheck();
         if (this._inner.removeConstraintReference(constraint)) {
-            this._wasmInstance.physicsWorldRemoveConstraint(this._inner.ptr, constraint.ptr);
+            this._runtime.wasmInstance.physicsWorldRemoveConstraint(this._inner.ptr, constraint.ptr);
             return true;
         }
         return false;

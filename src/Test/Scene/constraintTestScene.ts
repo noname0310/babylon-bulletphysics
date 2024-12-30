@@ -18,6 +18,7 @@ import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { MotionType } from "@/Runtime/motionType";
+import { NullPhysicsRuntime } from "@/Runtime/nullPhysicsRuntime";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
 import { PhysicsWorld } from "@/Runtime/physicsWorld";
 import { RigidBody } from "@/Runtime/rigidBody";
@@ -68,7 +69,8 @@ export class SceneBuilder implements ISceneBuilder {
         // Inspector.Show(scene, { enablePopup: false });
 
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
-        const world = new PhysicsWorld(wasmInstance);
+        const runtime = new NullPhysicsRuntime(wasmInstance);
+        const world = new PhysicsWorld(runtime);
 
         const matrix = new Matrix();
 
@@ -78,14 +80,14 @@ export class SceneBuilder implements ISceneBuilder {
             shadowGenerator.addShadowCaster(ground);
             ground.receiveShadows = true;
 
-            const groundShape = new PhysicsStaticPlaneShape(wasmInstance, new Vector3(0, 0, -1), 0);
+            const groundShape = new PhysicsStaticPlaneShape(runtime, new Vector3(0, 0, -1), 0);
             const groundRbInfo = new RigidBodyConstructionInfo(wasmInstance);
             groundRbInfo.shape = groundShape;
             Matrix.FromQuaternionToRef(ground.rotationQuaternion, matrix);
             groundRbInfo.setInitialTransform(matrix);
             groundRbInfo.motionType = MotionType.Static;
 
-            const groundRigidBody = new RigidBody(wasmInstance, groundRbInfo);
+            const groundRigidBody = new RigidBody(runtime, groundRbInfo);
             world.addRigidBody(groundRigidBody);
         }
 
@@ -98,7 +100,7 @@ export class SceneBuilder implements ISceneBuilder {
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
 
-        const boxShape = new PhysicsBoxShape(wasmInstance, new Vector3(1, 1, 1));
+        const boxShape = new PhysicsBoxShape(runtime, new Vector3(1, 1, 1));
         const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
         for (let i = 0; i < rbCount; ++i) {
             rbInfoList.setShape(i, boxShape);
@@ -108,12 +110,12 @@ export class SceneBuilder implements ISceneBuilder {
             rbInfoList.setLinearDamping(i, 0.3);
             rbInfoList.setAngularDamping(i, 0.3);
         }
-        const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
+        const boxRigidBodyBundle = new RigidBodyBundle(runtime, rbInfoList);
         world.addRigidBodyBundle(boxRigidBodyBundle);
 
         for (let i = 0; i < rbCount; i += 2) {
             const indices = [i, i + 1] as const;
-            const constraint = new Generic6DofSpringConstraint(wasmInstance, boxRigidBodyBundle, indices, Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
+            const constraint = new Generic6DofSpringConstraint(runtime, boxRigidBodyBundle, indices, Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
             constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
             constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
             constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));

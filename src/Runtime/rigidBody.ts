@@ -2,6 +2,7 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import type { IRuntime } from "./IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfo } from "./rigidBodyConstructionInfo";
@@ -47,7 +48,9 @@ class RigidBodyInner {
             return;
         }
 
+        // this operation is thread-safe because the rigid body is not belong to any physics world
         this._wasmInstance.deref()?.destroyRigidBody(this._ptr);
+
         this._ptr = 0;
         this._shapeReference!.removeReference();
         this._shapeReference = null;
@@ -64,6 +67,10 @@ class RigidBodyInner {
     public removeReference(): void {
         this._referenceCount -= 1;
     }
+
+    public get hasReferences(): boolean {
+        return 0 < this._referenceCount;
+    }
 }
 
 function rigidBodyFinalizer(inner: RigidBodyInner): void {
@@ -73,7 +80,7 @@ function rigidBodyFinalizer(inner: RigidBodyInner): void {
 const physicsRigidBodyRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<RigidBodyInner>>();
 
 export class RigidBody {
-    private readonly _wasmInstance: BulletWasmInstance;
+    public readonly runtime: IRuntime;
 
     private readonly _motionStatePtr: IWasmTypedArray<Float32Array>;
 
@@ -81,11 +88,11 @@ export class RigidBody {
 
     private _worldReference: Nullable<object>;
 
-    public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfo);
+    public constructor(runtime: IRuntime, info: RigidBodyConstructionInfo);
 
-    public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfoList, n: number);
+    public constructor(runtime: IRuntime, info: RigidBodyConstructionInfoList, n: number);
 
-    public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfo | RigidBodyConstructionInfoList, n?: number) {
+    public constructor(runtime: IRuntime, info: RigidBodyConstructionInfo | RigidBodyConstructionInfoList, n?: number) {
         const infoPtr = n !== undefined ? (info as RigidBodyConstructionInfoList).getPtr(n) : (info as RigidBodyConstructionInfo).ptr;
 
         if (infoPtr === 0) {
@@ -95,21 +102,22 @@ export class RigidBody {
         let shape: Nullable<PhysicsShape>;
         if (n !== undefined) {
             shape = (info as RigidBodyConstructionInfoList).getShape(n);
-            if (shape === null) {
-                throw new Error("Cannot create rigid body with null shape");
-            }
         } else {
             shape = (info as RigidBodyConstructionInfo).shape;
-            if (shape === null) {
-                throw new Error("Cannot create rigid body with null shape");
-            }
+        }
+        if (shape === null) {
+            throw new Error("Cannot create rigid body with null shape");
+        }
+        if (shape.runtime !== runtime) {
+            throw new Error("Cannot create rigid body with shapes from different runtimes");
         }
 
-        this._wasmInstance = wasmInstance;
+        this.runtime = runtime;
+        const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBody(infoPtr);
         const motionStatePtr = wasmInstance.rigidBodyGetMotionStatePtr(ptr);
         this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, 80 / Float32Array.BYTES_PER_ELEMENT);
-        this._inner = new RigidBodyInner(new WeakRef(wasmInstance), ptr, shape);
+        this._inner = new RigidBodyInner(new WeakRef(runtime.wasmInstance), ptr, shape);
         this._worldReference = null;
 
         let registry = physicsRigidBodyRegistryMap.get(wasmInstance);
@@ -128,7 +136,7 @@ export class RigidBody {
 
         this._inner.dispose();
 
-        const registry = physicsRigidBodyRegistryMap.get(this._wasmInstance);
+        const registry = physicsRigidBodyRegistryMap.get(this.runtime.wasmInstance);
         registry?.unregister(this);
     }
 
@@ -171,16 +179,25 @@ export class RigidBody {
 
     public makeKinematic(): void {
         this._nullCheck();
-        this._wasmInstance.rigidBodyMakeKinematic(this._inner.ptr);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyMakeKinematic(this._inner.ptr);
     }
 
     public restoreDynamic(): void {
         this._nullCheck();
-        this._wasmInstance.rigidBodyRestoreDynamic(this._inner.ptr);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyRestoreDynamic(this._inner.ptr);
     }
 
     public getTransformMatrixToRef(result: Matrix): Matrix {
         this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
         const motionStatePtr = this._motionStatePtr.array;
         result.setRowFromFloats(0, motionStatePtr[4], motionStatePtr[8], motionStatePtr[12], 0);
         result.setRowFromFloats(1, motionStatePtr[5], motionStatePtr[9], motionStatePtr[13], 0);
@@ -191,6 +208,9 @@ export class RigidBody {
 
     public setTransformMatrix(matrix: Matrix): void {
         this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
         const motionStatePtr = this._motionStatePtr.array;
         motionStatePtr[4] = matrix.m[0];
         motionStatePtr[8] = matrix.m[1];

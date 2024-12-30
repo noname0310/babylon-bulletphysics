@@ -1,9 +1,10 @@
+import type { IWasmSpinLock } from "./IWasmSpinLock";
 import type { IWasmTypedArray } from "./IWasmTypedArray";
 
 /**
  * Spinlock for WASM runtime synchronization
  */
-export class WasmSpinlock {
+export class WasmSpinlock implements IWasmSpinLock {
     private readonly _lock: IWasmTypedArray<Uint8Array>;
 
     /**

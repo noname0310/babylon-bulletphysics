@@ -2,6 +2,7 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import type { IRuntime } from "./IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
@@ -33,7 +34,9 @@ class RigidBodyBundleInner {
             return;
         }
 
+        // this operation is thread-safe because the rigid body bundle is not belong to any physics world
         this._wasmInstance.deref()?.destroyRigidBodyBundle(this._ptr);
+
         this._ptr = 0;
         for (const shape of this._shapeReferences) {
             shape.removeReference();
@@ -52,6 +55,10 @@ class RigidBodyBundleInner {
     public removeReference(): void {
         this._referenceCount -= 1;
     }
+
+    public get hasReferences(): boolean {
+        return 0 < this._referenceCount;
+    }
 }
 
 function rigidBodyBundleFinalizer(inner: RigidBodyBundleInner): void {
@@ -61,7 +68,7 @@ function rigidBodyBundleFinalizer(inner: RigidBodyBundleInner): void {
 const physicsRigidBodyBundleRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<RigidBodyBundleInner>>();
 
 export class RigidBodyBundle {
-    private readonly _wasmInstance: BulletWasmInstance;
+    public readonly runtime: IRuntime;
 
     private readonly _motionStatesPtr: IWasmTypedArray<Float32Array>;
 
@@ -70,7 +77,7 @@ export class RigidBodyBundle {
 
     private _worldReference: Nullable<object>;
 
-    public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfoList) {
+    public constructor(runtime: IRuntime, info: RigidBodyConstructionInfoList) {
         if (info.ptr === 0) {
             throw new Error("Cannot create rigid body bundle with null pointer");
         }
@@ -81,14 +88,18 @@ export class RigidBodyBundle {
             if (shape === null) {
                 throw new Error("Cannot create rigid body bundle with null shape");
             }
+            if (shape.runtime !== runtime) {
+                throw new Error("Cannot create rigid body bundle with shapes from different runtimes");
+            }
             shapeReferences.add(shape);
         }
 
-        this._wasmInstance = wasmInstance;
+        this.runtime = runtime;
+        const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBodyBundle(info.ptr, count);
         const motionStatesPtr = wasmInstance.rigidBodyBundleGetMotionStatesPtr(ptr);
         this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * motionStateSize / Float32Array.BYTES_PER_ELEMENT);
-        this._inner = new RigidBodyBundleInner(new WeakRef(wasmInstance), ptr, shapeReferences);
+        this._inner = new RigidBodyBundleInner(new WeakRef(runtime.wasmInstance), ptr, shapeReferences);
         this._count = count;
         this._worldReference = null;
 
@@ -108,7 +119,7 @@ export class RigidBodyBundle {
 
         this._inner.dispose();
 
-        const registry = physicsRigidBodyBundleRegistryMap.get(this._wasmInstance);
+        const registry = physicsRigidBodyBundleRegistryMap.get(this.runtime.wasmInstance);
         registry?.unregister(this);
     }
 
@@ -159,7 +170,10 @@ export class RigidBodyBundle {
             throw new RangeError("Index out of range");
         }
 
-        this._wasmInstance.rigidBodyBundleMakeKinematic(this._inner.ptr, index);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleMakeKinematic(this._inner.ptr, index);
     }
 
     public restoreDynamic(index: number): void {
@@ -168,7 +182,10 @@ export class RigidBodyBundle {
             throw new RangeError("Index out of range");
         }
 
-        this._wasmInstance.rigidBodyBundleRestoreDynamic(this._inner.ptr, index);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleRestoreDynamic(this._inner.ptr, index);
     }
 
     public getTransformMatrixToRef(index: number, result: Matrix): Matrix {
@@ -177,6 +194,9 @@ export class RigidBodyBundle {
             throw new RangeError("Index out of range");
         }
 
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
         const motionStatesPtr = this._motionStatesPtr.array;
         const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
         result.setRowFromFloats(0, motionStatesPtr[offset + 4], motionStatesPtr[offset + 8], motionStatesPtr[offset + 12], 0);
@@ -192,6 +212,9 @@ export class RigidBodyBundle {
             throw new RangeError("Index out of range");
         }
 
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
         const motionStatesPtr = this._motionStatesPtr.array;
         const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
         motionStatesPtr[offset + 4] = matrix.m[0];

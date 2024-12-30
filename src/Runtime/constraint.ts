@@ -2,6 +2,7 @@ import type { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import type { IRuntime } from "./IRuntime";
 import type { RigidBody } from "./rigidBody";
 import type { RigidBodyBundle } from "./rigidBodyBundle";
 
@@ -33,7 +34,9 @@ class ConstraintInner {
             return;
         }
 
+        // this operation is thread-safe because the constraint is not belong to any physics world
         this._wasmInstance.deref()?.destroyConstraint(this._ptr);
+
         this._ptr = 0;
         if (Array.isArray(this._bodyReference)) {
             this._bodyReference[0].removeReference();
@@ -55,6 +58,10 @@ class ConstraintInner {
     public removeReference(): void {
         this._referenceCount -= 1;
     }
+
+    public get hasReferences(): boolean {
+        return 0 < this._referenceCount;
+    }
 }
 
 function constraintFinalizer(inner: ConstraintInner): void {
@@ -64,20 +71,20 @@ function constraintFinalizer(inner: ConstraintInner): void {
 const constraintRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<ConstraintInner>>();
 
 export abstract class Constraint {
-    protected readonly _wasmInstance: BulletWasmInstance;
+    public readonly runtime: IRuntime;
     protected readonly _inner: ConstraintInner;
 
     private _worldReference: Nullable<object>;
 
-    protected constructor(wasmInstance: BulletWasmInstance, ptr: number, bodyReference: readonly [RigidBody, RigidBody] | RigidBodyBundle) {
-        this._wasmInstance = wasmInstance;
-        this._inner = new ConstraintInner(new WeakRef(wasmInstance), ptr, bodyReference);
+    protected constructor(runtime: IRuntime, ptr: number, bodyReference: readonly [RigidBody, RigidBody] | RigidBodyBundle) {
+        this.runtime = runtime;
+        this._inner = new ConstraintInner(new WeakRef(runtime.wasmInstance), ptr, bodyReference);
         this._worldReference = null;
 
-        let registry = constraintRegistryMap.get(wasmInstance);
+        let registry = constraintRegistryMap.get(runtime.wasmInstance);
         if (registry === undefined) {
             registry = new FinalizationRegistry(constraintFinalizer);
-            constraintRegistryMap.set(wasmInstance, registry);
+            constraintRegistryMap.set(runtime.wasmInstance, registry);
         }
 
         registry.register(this, this._inner, this);
@@ -90,7 +97,7 @@ export abstract class Constraint {
 
         this._inner.dispose();
 
-        const registry = constraintRegistryMap.get(this._wasmInstance);
+        const registry = constraintRegistryMap.get(this.runtime.wasmInstance);
         registry?.unregister(this);
     }
 
@@ -126,7 +133,7 @@ const matrixBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
 
 export class Generic6DofConstraint extends Constraint {
     public constructor(
-        wasmInstance: BulletWasmInstance,
+        runtime: IRuntime,
         bodyA: RigidBody,
         bodyB: RigidBody,
         frameA: Matrix,
@@ -135,7 +142,7 @@ export class Generic6DofConstraint extends Constraint {
     );
 
     public constructor(
-        wasmInstance: BulletWasmInstance,
+        runtime: IRuntime,
         bodyBundle: RigidBodyBundle,
         bodyIndices: readonly [number, number],
         frameA: Matrix,
@@ -144,13 +151,14 @@ export class Generic6DofConstraint extends Constraint {
     );
 
     public constructor(
-        wasmInstance: BulletWasmInstance,
+        runtime: IRuntime,
         bodyAOrBundle: RigidBody | RigidBodyBundle,
         bodyBOrIndices: RigidBody | readonly [number, number],
         frameA: Matrix,
         frameB: Matrix,
         useLinearReferenceFrameA: boolean
     ) {
+        const wasmInstance = runtime.wasmInstance;
         const frameABufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
         const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
         frameA.copyToArray(frameABuffer.array);
@@ -185,29 +193,41 @@ export class Generic6DofConstraint extends Constraint {
             ? (bodyAOrBundle as RigidBodyBundle)
             : [bodyAOrBundle as RigidBody, bodyBOrIndices as RigidBody] as const;
 
-        super(wasmInstance, ptr, bodyReference);
+        super(runtime, ptr, bodyReference);
     }
 
     public setLinearLowerLimit(limit: Vector3): void {
-        this._wasmInstance.constraintSetLinearLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetLinearLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
     }
 
     public setLinearUpperLimit(limit: Vector3): void {
-        this._wasmInstance.constraintSetLinearUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetLinearUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
     }
 
     public setAngularLowerLimit(limit: Vector3): void {
-        this._wasmInstance.constraintSetAngularLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetAngularLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
     }
 
     public setAngularUpperLimit(limit: Vector3): void {
-        this._wasmInstance.constraintSetAngularUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetAngularUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
     }
 }
 
 export class Generic6DofSpringConstraint extends Constraint {
     public constructor(
-        wasmInstance: BulletWasmInstance,
+        runtime: IRuntime,
         bodyA: RigidBody,
         bodyB: RigidBody,
         frameA: Matrix,
@@ -216,7 +236,7 @@ export class Generic6DofSpringConstraint extends Constraint {
     );
 
     public constructor(
-        wasmInstance: BulletWasmInstance,
+        runtime: IRuntime,
         bodyBundle: RigidBodyBundle,
         bodyIndices: readonly [number, number],
         frameA: Matrix,
@@ -225,13 +245,14 @@ export class Generic6DofSpringConstraint extends Constraint {
     );
 
     public constructor(
-        wasmInstance: BulletWasmInstance,
+        runtime: IRuntime,
         bodyAOrBundle: RigidBody | RigidBodyBundle,
         bodyBOrIndices: RigidBody | readonly [number, number],
         frameA: Matrix,
         frameB: Matrix,
         useLinearReferenceFrameA: boolean
     ) {
+        const wasmInstance = runtime.wasmInstance;
         const frameABufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
         const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
         frameA.copyToArray(frameABuffer.array);
@@ -266,34 +287,55 @@ export class Generic6DofSpringConstraint extends Constraint {
             ? (bodyAOrBundle as RigidBodyBundle)
             : [bodyAOrBundle as RigidBody, bodyBOrIndices as RigidBody] as const;
 
-        super(wasmInstance, ptr, bodyReference);
+        super(runtime, ptr, bodyReference);
     }
 
     public setLinearLowerLimit(limit: Vector3): void {
-        this._wasmInstance.constraintSetLinearLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetLinearLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
     }
 
     public setLinearUpperLimit(limit: Vector3): void {
-        this._wasmInstance.constraintSetLinearUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetLinearUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
     }
 
     public setAngularLowerLimit(limit: Vector3): void {
-        this._wasmInstance.constraintSetAngularLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetAngularLowerLimit(this._inner.ptr, limit.x, limit.y, limit.z);
     }
 
     public setAngularUpperLimit(limit: Vector3): void {
-        this._wasmInstance.constraintSetAngularUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetAngularUpperLimit(this._inner.ptr, limit.x, limit.y, limit.z);
     }
 
     public enableSpring(index: number, onOff: boolean): void {
-        this._wasmInstance.constraintEnableSpring(this._inner.ptr, index, onOff);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintEnableSpring(this._inner.ptr, index, onOff);
     }
 
     public setStiffness(index: number, stiffness: number): void {
-        this._wasmInstance.constraintSetStiffness(this._inner.ptr, index, stiffness);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetStiffness(this._inner.ptr, index, stiffness);
     }
 
     public setDamping(index: number, damping: number): void {
-        this._wasmInstance.constraintSetDamping(this._inner.ptr, index, damping);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.constraintSetDamping(this._inner.ptr, index, damping);
     }
 }
