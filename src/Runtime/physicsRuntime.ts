@@ -152,5 +152,7 @@ export class PhysicsRuntime implements IRuntime {
         }
 
         // TODO: Implement physics runtime evaluation
+        this._physicsWorld;
+        this._evaluationType;
     }
 }
