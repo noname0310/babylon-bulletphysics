@@ -130,12 +130,8 @@ export class SceneBuilder implements ISceneBuilder {
         }
 
         scene.onBeforeRenderObservable.add(() => {
-            // world.stepSimulation(1 / 60, 10, 1 / 60);
-
-            for (let i = 0; i < rbCount; ++i) {
-                boxRigidBodyBundle.getTransformMatrixToRef(i, matrix);
-                matrix.copyToArray(rigidbodyMatrixBuffer, i * 16);
-            }
+            world.stepSimulation(1 / 60, 10, 1 / 60);
+            boxRigidBodyBundle.getTransformMatricesToArray(rigidbodyMatrixBuffer);
             baseBox.thinInstanceBufferUpdated("matrix");
         });
 

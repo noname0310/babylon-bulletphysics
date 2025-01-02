@@ -1,5 +1,5 @@
 import type { Matrix } from "@babylonjs/core/Maths/math.vector";
-import type { Nullable } from "@babylonjs/core/types";
+import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { IRuntime } from "./IRuntime";
@@ -206,24 +206,59 @@ export class RigidBody {
         return result;
     }
 
-    public setTransformMatrix(matrix: Matrix): void {
+    public getTransformMatrixToArray(result: Float32Array, offset: number = 0): void {
         this._nullCheck();
         if (this._inner.hasReferences) {
             this.runtime.lock.wait();
         }
         const motionStatePtr = this._motionStatePtr.array;
-        motionStatePtr[4] = matrix.m[0];
-        motionStatePtr[8] = matrix.m[1];
-        motionStatePtr[12] = matrix.m[2];
-        motionStatePtr[5] = matrix.m[4];
-        motionStatePtr[9] = matrix.m[5];
-        motionStatePtr[13] = matrix.m[6];
-        motionStatePtr[6] = matrix.m[8];
-        motionStatePtr[10] = matrix.m[9];
-        motionStatePtr[14] = matrix.m[10];
 
-        motionStatePtr[16] = matrix.m[12];
-        motionStatePtr[17] = matrix.m[13];
-        motionStatePtr[18] = matrix.m[14];
+        result[offset] = motionStatePtr[4];
+        result[offset + 1] = motionStatePtr[8];
+        result[offset + 2] = motionStatePtr[12];
+        result[offset + 3] = 0;
+
+        result[offset + 4] = motionStatePtr[5];
+        result[offset + 5] = motionStatePtr[9];
+        result[offset + 6] = motionStatePtr[13];
+        result[offset + 7] = 0;
+
+        result[offset + 8] = motionStatePtr[6];
+        result[offset + 9] = motionStatePtr[10];
+        result[offset + 10] = motionStatePtr[14];
+        result[offset + 11] = 0;
+
+        result[offset + 12] = motionStatePtr[16];
+        result[offset + 13] = motionStatePtr[17];
+        result[offset + 14] = motionStatePtr[18];
+        result[offset + 15] = 1;
+    }
+
+    public setTransformMatrix(matrix: Matrix): void {
+        this.setTransformMatrixFromArray(matrix.m, 0);
+    }
+
+    public setTransformMatrixFromArray(array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const motionStatePtr = this._motionStatePtr.array;
+
+        motionStatePtr[4] = array[offset];
+        motionStatePtr[8] = array[offset + 1];
+        motionStatePtr[12] = array[offset + 2];
+
+        motionStatePtr[5] = array[offset + 4];
+        motionStatePtr[9] = array[offset + 5];
+        motionStatePtr[13] = array[offset + 6];
+
+        motionStatePtr[6] = array[offset + 8];
+        motionStatePtr[10] = array[offset + 9];
+        motionStatePtr[14] = array[offset + 10];
+
+        motionStatePtr[16] = array[offset + 12];
+        motionStatePtr[17] = array[offset + 13];
+        motionStatePtr[18] = array[offset + 14];
     }
 }

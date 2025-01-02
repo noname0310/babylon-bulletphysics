@@ -168,10 +168,7 @@ export class SceneBuilder implements ISceneBuilder {
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
-                const body = bodies[i];
-                const startOffset = i * 16;
-                body.getTransformMatrixToRef(matrix);
-                matrix.copyToArray(rigidbodyMatrixBuffer, startOffset);
+                bodies[i].getTransformMatrixToArray(rigidbodyMatrixBuffer, i * 16);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
         });

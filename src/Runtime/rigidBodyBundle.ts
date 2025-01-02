@@ -1,5 +1,5 @@
 import type { Matrix } from "@babylonjs/core/Maths/math.vector";
-import type { Nullable } from "@babylonjs/core/types";
+import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { IRuntime } from "./IRuntime";
@@ -206,7 +206,7 @@ export class RigidBodyBundle {
         return result;
     }
 
-    public setTransformMatrix(index: number, matrix: Matrix): void {
+    public getTransformMatrixToArray(index: number, result: Float32Array, offset: number = 0): void {
         this._nullCheck();
         if (index < 0 || this._count <= index) {
             throw new RangeError("Index out of range");
@@ -216,19 +216,125 @@ export class RigidBodyBundle {
             this.runtime.lock.wait();
         }
         const motionStatesPtr = this._motionStatesPtr.array;
-        const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-        motionStatesPtr[offset + 4] = matrix.m[0];
-        motionStatesPtr[offset + 8] = matrix.m[1];
-        motionStatesPtr[offset + 12] = matrix.m[2];
-        motionStatesPtr[offset + 5] = matrix.m[4];
-        motionStatesPtr[offset + 9] = matrix.m[5];
-        motionStatesPtr[offset + 13] = matrix.m[6];
-        motionStatesPtr[offset + 6] = matrix.m[8];
-        motionStatesPtr[offset + 10] = matrix.m[9];
-        motionStatesPtr[offset + 14] = matrix.m[10];
+        const motionStateOffset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
 
-        motionStatesPtr[offset + 16] = matrix.m[12];
-        motionStatesPtr[offset + 17] = matrix.m[13];
-        motionStatesPtr[offset + 18] = matrix.m[14];
+        result[offset] = motionStatesPtr[motionStateOffset + 4];
+        result[offset + 1] = motionStatesPtr[motionStateOffset + 8];
+        result[offset + 2] = motionStatesPtr[motionStateOffset + 12];
+        result[offset + 3] = 0;
+
+        result[offset + 4] = motionStatesPtr[motionStateOffset + 5];
+        result[offset + 5] = motionStatesPtr[motionStateOffset + 9];
+        result[offset + 6] = motionStatesPtr[motionStateOffset + 13];
+        result[offset + 7] = 0;
+
+        result[offset + 8] = motionStatesPtr[motionStateOffset + 6];
+        result[offset + 9] = motionStatesPtr[motionStateOffset + 10];
+        result[offset + 10] = motionStatesPtr[motionStateOffset + 14];
+        result[offset + 11] = 0;
+
+        result[offset + 12] = motionStatesPtr[motionStateOffset + 16];
+        result[offset + 13] = motionStatesPtr[motionStateOffset + 17];
+        result[offset + 14] = motionStatesPtr[motionStateOffset + 18];
+        result[offset + 15] = 1;
+    }
+
+    public getTransformMatricesToArray(result: Float32Array, offset: number = 0): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const motionStatesPtr = this._motionStatesPtr.array;
+        for (let i = 0; i < this._count; ++i) {
+            const motionStateOffset = i * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
+
+            result[offset] = motionStatesPtr[motionStateOffset + 4];
+            result[offset + 1] = motionStatesPtr[motionStateOffset + 8];
+            result[offset + 2] = motionStatesPtr[motionStateOffset + 12];
+            result[offset + 3] = 0;
+
+            result[offset + 4] = motionStatesPtr[motionStateOffset + 5];
+            result[offset + 5] = motionStatesPtr[motionStateOffset + 9];
+            result[offset + 6] = motionStatesPtr[motionStateOffset + 13];
+            result[offset + 7] = 0;
+
+            result[offset + 8] = motionStatesPtr[motionStateOffset + 6];
+            result[offset + 9] = motionStatesPtr[motionStateOffset + 10];
+            result[offset + 10] = motionStatesPtr[motionStateOffset + 14];
+            result[offset + 11] = 0;
+
+            result[offset + 12] = motionStatesPtr[motionStateOffset + 16];
+            result[offset + 13] = motionStatesPtr[motionStateOffset + 17];
+            result[offset + 14] = motionStatesPtr[motionStateOffset + 18];
+            result[offset + 15] = 1;
+
+            offset += 16;
+        }
+    }
+
+    public setTransformMatrix(index: number, matrix: Matrix): void {
+        this.setTransformMatrixFromArray(index, matrix.m, 0);
+    }
+
+    public setTransformMatrixFromArray(index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const motionStatesPtr = this._motionStatesPtr.array;
+        const motionStateOffset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
+
+        motionStatesPtr[motionStateOffset + 4] = array[offset];
+        motionStatesPtr[motionStateOffset + 8] = array[offset + 1];
+        motionStatesPtr[motionStateOffset + 12] = array[offset + 2];
+
+        motionStatesPtr[motionStateOffset + 5] = array[offset + 4];
+        motionStatesPtr[motionStateOffset + 9] = array[offset + 5];
+        motionStatesPtr[motionStateOffset + 13] = array[offset + 6];
+
+        motionStatesPtr[motionStateOffset + 6] = array[offset + 8];
+        motionStatesPtr[motionStateOffset + 10] = array[offset + 9];
+        motionStatesPtr[motionStateOffset + 14] = array[offset + 10];
+
+        motionStatesPtr[motionStateOffset + 16] = array[offset + 12];
+        motionStatesPtr[motionStateOffset + 17] = array[offset + 13];
+        motionStatesPtr[motionStateOffset + 18] = array[offset + 14];
+    }
+
+    public setTransformMatricesFromArray(array: DeepImmutable<number[]>, offset: number = 0): void {
+        this._nullCheck();
+        if (array.length < this._count * 16) {
+            throw new RangeError("Array is too short");
+        }
+
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const motionStatesPtr = this._motionStatesPtr.array;
+        for (let i = 0; i < this._count; ++i) {
+            const motionStateOffset = i * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
+
+            motionStatesPtr[motionStateOffset + 4] = array[offset];
+            motionStatesPtr[motionStateOffset + 8] = array[offset + 1];
+            motionStatesPtr[motionStateOffset + 12] = array[offset + 2];
+
+            motionStatesPtr[motionStateOffset + 5] = array[offset + 4];
+            motionStatesPtr[motionStateOffset + 9] = array[offset + 5];
+            motionStatesPtr[motionStateOffset + 13] = array[offset + 6];
+
+            motionStatesPtr[motionStateOffset + 6] = array[offset + 8];
+            motionStatesPtr[motionStateOffset + 10] = array[offset + 9];
+            motionStatesPtr[motionStateOffset + 14] = array[offset + 10];
+
+            motionStatesPtr[motionStateOffset + 16] = array[offset + 12];
+            motionStatesPtr[motionStateOffset + 17] = array[offset + 13];
+            motionStatesPtr[motionStateOffset + 18] = array[offset + 14];
+
+            offset += 16;
+        }
     }
 }
