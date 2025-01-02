@@ -15,6 +15,8 @@ struct PhysicsWorldHandleInfo {
 pub(crate) struct PhysicsWorld {
     inner: bind::physics_world::PhysicsWorld,
     #[cfg(debug_assertions)]
+    ref_count: u32,
+    #[cfg(debug_assertions)]
     handle_info: PhysicsWorldHandleInfo,
     shadow_bodies: Vec<RigidBodyShadow>,
     shadow_body_bundles: Vec<RigidBodyBundleShadow>,
@@ -26,6 +28,8 @@ impl PhysicsWorld {
         let inner = bind::physics_world::PhysicsWorld::new();
         Self {
             inner,
+            #[cfg(debug_assertions)]
+            ref_count: 0,
             #[cfg(debug_assertions)]
             handle_info: PhysicsWorldHandleInfo {
                 bodies: Vec::new(),
@@ -238,9 +242,70 @@ impl PhysicsWorld {
     pub(crate) fn is_empty(&self) -> bool {
         self.object_count == 0
     }
+
+    pub(crate) fn create_handle(&mut self) -> PhysicsWorldHandle {
+        PhysicsWorldHandle::new(self)
+    }
 }
 
 unsafe impl Send for PhysicsWorld {}
+
+#[cfg(debug_assertions)]
+impl Drop for PhysicsWorld {
+    fn drop(&mut self) {
+        if 0 < self.ref_count {
+            panic!("PhysicsWorld still has references");
+        }
+    }
+}
+
+pub(crate) struct PhysicsWorldHandle {
+    world: &'static mut PhysicsWorld,
+}
+
+impl PhysicsWorldHandle {
+    pub(crate) fn new(world: &mut PhysicsWorld) -> Self {
+        let world = unsafe {
+            std::mem::transmute::<&mut PhysicsWorld, &'static mut PhysicsWorld>(world)
+        };
+
+        #[cfg(debug_assertions)]
+        {
+            world.ref_count += 1;
+        }
+
+        Self {
+            world,
+        }
+    }
+
+    pub(crate) fn get(&self) -> &PhysicsWorld {
+        self.world
+    }
+
+    pub(crate) fn get_mut(&mut self) -> &mut PhysicsWorld {
+        self.world
+    }
+
+    pub(crate) fn clone(&mut self) -> Self {
+        Self::new(self.world)
+    }
+}
+
+#[cfg(debug_assertions)]
+impl Drop for PhysicsWorldHandle {
+    fn drop(&mut self) {
+        self.world.ref_count -= 1;
+    }
+}
+
+impl PartialEq for PhysicsWorldHandle {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self.world as *const PhysicsWorld, other.world as *const PhysicsWorld)
+    }
+}
+
+impl Eq for PhysicsWorldHandle {}
 
 #[wasm_bindgen(js_name = "createPhysicsWorld")]
 pub fn create_physics_world() -> *mut usize {

@@ -20,6 +20,8 @@ struct MultiPhysicsWorldHandleInfo {
 pub(crate) struct MultiPhysicsWorld {
     worlds: FxHashMap<PhysicsWorldId, PhysicsWorld>,
     #[cfg(debug_assertions)]
+    ref_count: u32,
+    #[cfg(debug_assertions)]
     handle_info: MultiPhysicsWorldHandleInfo,
     global_bodies: Vec<RigidBodyHandle>,
     global_body_bundles: Vec<RigidBodyBundleHandle>,
@@ -29,6 +31,8 @@ impl MultiPhysicsWorld {
     pub(crate) fn new() -> Self {
         Self {
             worlds: FxHashMap::default(),
+            #[cfg(debug_assertions)]
+            ref_count: 0,
             #[cfg(debug_assertions)]
             handle_info: MultiPhysicsWorldHandleInfo {
                 bodies: Vec::new(),
@@ -246,7 +250,68 @@ impl MultiPhysicsWorld {
         self.get_world(world_id).map(|world| world.remove_constraint(constraint));
         self.remove_world_if_empty(world_id);
     }
+
+    pub(crate) fn create_handle(&mut self) -> MultiPhysicsWorldHandle {
+        MultiPhysicsWorldHandle::new(self)
+    }
 }
+
+#[cfg(debug_assertions)]
+impl Drop for MultiPhysicsWorld {
+    fn drop(&mut self) {
+        if 0 < self.ref_count {
+            panic!("MultiPhysicsWorld still has references");
+        }
+    }
+}
+
+pub(crate) struct MultiPhysicsWorldHandle {
+    world: &'static mut MultiPhysicsWorld,
+}
+
+impl MultiPhysicsWorldHandle {
+    pub(crate) fn new(world: &mut MultiPhysicsWorld) -> Self {
+        let world = unsafe {
+            std::mem::transmute::<&mut MultiPhysicsWorld, &'static mut MultiPhysicsWorld>(world)
+        };
+
+        #[cfg(debug_assertions)]
+        {
+            world.ref_count += 1;
+        }
+
+        Self {
+            world,
+        }
+    }
+
+    pub(crate) fn get(&self) -> &MultiPhysicsWorld {
+        self.world
+    }
+
+    pub(crate) fn get_mut(&mut self) -> &mut MultiPhysicsWorld {
+        self.world
+    }
+
+    pub(crate) fn clone(&mut self) -> Self {
+        Self::new(self.world)
+    }
+}
+
+#[cfg(debug_assertions)]
+impl Drop for MultiPhysicsWorldHandle {
+    fn drop(&mut self) {
+        self.world.ref_count -= 1;
+    }
+}
+
+impl PartialEq for MultiPhysicsWorldHandle {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self.world as *const MultiPhysicsWorld, other.world as *const MultiPhysicsWorld)
+    }
+}
+
+impl Eq for MultiPhysicsWorldHandle {}
 
 #[wasm_bindgen(js_name = "createMultiPhysicsWorld")]
 pub fn create_multi_physics_world() -> *mut usize {
