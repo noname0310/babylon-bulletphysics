@@ -3360,14 +3360,14 @@ __webpack_async_result__();
 /***/ 9603:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "f027d125122573f61de6.wasm";
+module.exports = __webpack_require__.p + "8c5efcbbdca833b16217.wasm";
 
 /***/ }),
 
 /***/ 8865:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "8d59a0c5d5195e3eab27.wasm";
+module.exports = __webpack_require__.p + "c48c33ac87735373fa25.wasm";
 
 /***/ })
 
