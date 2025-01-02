@@ -77,6 +77,16 @@ export abstract class Constraint {
     private _worldReference: Nullable<object>;
 
     protected constructor(runtime: IRuntime, ptr: number, bodyReference: readonly [RigidBody, RigidBody] | RigidBodyBundle) {
+        if (Array.isArray(bodyReference)) {
+            if (bodyReference[0].runtime !== runtime || bodyReference[1].runtime !== runtime) {
+                throw new Error("Cannot create constraint between bodies from different runtimes");
+            }
+        } else {
+            if ((bodyReference as RigidBodyBundle).runtime !== runtime) {
+                throw new Error("Cannot create constraint between body and bundle from different runtimes");
+            }
+        }
+
         this.runtime = runtime;
         this._inner = new ConstraintInner(new WeakRef(runtime.wasmInstance), ptr, bodyReference);
         this._worldReference = null;

@@ -83,7 +83,7 @@ impl PhysicsWorld {
         }
     }
 
-    pub (crate) fn add_rigidbody_bundle(&mut self, mut bundle: RigidBodyBundleHandle) {
+    pub(crate) fn add_rigidbody_bundle(&mut self, mut bundle: RigidBodyBundleHandle) {
         #[cfg(debug_assertions)]
         {
             if self.handle_info.body_bundles.iter().any(|b| *b == bundle) {

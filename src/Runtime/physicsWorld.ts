@@ -9,19 +9,29 @@ import type { RigidBodyBundle } from "./rigidBodyBundle";
 class PhysicsWorldInner {
     private readonly _runtime: WeakRef<IRuntime>;
     private _ptr: number;
+
     private readonly _rigidBodyReferences: Set<RigidBody>;
     private readonly _rigidBodyBundleReferences: Set<RigidBodyBundle>;
     private readonly _constraintReferences: Set<Constraint>;
 
+    private _referenceCount: number;
+
     public constructor(runtime: WeakRef<IRuntime>, ptr: number) {
         this._runtime = runtime;
         this._ptr = ptr;
+
         this._rigidBodyReferences = new Set<RigidBody>();
         this._rigidBodyBundleReferences = new Set<RigidBodyBundle>();
         this._constraintReferences = new Set<Constraint>();
+
+        this._referenceCount = 0;
     }
 
     public dispose(): void {
+        if (this._referenceCount > 0) {
+            throw new Error("Cannot dispose physics world while it still has references");
+        }
+
         if (this._ptr === 0) {
             return;
         }
@@ -51,6 +61,14 @@ class PhysicsWorldInner {
 
     public get ptr(): number {
         return this._ptr;
+    }
+
+    public addReference(): void {
+        this._referenceCount += 1;
+    }
+
+    public removeReference(): void {
+        this._referenceCount -= 1;
     }
 
     public addRigidBodyReference(rigidBody: RigidBody): boolean {
@@ -150,6 +168,14 @@ export class PhysicsWorld {
         return this._inner.ptr;
     }
 
+    public addReference(): void {
+        this._inner.addReference();
+    }
+
+    public removeReference(): void {
+        this._inner.removeReference();
+    }
+
     private _nullCheck(): void {
         if (this._inner.ptr === 0) {
             throw new Error("Cannot access disposed physics world");
@@ -167,6 +193,9 @@ export class PhysicsWorld {
     }
 
     public addRigidBody(rigidBody: RigidBody): boolean {
+        if (rigidBody.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body from different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyReference(rigidBody)) {
             this._runtime.wasmInstance.physicsWorldAddRigidBody(this._inner.ptr, rigidBody.ptr);
@@ -185,6 +214,9 @@ export class PhysicsWorld {
     }
 
     public addRigidBodyBundle(rigidBodyBundle: RigidBodyBundle): boolean {
+        if (rigidBodyBundle.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body bundle from different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleReference(rigidBodyBundle)) {
             this._runtime.wasmInstance.physicsWorldAddRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
@@ -203,6 +235,9 @@ export class PhysicsWorld {
     }
 
     public addConstraint(constraint: Constraint, disableCollisionsBetweenLinkedBodies: boolean): boolean {
+        if (constraint.runtime !== this._runtime) {
+            throw new Error("Cannot add constraint from different runtime");
+        }
         this._nullCheck();
         if (this._inner.addConstraintReference(constraint)) {
             this._runtime.wasmInstance.physicsWorldAddConstraint(this._inner.ptr, constraint.ptr, disableCollisionsBetweenLinkedBodies);

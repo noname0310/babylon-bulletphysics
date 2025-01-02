@@ -21,6 +21,8 @@ class MultiPhysicsWorldInner {
 
     private readonly _constraintReferences: Set<Constraint>;
 
+    private _referenceCount: number;
+
     public constructor(runtime: WeakRef<IRuntime>, ptr: number) {
         this._runtime = runtime;
         this._ptr = ptr;
@@ -35,9 +37,15 @@ class MultiPhysicsWorldInner {
         this._rigidBodyBundleShadowReferences = new Map<number, Set<RigidBodyBundle>>();
 
         this._constraintReferences = new Set<Constraint>();
+
+        this._referenceCount = 0;
     }
 
     public dispose(): void {
+        if (this._referenceCount > 0) {
+            throw new Error("Cannot dispose physics world while it still has references");
+        }
+
         if (this._ptr === 0) {
             return;
         }
@@ -91,6 +99,14 @@ class MultiPhysicsWorldInner {
 
     public get ptr(): number {
         return this._ptr;
+    }
+
+    public addReference(): void {
+        this._referenceCount += 1;
+    }
+
+    public removeReference(): void {
+        this._referenceCount -= 1;
     }
 
     public addRigidBodyReference(rigidBody: RigidBody, worldId: number): boolean {
@@ -332,6 +348,14 @@ export class MultiPhysicsWorld {
         return this._inner.ptr;
     }
 
+    public addReference(): void {
+        this._inner.addReference();
+    }
+
+    public removeReference(): void {
+        this._inner.removeReference();
+    }
+
     private _nullCheck(): void {
         if (this._inner.ptr === 0) {
             throw new Error("Cannot access disposed physics world");
@@ -351,6 +375,9 @@ export class MultiPhysicsWorld {
     }
 
     public addRigidBody(rigidBody: RigidBody, worldId: number): boolean {
+        if (rigidBody.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyReference(rigidBody, worldId)) {
             this._runtime.lock.wait();
@@ -371,6 +398,9 @@ export class MultiPhysicsWorld {
     }
 
     public addRigidBodyBundle(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
+        if (rigidBodyBundle.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body bundle from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleReference(rigidBodyBundle, worldId)) {
             this._runtime.lock.wait();
@@ -391,6 +421,9 @@ export class MultiPhysicsWorld {
     }
 
     public addRigidBodyToGlobal(rigidBody: RigidBody): boolean {
+        if (rigidBody.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyGlobalReference(rigidBody)) {
             this._runtime.lock.wait();
@@ -411,6 +444,9 @@ export class MultiPhysicsWorld {
     }
 
     public addRigidBodyBundleToGlobal(rigidBodyBundle: RigidBodyBundle): boolean {
+        if (rigidBodyBundle.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body bundle from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleGlobalReference(rigidBodyBundle)) {
             this._runtime.lock.wait();
@@ -431,6 +467,9 @@ export class MultiPhysicsWorld {
     }
 
     public addRigidBodyShadow(rigidBody: RigidBody, worldId: number): boolean {
+        if (rigidBody.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyShadowReference(rigidBody, worldId)) {
             this._runtime.lock.wait();
@@ -451,6 +490,9 @@ export class MultiPhysicsWorld {
     }
 
     public addRigidBodyBundleShadow(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
+        if (rigidBodyBundle.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body bundle from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
             this._runtime.lock.wait();
@@ -471,6 +513,9 @@ export class MultiPhysicsWorld {
     }
 
     public addConstraint(constraint: Constraint, worldId: number, disableCollisionsBetweenLinkedBodies: boolean): boolean {
+        if (constraint.runtime !== this._runtime) {
+            throw new Error("Cannot add constraint from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addConstraintReference(constraint)) {
             this._runtime.lock.wait();
