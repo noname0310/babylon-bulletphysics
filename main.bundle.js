@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 9637:
+/***/ 6065:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -428,6 +428,507 @@ class Generic6DofSpringConstraint extends Constraint {
             this.runtime.lock.wait();
         }
         this.runtime.wasmInstance.constraintSetDamping(this._inner.ptr, index, damping);
+    }
+}
+
+;// ./src/Runtime/Misc/wasmSpinlock.ts
+/**
+ * Spinlock for WASM runtime synchronization
+ */
+class WasmSpinlock {
+    _lock;
+    /**
+     * Creates a new WasmSpinlock with the 1 byte length lock array
+     * @param lock Lock array
+     */
+    constructor(lock) {
+        this._lock = lock;
+    }
+    /**
+     * waits for the lock to be released
+     */
+    wait() {
+        const lock = this._lock.array;
+        // let locked = false;
+        // const lockStartTime = performance.now();
+        while (Atomics.load(lock, 0) !== 0) {
+            // locked = true;
+            // spin
+        }
+        // if (locked) {
+        //     const lockTime = performance.now() - lockStartTime;
+        //     console.trace(`Spinlock wait time: ${lockTime}ms`);
+        // }
+    }
+}
+
+;// ./src/Runtime/physicsWorld.ts
+class PhysicsWorldInner {
+    _runtime;
+    _ptr;
+    _rigidBodyReferences;
+    _rigidBodyBundleReferences;
+    _constraintReferences;
+    _referenceCount;
+    constructor(runtime, ptr) {
+        this._runtime = runtime;
+        this._ptr = ptr;
+        this._rigidBodyReferences = new Set();
+        this._rigidBodyBundleReferences = new Set();
+        this._constraintReferences = new Set();
+        this._referenceCount = 0;
+    }
+    dispose() {
+        if (this._referenceCount > 0) {
+            throw new Error("Cannot dispose physics world while it still has references");
+        }
+        if (this._ptr === 0) {
+            return;
+        }
+        const runtime = this._runtime.deref();
+        if (runtime !== undefined) {
+            runtime.lock.wait();
+            runtime.wasmInstance.destroyPhysicsWorld(this._ptr);
+        }
+        this._ptr = 0;
+        for (const rigidBody of this._rigidBodyReferences) {
+            rigidBody.setWorldReference(null);
+        }
+        this._rigidBodyReferences.clear();
+        for (const rigidBodyBundle of this._rigidBodyBundleReferences) {
+            rigidBodyBundle.setWorldReference(null);
+        }
+        this._rigidBodyBundleReferences.clear();
+        for (const constraint of this._constraintReferences) {
+            constraint.setWorldReference(null);
+        }
+        this._constraintReferences.clear();
+    }
+    get ptr() {
+        return this._ptr;
+    }
+    addReference() {
+        this._referenceCount += 1;
+    }
+    removeReference() {
+        this._referenceCount -= 1;
+    }
+    addRigidBodyReference(rigidBody) {
+        if (this._rigidBodyReferences.has(rigidBody)) {
+            return false;
+        }
+        rigidBody.setWorldReference(this);
+        this._rigidBodyReferences.add(rigidBody);
+        return true;
+    }
+    removeRigidBodyReference(rigidBody) {
+        if (this._rigidBodyReferences.delete(rigidBody)) {
+            rigidBody.setWorldReference(null);
+            return true;
+        }
+        return false;
+    }
+    addRigidBodyBundleReference(rigidBodyBundle) {
+        if (this._rigidBodyBundleReferences.has(rigidBodyBundle)) {
+            return false;
+        }
+        rigidBodyBundle.setWorldReference(this);
+        this._rigidBodyBundleReferences.add(rigidBodyBundle);
+        return true;
+    }
+    removeRigidBodyBundleReference(rigidBodyBundle) {
+        if (this._rigidBodyBundleReferences.delete(rigidBodyBundle)) {
+            rigidBodyBundle.setWorldReference(null);
+            return true;
+        }
+        return false;
+    }
+    addConstraintReference(constraint) {
+        if (this._constraintReferences.has(constraint)) {
+            return false;
+        }
+        constraint.setWorldReference(this);
+        this._constraintReferences.add(constraint);
+        return true;
+    }
+    removeConstraintReference(constraint) {
+        if (this._constraintReferences.delete(constraint)) {
+            constraint.setWorldReference(null);
+            return true;
+        }
+        return false;
+    }
+}
+function physicsWorldFinalizer(inner) {
+    inner.dispose();
+}
+const physicsWorldRegistryMap = new WeakMap();
+class PhysicsWorld {
+    _runtime;
+    _inner;
+    constructor(runtime) {
+        this._runtime = runtime;
+        const ptr = runtime.wasmInstance.createPhysicsWorld();
+        this._inner = new PhysicsWorldInner(new WeakRef(runtime), ptr);
+        let registry = physicsWorldRegistryMap.get(runtime.wasmInstance);
+        if (registry === undefined) {
+            registry = new FinalizationRegistry(physicsWorldFinalizer);
+            physicsWorldRegistryMap.set(runtime.wasmInstance, registry);
+        }
+        registry.register(this, this._inner, this);
+    }
+    dispose() {
+        if (this._inner.ptr === 0) {
+            return;
+        }
+        this._inner.dispose();
+        const registry = physicsWorldRegistryMap.get(this._runtime.wasmInstance);
+        registry?.unregister(this);
+    }
+    get ptr() {
+        return this._inner.ptr;
+    }
+    addReference() {
+        this._inner.addReference();
+    }
+    removeReference() {
+        this._inner.removeReference();
+    }
+    _nullCheck() {
+        if (this._inner.ptr === 0) {
+            throw new Error("Cannot access disposed physics world");
+        }
+    }
+    setGravity(gravity) {
+        this._nullCheck();
+        this._runtime.wasmInstance.physicsWorldSetGravity(this._inner.ptr, gravity.x, gravity.y, gravity.z);
+    }
+    stepSimulation(timeStep, maxSubSteps, fixedTimeStep) {
+        this._nullCheck();
+        this._runtime.wasmInstance.physicsWorldStepSimulation(this._inner.ptr, timeStep, maxSubSteps, fixedTimeStep);
+    }
+    addRigidBody(rigidBody) {
+        if (rigidBody.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body from different runtime");
+        }
+        this._nullCheck();
+        if (this._inner.addRigidBodyReference(rigidBody)) {
+            this._runtime.wasmInstance.physicsWorldAddRigidBody(this._inner.ptr, rigidBody.ptr);
+            return true;
+        }
+        return false;
+    }
+    removeRigidBody(rigidBody) {
+        this._nullCheck();
+        if (this._inner.removeRigidBodyReference(rigidBody)) {
+            this._runtime.wasmInstance.physicsWorldRemoveRigidBody(this._inner.ptr, rigidBody.ptr);
+            return true;
+        }
+        return false;
+    }
+    addRigidBodyBundle(rigidBodyBundle) {
+        if (rigidBodyBundle.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body bundle from different runtime");
+        }
+        this._nullCheck();
+        if (this._inner.addRigidBodyBundleReference(rigidBodyBundle)) {
+            this._runtime.wasmInstance.physicsWorldAddRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+    removeRigidBodyBundle(rigidBodyBundle) {
+        this._nullCheck();
+        if (this._inner.removeRigidBodyBundleReference(rigidBodyBundle)) {
+            this._runtime.wasmInstance.physicsWorldRemoveRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
+            return true;
+        }
+        return false;
+    }
+    addConstraint(constraint, disableCollisionsBetweenLinkedBodies) {
+        if (constraint.runtime !== this._runtime) {
+            throw new Error("Cannot add constraint from different runtime");
+        }
+        this._nullCheck();
+        if (this._inner.addConstraintReference(constraint)) {
+            this._runtime.wasmInstance.physicsWorldAddConstraint(this._inner.ptr, constraint.ptr, disableCollisionsBetweenLinkedBodies);
+            return true;
+        }
+        return false;
+    }
+    removeConstraint(constraint) {
+        this._nullCheck();
+        if (this._inner.removeConstraintReference(constraint)) {
+            this._runtime.wasmInstance.physicsWorldRemoveConstraint(this._inner.ptr, constraint.ptr);
+            return true;
+        }
+        return false;
+    }
+}
+
+;// ./src/Runtime/Impl/Buffered/bufferedRigidBodyImpl.ts
+class BufferedRigidBodyImpl {
+    shouldSync;
+    /**
+     * for getTransformMatrixToRef
+     */
+    _readMatrix;
+    /**
+     * for setTransformMatrix
+     */
+    _writeMatrix;
+    _isWriteMatrixDirty;
+    constructor() {
+        this.shouldSync = false;
+        this._readMatrix = new Float32Array(16);
+        this._writeMatrix = new Float32Array(16);
+        this._isWriteMatrixDirty = false;
+    }
+    commitFromMotionState(motionStatePtr) {
+        const m = this._readMatrix;
+        const n = motionStatePtr.array;
+        m[0] = n[4];
+        m[1] = n[8];
+        m[2] = n[12];
+        m[3] = 0;
+        m[4] = n[5];
+        m[5] = n[9];
+        m[6] = n[13];
+        m[7] = 0;
+        m[8] = n[6];
+        m[9] = n[10];
+        m[10] = n[14];
+        m[11] = 0;
+        m[12] = n[16];
+        m[13] = n[17];
+        m[14] = n[18];
+        m[15] = 1;
+    }
+    commitToMotionState(motionStatePtr) {
+        if (!this._isWriteMatrixDirty) {
+            return;
+        }
+        const m = this._writeMatrix;
+        const n = motionStatePtr.array;
+        n[4] = m[0];
+        n[8] = m[1];
+        n[12] = m[2];
+        n[5] = m[4];
+        n[9] = m[5];
+        n[13] = m[6];
+        n[6] = m[8];
+        n[10] = m[9];
+        n[14] = m[10];
+        n[16] = m[12];
+        n[17] = m[13];
+        n[18] = m[14];
+    }
+    getTransformMatrixToRef(_motionStatePtr, result) {
+        const m = this._readMatrix;
+        result.setRowFromFloats(0, m[0], m[1], m[2], 0);
+        result.setRowFromFloats(1, m[4], m[5], m[6], 0);
+        result.setRowFromFloats(2, m[8], m[9], m[10], 0);
+        result.setRowFromFloats(3, m[12], m[13], m[14], 1);
+        return result;
+    }
+    getTransformMatrixToArray(_motionStatePtr, result, offset = 0) {
+        result.set(this._readMatrix, offset);
+    }
+    setTransformMatrixFromArray(_motionStatePtr, array, offset = 0) {
+        this._writeMatrix.set(array, offset);
+        this._isWriteMatrixDirty = true;
+    }
+}
+
+;// ./src/Runtime/Impl/Immediate/immediateRigidBodyImpl.ts
+class ImmediateRigidBodyImpl {
+    shouldSync;
+    constructor() {
+        this.shouldSync = true;
+    }
+    getTransformMatrixToRef(motionStatePtr, result) {
+        const m = motionStatePtr.array;
+        result.setRowFromFloats(0, m[4], m[8], m[12], 0);
+        result.setRowFromFloats(1, m[5], m[9], m[13], 0);
+        result.setRowFromFloats(2, m[6], m[10], m[14], 0);
+        result.setRowFromFloats(3, m[16], m[17], m[18], 1);
+        return result;
+    }
+    getTransformMatrixToArray(motionStatePtr, result, offset = 0) {
+        const m = motionStatePtr.array;
+        result[offset] = m[4];
+        result[offset + 1] = m[8];
+        result[offset + 2] = m[12];
+        result[offset + 3] = 0;
+        result[offset + 4] = m[5];
+        result[offset + 5] = m[9];
+        result[offset + 6] = m[13];
+        result[offset + 7] = 0;
+        result[offset + 8] = m[6];
+        result[offset + 9] = m[10];
+        result[offset + 10] = m[14];
+        result[offset + 11] = 0;
+        result[offset + 12] = m[16];
+        result[offset + 13] = m[17];
+        result[offset + 14] = m[18];
+        result[offset + 15] = 1;
+    }
+    setTransformMatrixFromArray(motionStatePtr, array, offset = 0) {
+        const m = motionStatePtr.array;
+        m[4] = array[offset];
+        m[8] = array[offset + 1];
+        m[12] = array[offset + 2];
+        m[5] = array[offset + 4];
+        m[9] = array[offset + 5];
+        m[13] = array[offset + 6];
+        m[6] = array[offset + 8];
+        m[10] = array[offset + 9];
+        m[14] = array[offset + 10];
+        m[16] = array[offset + 12];
+        m[17] = array[offset + 13];
+        m[18] = array[offset + 14];
+    }
+}
+
+;// ./src/Runtime/Impl/physicsRuntimeEvaluationType.ts
+var PhysicsRuntimeEvaluationType;
+(function (PhysicsRuntimeEvaluationType) {
+    PhysicsRuntimeEvaluationType[PhysicsRuntimeEvaluationType["Immediate"] = 0] = "Immediate";
+    PhysicsRuntimeEvaluationType[PhysicsRuntimeEvaluationType["Buffered"] = 1] = "Buffered";
+})(PhysicsRuntimeEvaluationType || (PhysicsRuntimeEvaluationType = {}));
+
+;// ./src/Runtime/Impl/physicsRuntime.ts
+
+
+
+
+
+
+class PhysicsRuntimeInner {
+    _lock;
+    _wasmInstance;
+    _ptr;
+    _worldReference;
+    constructor(lock, wasmInstance, ptr, worldReference) {
+        this._lock = lock;
+        this._wasmInstance = wasmInstance;
+        this._ptr = ptr;
+        this._worldReference = worldReference;
+        worldReference.addReference();
+    }
+    dispose() {
+        if (this._ptr === 0) {
+            return;
+        }
+        this._lock.wait(); // ensure that the runtime is not evaluating the world
+        this._wasmInstance.deref()?.destroyPhysicsRuntime(this._ptr);
+        this._ptr = 0;
+        this._worldReference.removeReference();
+        this._worldReference = null;
+    }
+    get ptr() {
+        return this._ptr;
+    }
+}
+function physicsRuntimeFinalizer(inner) {
+    inner.dispose();
+}
+const physicsRuntimeRegistryMap = new WeakMap();
+class PhysicsRuntime {
+    /**
+     * @internal
+     */
+    wasmInstance;
+    /**
+     * Spinlock for the physics runtime to synchronize access to the physics world state
+     * @internal
+     */
+    lock;
+    _inner;
+    _physicsWorld;
+    _scene;
+    _afterAnimationsBinded;
+    _evaluationType;
+    /**
+     * Creates a new physics runtime
+     * @param wasmInstance The Bullet WASM instance
+     */
+    constructor(wasmInstance) {
+        this.wasmInstance = wasmInstance;
+        const physicsWorld = new PhysicsWorld(this);
+        const ptr = wasmInstance.createPhysicsRuntime(physicsWorld.ptr);
+        const lockPtr = wasmInstance.physicsRuntimeGetLockStatePtr(ptr);
+        this.lock = new WasmSpinlock(wasmInstance.createTypedArray(Uint8Array, lockPtr, 1));
+        this._inner = new PhysicsRuntimeInner(this.lock, new WeakRef(wasmInstance), ptr, physicsWorld);
+        this._physicsWorld = physicsWorld;
+        let registry = physicsRuntimeRegistryMap.get(wasmInstance);
+        if (registry === undefined) {
+            registry = new FinalizationRegistry(physicsRuntimeFinalizer);
+            physicsRuntimeRegistryMap.set(wasmInstance, registry);
+        }
+        registry.register(this, this._inner, this);
+        this._scene = null;
+        this._afterAnimationsBinded = null;
+        this._evaluationType = PhysicsRuntimeEvaluationType.Immediate;
+    }
+    dispose() {
+        if (this._inner.ptr === 0) {
+            return;
+        }
+        this._inner.dispose();
+        const registry = physicsRuntimeRegistryMap.get(this.wasmInstance);
+        registry?.unregister(this);
+    }
+    get ptr() {
+        return this._inner.ptr;
+    }
+    _nullCheck() {
+        if (this._inner.ptr === 0) {
+            throw new Error("Cannot access disposed physics runtime");
+        }
+    }
+    createRigidBodyImpl() {
+        if (this._evaluationType === PhysicsRuntimeEvaluationType.Immediate) {
+            return new ImmediateRigidBodyImpl();
+        }
+        else {
+            return new BufferedRigidBodyImpl();
+        }
+    }
+    register(scene) {
+        if (this._afterAnimationsBinded !== null)
+            return;
+        this._nullCheck();
+        this._afterAnimationsBinded = () => {
+            this.afterAnimations(scene.getEngine().getDeltaTime());
+        };
+        this._scene = scene;
+        scene.onAfterAnimationsObservable.add(this._afterAnimationsBinded);
+    }
+    unregister() {
+        if (this._afterAnimationsBinded === null)
+            return;
+        this._scene.onAfterAnimationsObservable.removeCallback(this._afterAnimationsBinded);
+        this._afterAnimationsBinded = null;
+        this._scene = null;
+    }
+    afterAnimations(deltaTime) {
+        if (this._inner.ptr === 0) {
+            this.unregister();
+            return;
+        }
+        const scene = this._scene;
+        if (scene !== null) {
+            deltaTime = scene.useConstantAnimationDeltaTime
+                ? 16
+                : Math.max(core_scene/* Scene */.Z.MinDeltaTime, Math.min(deltaTime, core_scene/* Scene */.Z.MaxDeltaTime));
+        }
+        else {
+            deltaTime = Math.max(core_scene/* Scene */.Z.MinDeltaTime, Math.min(deltaTime, core_scene/* Scene */.Z.MaxDeltaTime));
+        }
+        // TODO: Implement physics runtime evaluation
+        this._physicsWorld;
+        this._evaluationType;
     }
 }
 
@@ -1609,373 +2110,6 @@ class BulletWasmInstanceTypeMD {
     }
 }
 
-;// ./src/Runtime/Misc/wasmSpinlock.ts
-/**
- * Spinlock for WASM runtime synchronization
- */
-class WasmSpinlock {
-    _lock;
-    /**
-     * Creates a new WasmSpinlock with the 1 byte length lock array
-     * @param lock Lock array
-     */
-    constructor(lock) {
-        this._lock = lock;
-    }
-    /**
-     * waits for the lock to be released
-     */
-    wait() {
-        const lock = this._lock.array;
-        // let locked = false;
-        // const lockStartTime = performance.now();
-        while (Atomics.load(lock, 0) !== 0) {
-            // locked = true;
-            // spin
-        }
-        // if (locked) {
-        //     const lockTime = performance.now() - lockStartTime;
-        //     console.trace(`Spinlock wait time: ${lockTime}ms`);
-        // }
-    }
-}
-
-;// ./src/Runtime/physicsRuntimeEvaluationType.ts
-var PhysicsRuntimeEvaluationType;
-(function (PhysicsRuntimeEvaluationType) {
-    PhysicsRuntimeEvaluationType[PhysicsRuntimeEvaluationType["Immediate"] = 0] = "Immediate";
-    PhysicsRuntimeEvaluationType[PhysicsRuntimeEvaluationType["Buffered"] = 1] = "Buffered";
-})(PhysicsRuntimeEvaluationType || (PhysicsRuntimeEvaluationType = {}));
-
-;// ./src/Runtime/physicsWorld.ts
-class PhysicsWorldInner {
-    _runtime;
-    _ptr;
-    _rigidBodyReferences;
-    _rigidBodyBundleReferences;
-    _constraintReferences;
-    _referenceCount;
-    constructor(runtime, ptr) {
-        this._runtime = runtime;
-        this._ptr = ptr;
-        this._rigidBodyReferences = new Set();
-        this._rigidBodyBundleReferences = new Set();
-        this._constraintReferences = new Set();
-        this._referenceCount = 0;
-    }
-    dispose() {
-        if (this._referenceCount > 0) {
-            throw new Error("Cannot dispose physics world while it still has references");
-        }
-        if (this._ptr === 0) {
-            return;
-        }
-        const runtime = this._runtime.deref();
-        if (runtime !== undefined) {
-            runtime.lock.wait();
-            runtime.wasmInstance.destroyPhysicsWorld(this._ptr);
-        }
-        this._ptr = 0;
-        for (const rigidBody of this._rigidBodyReferences) {
-            rigidBody.setWorldReference(null);
-        }
-        this._rigidBodyReferences.clear();
-        for (const rigidBodyBundle of this._rigidBodyBundleReferences) {
-            rigidBodyBundle.setWorldReference(null);
-        }
-        this._rigidBodyBundleReferences.clear();
-        for (const constraint of this._constraintReferences) {
-            constraint.setWorldReference(null);
-        }
-        this._constraintReferences.clear();
-    }
-    get ptr() {
-        return this._ptr;
-    }
-    addReference() {
-        this._referenceCount += 1;
-    }
-    removeReference() {
-        this._referenceCount -= 1;
-    }
-    addRigidBodyReference(rigidBody) {
-        if (this._rigidBodyReferences.has(rigidBody)) {
-            return false;
-        }
-        rigidBody.setWorldReference(this);
-        this._rigidBodyReferences.add(rigidBody);
-        return true;
-    }
-    removeRigidBodyReference(rigidBody) {
-        if (this._rigidBodyReferences.delete(rigidBody)) {
-            rigidBody.setWorldReference(null);
-            return true;
-        }
-        return false;
-    }
-    addRigidBodyBundleReference(rigidBodyBundle) {
-        if (this._rigidBodyBundleReferences.has(rigidBodyBundle)) {
-            return false;
-        }
-        rigidBodyBundle.setWorldReference(this);
-        this._rigidBodyBundleReferences.add(rigidBodyBundle);
-        return true;
-    }
-    removeRigidBodyBundleReference(rigidBodyBundle) {
-        if (this._rigidBodyBundleReferences.delete(rigidBodyBundle)) {
-            rigidBodyBundle.setWorldReference(null);
-            return true;
-        }
-        return false;
-    }
-    addConstraintReference(constraint) {
-        if (this._constraintReferences.has(constraint)) {
-            return false;
-        }
-        constraint.setWorldReference(this);
-        this._constraintReferences.add(constraint);
-        return true;
-    }
-    removeConstraintReference(constraint) {
-        if (this._constraintReferences.delete(constraint)) {
-            constraint.setWorldReference(null);
-            return true;
-        }
-        return false;
-    }
-}
-function physicsWorldFinalizer(inner) {
-    inner.dispose();
-}
-const physicsWorldRegistryMap = new WeakMap();
-class PhysicsWorld {
-    _runtime;
-    _inner;
-    constructor(runtime) {
-        this._runtime = runtime;
-        const ptr = runtime.wasmInstance.createPhysicsWorld();
-        this._inner = new PhysicsWorldInner(new WeakRef(runtime), ptr);
-        let registry = physicsWorldRegistryMap.get(runtime.wasmInstance);
-        if (registry === undefined) {
-            registry = new FinalizationRegistry(physicsWorldFinalizer);
-            physicsWorldRegistryMap.set(runtime.wasmInstance, registry);
-        }
-        registry.register(this, this._inner, this);
-    }
-    dispose() {
-        if (this._inner.ptr === 0) {
-            return;
-        }
-        this._inner.dispose();
-        const registry = physicsWorldRegistryMap.get(this._runtime.wasmInstance);
-        registry?.unregister(this);
-    }
-    get ptr() {
-        return this._inner.ptr;
-    }
-    addReference() {
-        this._inner.addReference();
-    }
-    removeReference() {
-        this._inner.removeReference();
-    }
-    _nullCheck() {
-        if (this._inner.ptr === 0) {
-            throw new Error("Cannot access disposed physics world");
-        }
-    }
-    setGravity(gravity) {
-        this._nullCheck();
-        this._runtime.wasmInstance.physicsWorldSetGravity(this._inner.ptr, gravity.x, gravity.y, gravity.z);
-    }
-    stepSimulation(timeStep, maxSubSteps, fixedTimeStep) {
-        this._nullCheck();
-        this._runtime.wasmInstance.physicsWorldStepSimulation(this._inner.ptr, timeStep, maxSubSteps, fixedTimeStep);
-    }
-    addRigidBody(rigidBody) {
-        if (rigidBody.runtime !== this._runtime) {
-            throw new Error("Cannot add rigid body from different runtime");
-        }
-        this._nullCheck();
-        if (this._inner.addRigidBodyReference(rigidBody)) {
-            this._runtime.wasmInstance.physicsWorldAddRigidBody(this._inner.ptr, rigidBody.ptr);
-            return true;
-        }
-        return false;
-    }
-    removeRigidBody(rigidBody) {
-        this._nullCheck();
-        if (this._inner.removeRigidBodyReference(rigidBody)) {
-            this._runtime.wasmInstance.physicsWorldRemoveRigidBody(this._inner.ptr, rigidBody.ptr);
-            return true;
-        }
-        return false;
-    }
-    addRigidBodyBundle(rigidBodyBundle) {
-        if (rigidBodyBundle.runtime !== this._runtime) {
-            throw new Error("Cannot add rigid body bundle from different runtime");
-        }
-        this._nullCheck();
-        if (this._inner.addRigidBodyBundleReference(rigidBodyBundle)) {
-            this._runtime.wasmInstance.physicsWorldAddRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
-            return true;
-        }
-        return false;
-    }
-    removeRigidBodyBundle(rigidBodyBundle) {
-        this._nullCheck();
-        if (this._inner.removeRigidBodyBundleReference(rigidBodyBundle)) {
-            this._runtime.wasmInstance.physicsWorldRemoveRigidBodyBundle(this._inner.ptr, rigidBodyBundle.ptr);
-            return true;
-        }
-        return false;
-    }
-    addConstraint(constraint, disableCollisionsBetweenLinkedBodies) {
-        if (constraint.runtime !== this._runtime) {
-            throw new Error("Cannot add constraint from different runtime");
-        }
-        this._nullCheck();
-        if (this._inner.addConstraintReference(constraint)) {
-            this._runtime.wasmInstance.physicsWorldAddConstraint(this._inner.ptr, constraint.ptr, disableCollisionsBetweenLinkedBodies);
-            return true;
-        }
-        return false;
-    }
-    removeConstraint(constraint) {
-        this._nullCheck();
-        if (this._inner.removeConstraintReference(constraint)) {
-            this._runtime.wasmInstance.physicsWorldRemoveConstraint(this._inner.ptr, constraint.ptr);
-            return true;
-        }
-        return false;
-    }
-}
-
-;// ./src/Runtime/physicsRuntime.ts
-
-
-
-
-class PhysicsRuntimeInner {
-    _lock;
-    _wasmInstance;
-    _ptr;
-    _worldReference;
-    constructor(lock, wasmInstance, ptr, worldReference) {
-        this._lock = lock;
-        this._wasmInstance = wasmInstance;
-        this._ptr = ptr;
-        this._worldReference = worldReference;
-        worldReference.addReference();
-    }
-    dispose() {
-        if (this._ptr === 0) {
-            return;
-        }
-        this._lock.wait(); // ensure that the runtime is not evaluating the world
-        this._wasmInstance.deref()?.destroyPhysicsRuntime(this._ptr);
-        this._ptr = 0;
-        this._worldReference.removeReference();
-        this._worldReference = null;
-    }
-    get ptr() {
-        return this._ptr;
-    }
-}
-function physicsRuntimeFinalizer(inner) {
-    inner.dispose();
-}
-const physicsRuntimeRegistryMap = new WeakMap();
-class PhysicsRuntime {
-    /**
-     * @internal
-     */
-    wasmInstance;
-    /**
-     * Spinlock for the physics runtime to synchronize access to the physics world state
-     * @internal
-     */
-    lock;
-    _inner;
-    _physicsWorld;
-    _scene;
-    _afterAnimationsBinded;
-    _evaluationType;
-    /**
-     * Creates a new physics runtime
-     * @param wasmInstance The Bullet WASM instance
-     */
-    constructor(wasmInstance) {
-        this.wasmInstance = wasmInstance;
-        const physicsWorld = new PhysicsWorld(this);
-        const ptr = wasmInstance.createPhysicsRuntime(physicsWorld.ptr);
-        const lockPtr = wasmInstance.physicsRuntimeGetLockStatePtr(ptr);
-        this.lock = new WasmSpinlock(wasmInstance.createTypedArray(Uint8Array, lockPtr, 1));
-        this._inner = new PhysicsRuntimeInner(this.lock, new WeakRef(wasmInstance), ptr, physicsWorld);
-        this._physicsWorld = physicsWorld;
-        let registry = physicsRuntimeRegistryMap.get(wasmInstance);
-        if (registry === undefined) {
-            registry = new FinalizationRegistry(physicsRuntimeFinalizer);
-            physicsRuntimeRegistryMap.set(wasmInstance, registry);
-        }
-        registry.register(this, this._inner, this);
-        this._scene = null;
-        this._afterAnimationsBinded = null;
-        this._evaluationType = PhysicsRuntimeEvaluationType.Immediate;
-    }
-    dispose() {
-        if (this._inner.ptr === 0) {
-            return;
-        }
-        this._inner.dispose();
-        const registry = physicsRuntimeRegistryMap.get(this.wasmInstance);
-        registry?.unregister(this);
-    }
-    get ptr() {
-        return this._inner.ptr;
-    }
-    _nullCheck() {
-        if (this._inner.ptr === 0) {
-            throw new Error("Cannot access disposed physics runtime");
-        }
-    }
-    register(scene) {
-        if (this._afterAnimationsBinded !== null)
-            return;
-        this._nullCheck();
-        this._afterAnimationsBinded = () => {
-            this.afterAnimations(scene.getEngine().getDeltaTime());
-        };
-        this._scene = scene;
-        scene.onAfterAnimationsObservable.add(this._afterAnimationsBinded);
-    }
-    unregister() {
-        if (this._afterAnimationsBinded === null)
-            return;
-        this._scene.onAfterAnimationsObservable.removeCallback(this._afterAnimationsBinded);
-        this._afterAnimationsBinded = null;
-        this._scene = null;
-    }
-    afterAnimations(deltaTime) {
-        if (this._inner.ptr === 0) {
-            this.unregister();
-            return;
-        }
-        const scene = this._scene;
-        if (scene !== null) {
-            deltaTime = scene.useConstantAnimationDeltaTime
-                ? 16
-                : Math.max(core_scene/* Scene */.Z.MinDeltaTime, Math.min(deltaTime, core_scene/* Scene */.Z.MaxDeltaTime));
-        }
-        else {
-            deltaTime = Math.max(core_scene/* Scene */.Z.MinDeltaTime, Math.min(deltaTime, core_scene/* Scene */.Z.MaxDeltaTime));
-        }
-        // TODO: Implement physics runtime evaluation
-        this._physicsWorld;
-        this._evaluationType;
-    }
-}
-
 ;// ./src/Runtime/physicsShape.ts
 class PhysicsShapeInner {
     _wasmInstance;
@@ -2131,6 +2265,7 @@ class RigidBody {
     _motionStatePtr;
     _inner;
     _worldReference;
+    impl;
     constructor(runtime, info, n) {
         const infoPtr = n !== undefined ? info.getPtr(n) : info.ptr;
         if (infoPtr === 0) {
@@ -2162,6 +2297,7 @@ class RigidBody {
             physicsRigidBodyRegistryMap.set(wasmInstance, registry);
         }
         registry.register(this, this._inner, this);
+        this.impl = runtime.createRigidBodyImpl();
     }
     dispose() {
         if (this._inner.ptr === 0) {
@@ -2219,60 +2355,28 @@ class RigidBody {
     }
     getTransformMatrixToRef(result) {
         this._nullCheck();
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatePtr = this._motionStatePtr.array;
-        result.setRowFromFloats(0, motionStatePtr[4], motionStatePtr[8], motionStatePtr[12], 0);
-        result.setRowFromFloats(1, motionStatePtr[5], motionStatePtr[9], motionStatePtr[13], 0);
-        result.setRowFromFloats(2, motionStatePtr[6], motionStatePtr[10], motionStatePtr[14], 0);
-        result.setRowFromFloats(3, motionStatePtr[16], motionStatePtr[17], motionStatePtr[18], 1);
+        this.impl.getTransformMatrixToRef(this._motionStatePtr, result);
         return result;
     }
     getTransformMatrixToArray(result, offset = 0) {
         this._nullCheck();
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatePtr = this._motionStatePtr.array;
-        result[offset] = motionStatePtr[4];
-        result[offset + 1] = motionStatePtr[8];
-        result[offset + 2] = motionStatePtr[12];
-        result[offset + 3] = 0;
-        result[offset + 4] = motionStatePtr[5];
-        result[offset + 5] = motionStatePtr[9];
-        result[offset + 6] = motionStatePtr[13];
-        result[offset + 7] = 0;
-        result[offset + 8] = motionStatePtr[6];
-        result[offset + 9] = motionStatePtr[10];
-        result[offset + 10] = motionStatePtr[14];
-        result[offset + 11] = 0;
-        result[offset + 12] = motionStatePtr[16];
-        result[offset + 13] = motionStatePtr[17];
-        result[offset + 14] = motionStatePtr[18];
-        result[offset + 15] = 1;
+        this.impl.getTransformMatrixToArray(this._motionStatePtr, result, offset);
     }
     setTransformMatrix(matrix) {
         this.setTransformMatrixFromArray(matrix.m, 0);
     }
     setTransformMatrixFromArray(array, offset = 0) {
         this._nullCheck();
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatePtr = this._motionStatePtr.array;
-        motionStatePtr[4] = array[offset];
-        motionStatePtr[8] = array[offset + 1];
-        motionStatePtr[12] = array[offset + 2];
-        motionStatePtr[5] = array[offset + 4];
-        motionStatePtr[9] = array[offset + 5];
-        motionStatePtr[13] = array[offset + 6];
-        motionStatePtr[6] = array[offset + 8];
-        motionStatePtr[10] = array[offset + 9];
-        motionStatePtr[14] = array[offset + 10];
-        motionStatePtr[16] = array[offset + 12];
-        motionStatePtr[17] = array[offset + 13];
-        motionStatePtr[18] = array[offset + 14];
+        this.impl.setTransformMatrixFromArray(this._motionStatePtr, array, offset);
     }
 }
 
@@ -3325,7 +3429,7 @@ class BaseRuntime {
 __webpack_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3720);
 /* harmony import */ var _baseRuntime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1478);
-/* harmony import */ var _Scene_physicsRuntimeTestScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9637);
+/* harmony import */ var _Scene_physicsRuntimeTestScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6065);
 
 
 
