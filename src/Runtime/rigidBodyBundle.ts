@@ -2,7 +2,7 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
-import type { IRuntime } from "./IRuntime";
+import type { IRuntime } from "./Impl/IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";

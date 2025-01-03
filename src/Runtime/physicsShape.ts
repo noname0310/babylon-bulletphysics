@@ -1,7 +1,7 @@
 import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
-import type { IRuntime } from "./IRuntime";
+import type { IRuntime } from "./Impl/IRuntime";
 
 class PhysicsShapeInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;

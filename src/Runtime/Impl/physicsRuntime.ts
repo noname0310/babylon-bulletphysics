@@ -1,11 +1,14 @@
 import { Scene } from "@babylonjs/core/scene";
 import type { Nullable } from "@babylonjs/core/types";
 
-import type { BulletWasmInstance } from "./bulletWasmInstance";
+import type { BulletWasmInstance } from "../bulletWasmInstance";
+import { WasmSpinlock } from "../Misc/wasmSpinlock";
+import { PhysicsWorld } from "../physicsWorld";
+import { BufferedRigidBodyImpl } from "./Buffered/bufferedRigidBodyImpl";
+import { ImmediateRigidBodyImpl } from "./Immediate/immediateRigidBodyImpl";
+import type { IRigidBodyImpl } from "./IRigidBodyImpl";
 import type { IRuntime } from "./IRuntime";
-import { WasmSpinlock } from "./Misc/wasmSpinlock";
 import { PhysicsRuntimeEvaluationType } from "./physicsRuntimeEvaluationType";
-import { PhysicsWorld } from "./physicsWorld";
 
 class PhysicsRuntimeInner {
     private readonly _lock: WasmSpinlock;
@@ -114,6 +117,14 @@ export class PhysicsRuntime implements IRuntime {
     private _nullCheck(): void {
         if (this._inner.ptr === 0) {
             throw new Error("Cannot access disposed physics runtime");
+        }
+    }
+
+    public createRigidBodyImpl(): IRigidBodyImpl {
+        if (this._evaluationType === PhysicsRuntimeEvaluationType.Immediate) {
+            return new ImmediateRigidBodyImpl();
+        } else {
+            return new BufferedRigidBodyImpl();
         }
     }
 

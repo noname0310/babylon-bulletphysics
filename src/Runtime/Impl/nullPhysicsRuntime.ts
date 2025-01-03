@@ -1,4 +1,5 @@
-import type { BulletWasmInstance } from "./bulletWasmInstance";
+import type { BulletWasmInstance } from "../bulletWasmInstance";
+import { ImmediateRigidBodyImpl } from "./Immediate/immediateRigidBodyImpl";
 import type { IRuntime } from "./IRuntime";
 
 class NullSpinlock {
@@ -24,5 +25,9 @@ export class NullPhysicsRuntime implements IRuntime {
     public constructor(wasmInstance: BulletWasmInstance) {
         this.wasmInstance = wasmInstance;
         this.lock = new NullSpinlock();
+    }
+
+    public createRigidBodyImpl(): ImmediateRigidBodyImpl {
+        return new ImmediateRigidBodyImpl();
     }
 }

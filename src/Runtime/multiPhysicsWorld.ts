@@ -2,7 +2,7 @@ import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { Constraint } from "./constraint";
-import type { IRuntime } from "./IRuntime";
+import type { IRuntime } from "./Impl/IRuntime";
 import type { RigidBody } from "./rigidBody";
 import type { RigidBodyBundle } from "./rigidBodyBundle";
 

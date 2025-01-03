@@ -15,12 +15,12 @@ import { Scene } from "@babylonjs/core/scene";
 
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
+import { NullPhysicsRuntime } from "@/Runtime/Impl/nullPhysicsRuntime";
 import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
 import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
 // import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
 import { MotionType } from "@/Runtime/motionType";
 import { MultiPhysicsWorld } from "@/Runtime/multiPhysicsWorld";
-import { NullPhysicsRuntime } from "@/Runtime/nullPhysicsRuntime";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
 import { RigidBody } from "@/Runtime/rigidBody";
 import { RigidBodyBundle } from "@/Runtime/rigidBodyBundle";

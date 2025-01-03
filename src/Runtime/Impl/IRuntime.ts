@@ -1,5 +1,6 @@
-import type { BulletWasmInstance } from "./bulletWasmInstance";
-import type { IWasmSpinLock } from "./Misc/IWasmSpinLock";
+import type { BulletWasmInstance } from "../bulletWasmInstance";
+import type { IWasmSpinLock } from "../Misc/IWasmSpinLock";
+import type { IRigidBodyImpl } from "./IRigidBodyImpl";
 
 /**
  * Represents the runtime for the physics engine
@@ -15,4 +16,6 @@ export interface IRuntime {
      *
      */
     readonly lock: IWasmSpinLock;
+
+    createRigidBodyImpl(): IRigidBodyImpl;
 }
