@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 6065:
+/***/ 818:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -431,6 +431,8 @@ class Generic6DofSpringConstraint extends Constraint {
     }
 }
 
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/observable.js
+var observable = __webpack_require__(9848);
 ;// ./src/Runtime/Misc/wasmSpinlock.ts
 /**
  * Spinlock for WASM runtime synchronization
@@ -666,6 +668,147 @@ class PhysicsWorld {
     }
 }
 
+;// ./src/Runtime/Impl/Buffered/bufferedRigidBodyBundleImpl.ts
+class BufferedRigidBodyBundleImpl {
+    shouldSync;
+    /**
+     * for getTransformMatrixToRef
+     */
+    _readMatrices;
+    /**
+     * for setTransformMatrix
+     */
+    _writeMatrices;
+    _isWriteMatricesDirty;
+    _writeMatrixDirtyFlags;
+    _count;
+    constructor(count) {
+        this.shouldSync = false;
+        this._readMatrices = new Float32Array(count * 16);
+        this._writeMatrices = new Float32Array(count * 16);
+        this._isWriteMatricesDirty = false;
+        this._writeMatrixDirtyFlags = new Uint8Array(count);
+        this._count = count;
+    }
+    commitFromMotionState(motionStatesPtr) {
+        const n = this._readMatrices;
+        const m = motionStatesPtr.array;
+        const count = this._count;
+        let nOffset = 0;
+        let mOffset = 0;
+        for (let i = 0; i < count; ++i) {
+            n[nOffset] = m[mOffset + 4];
+            n[nOffset + 1] = m[mOffset + 8];
+            n[nOffset + 2] = m[mOffset + 12];
+            n[nOffset + 3] = 0;
+            n[nOffset + 4] = m[mOffset + 5];
+            n[nOffset + 5] = m[mOffset + 9];
+            n[nOffset + 6] = m[mOffset + 13];
+            n[nOffset + 7] = 0;
+            n[nOffset + 8] = m[mOffset + 6];
+            n[nOffset + 9] = m[mOffset + 10];
+            n[nOffset + 10] = m[mOffset + 14];
+            n[nOffset + 11] = 0;
+            n[nOffset + 12] = m[mOffset + 16];
+            n[nOffset + 13] = m[mOffset + 17];
+            n[nOffset + 14] = m[mOffset + 18];
+            n[nOffset + 15] = 1;
+            nOffset += 16;
+            mOffset += 20 /* Constants.MotionStateSizeInFloat32Array */;
+        }
+    }
+    commitToMotionState(motionStatesPtr) {
+        if (!this._isWriteMatricesDirty) {
+            return;
+        }
+        const n = this._writeMatrices;
+        const m = motionStatesPtr.array;
+        const writeMatrixDirtyFlags = this._writeMatrixDirtyFlags;
+        const count = this._count;
+        let nOffset = 0;
+        let mOffset = 0;
+        for (let i = 0; i < count; ++i) {
+            if (writeMatrixDirtyFlags[i] === 0) {
+                nOffset += 16;
+                mOffset += 20 /* Constants.MotionStateSizeInFloat32Array */;
+                continue;
+            }
+            m[mOffset + 4] = n[nOffset];
+            m[mOffset + 8] = n[nOffset + 1];
+            m[mOffset + 12] = n[nOffset + 2];
+            m[mOffset + 5] = n[nOffset + 4];
+            m[mOffset + 9] = n[nOffset + 5];
+            m[mOffset + 13] = n[nOffset + 6];
+            m[mOffset + 6] = n[nOffset + 8];
+            m[mOffset + 10] = n[nOffset + 9];
+            m[mOffset + 14] = n[nOffset + 10];
+            m[mOffset + 16] = n[nOffset + 12];
+            m[mOffset + 17] = n[nOffset + 13];
+            m[mOffset + 18] = n[nOffset + 14];
+            writeMatrixDirtyFlags[i] = 0;
+            nOffset += 16;
+            mOffset += 20 /* Constants.MotionStateSizeInFloat32Array */;
+        }
+        this._isWriteMatricesDirty = false;
+    }
+    getTransformMatrixToRef(_motionStatesPtr, index, result) {
+        const m = this._readMatrices;
+        const offset = index * 16;
+        result.set(m[offset], m[offset + 1], m[offset + 2], 0, m[offset + 4], m[offset + 5], m[offset + 6], 0, m[offset + 8], m[offset + 9], m[offset + 10], 0, m[offset + 12], m[offset + 13], m[offset + 14], 1);
+        return result;
+    }
+    getTransformMatrixToArray(_motionStatesPtr, index, result, offset = 0) {
+        const m = this._readMatrices;
+        const mOffset = index * 16;
+        result[offset] = m[mOffset];
+        result[offset + 1] = m[mOffset + 1];
+        result[offset + 2] = m[mOffset + 2];
+        result[offset + 3] = 0;
+        result[offset + 4] = m[mOffset + 4];
+        result[offset + 5] = m[mOffset + 5];
+        result[offset + 6] = m[mOffset + 6];
+        result[offset + 7] = 0;
+        result[offset + 8] = m[mOffset + 8];
+        result[offset + 9] = m[mOffset + 9];
+        result[offset + 10] = m[mOffset + 10];
+        result[offset + 11] = 0;
+        result[offset + 12] = m[mOffset + 12];
+        result[offset + 13] = m[mOffset + 13];
+        result[offset + 14] = m[mOffset + 14];
+        result[offset + 15] = 1;
+    }
+    getTransformMatricesToArray(_motionStatesPtr, result, offset = 0) {
+        result.set(this._readMatrices, offset);
+    }
+    setTransformMatrixFromArray(_motionStatesPtr, index, array, offset = 0) {
+        const m = this._writeMatrices;
+        const writeMatrixDirtyFlags = this._writeMatrixDirtyFlags;
+        const mOffset = index * 16;
+        m[mOffset] = array[offset];
+        m[mOffset + 1] = array[offset + 1];
+        m[mOffset + 2] = array[offset + 2];
+        m[mOffset + 3] = 0;
+        m[mOffset + 4] = array[offset + 4];
+        m[mOffset + 5] = array[offset + 5];
+        m[mOffset + 6] = array[offset + 6];
+        m[mOffset + 7] = 0;
+        m[mOffset + 8] = array[offset + 8];
+        m[mOffset + 9] = array[offset + 9];
+        m[mOffset + 10] = array[offset + 10];
+        m[mOffset + 11] = 0;
+        m[mOffset + 12] = array[offset + 12];
+        m[mOffset + 13] = array[offset + 13];
+        m[mOffset + 14] = array[offset + 14];
+        m[mOffset + 15] = 1;
+        writeMatrixDirtyFlags[index] = 1;
+        this._isWriteMatricesDirty = true;
+    }
+    setTransformMatricesFromArray(_motionStatesPtr, array, offset = 0) {
+        this._writeMatrices.set(array, offset);
+        this._isWriteMatricesDirty = true;
+    }
+}
+
 ;// ./src/Runtime/Impl/Buffered/bufferedRigidBodyImpl.ts
 class BufferedRigidBodyImpl {
     shouldSync;
@@ -722,13 +865,11 @@ class BufferedRigidBodyImpl {
         n[16] = m[12];
         n[17] = m[13];
         n[18] = m[14];
+        this._isWriteMatrixDirty = false;
     }
     getTransformMatrixToRef(_motionStatePtr, result) {
         const m = this._readMatrix;
-        result.setRowFromFloats(0, m[0], m[1], m[2], 0);
-        result.setRowFromFloats(1, m[4], m[5], m[6], 0);
-        result.setRowFromFloats(2, m[8], m[9], m[10], 0);
-        result.setRowFromFloats(3, m[12], m[13], m[14], 1);
+        result.set(m[0], m[1], m[2], 0, m[4], m[5], m[6], 0, m[8], m[9], m[10], 0, m[12], m[13], m[14], 1);
         return result;
     }
     getTransformMatrixToArray(_motionStatePtr, result, offset = 0) {
@@ -740,6 +881,106 @@ class BufferedRigidBodyImpl {
     }
 }
 
+;// ./src/Runtime/Impl/Immediate/immediateRigidBodyBundleImpl.ts
+class ImmediateRigidBodyBundleImpl {
+    shouldSync;
+    _count;
+    constructor(count) {
+        this.shouldSync = true;
+        this._count = count;
+    }
+    getTransformMatrixToRef(motionStatesPtr, index, result) {
+        const m = motionStatesPtr.array;
+        const offset = index * 20 /* Constants.MotionStateSizeInFloat32Array */;
+        result.set(m[offset + 4], m[offset + 8], m[offset + 12], 0, m[offset + 5], m[offset + 9], m[offset + 13], 0, m[offset + 6], m[offset + 10], m[offset + 14], 0, m[offset + 16], m[offset + 17], m[offset + 18], 1);
+        return result;
+    }
+    getTransformMatrixToArray(motionStatesPtr, index, result, offset = 0) {
+        const m = motionStatesPtr.array;
+        const mOffset = index * 20 /* Constants.MotionStateSizeInFloat32Array */;
+        result[offset] = m[mOffset + 4];
+        result[offset + 1] = m[mOffset + 8];
+        result[offset + 2] = m[mOffset + 12];
+        result[offset + 3] = 0;
+        result[offset + 4] = m[mOffset + 5];
+        result[offset + 5] = m[mOffset + 9];
+        result[offset + 6] = m[mOffset + 13];
+        result[offset + 7] = 0;
+        result[offset + 8] = m[mOffset + 6];
+        result[offset + 9] = m[mOffset + 10];
+        result[offset + 10] = m[mOffset + 14];
+        result[offset + 11] = 0;
+        result[offset + 12] = m[mOffset + 16];
+        result[offset + 13] = m[mOffset + 17];
+        result[offset + 14] = m[mOffset + 18];
+        result[offset + 15] = 1;
+    }
+    getTransformMatricesToArray(motionStatesPtr, result, offset = 0) {
+        const m = motionStatesPtr.array;
+        const count = this._count;
+        let mOffset = 0;
+        let rOffset = offset;
+        for (let i = 0; i < count; ++i) {
+            result[rOffset] = m[mOffset + 4];
+            result[rOffset + 1] = m[mOffset + 8];
+            result[rOffset + 2] = m[mOffset + 12];
+            result[rOffset + 3] = 0;
+            result[rOffset + 4] = m[mOffset + 5];
+            result[rOffset + 5] = m[mOffset + 9];
+            result[rOffset + 6] = m[mOffset + 13];
+            result[rOffset + 7] = 0;
+            result[rOffset + 8] = m[mOffset + 6];
+            result[rOffset + 9] = m[mOffset + 10];
+            result[rOffset + 10] = m[mOffset + 14];
+            result[rOffset + 11] = 0;
+            result[rOffset + 12] = m[mOffset + 16];
+            result[rOffset + 13] = m[mOffset + 17];
+            result[rOffset + 14] = m[mOffset + 18];
+            result[rOffset + 15] = 1;
+            mOffset += 20 /* Constants.MotionStateSizeInFloat32Array */;
+            rOffset += 16;
+        }
+    }
+    setTransformMatrixFromArray(motionStatesPtr, index, array, offset = 0) {
+        const m = motionStatesPtr.array;
+        const mOffset = index * 20 /* Constants.MotionStateSizeInFloat32Array */;
+        m[mOffset + 4] = array[offset];
+        m[mOffset + 8] = array[offset + 1];
+        m[mOffset + 12] = array[offset + 2];
+        m[mOffset + 5] = array[offset + 4];
+        m[mOffset + 9] = array[offset + 5];
+        m[mOffset + 13] = array[offset + 6];
+        m[mOffset + 6] = array[offset + 8];
+        m[mOffset + 10] = array[offset + 9];
+        m[mOffset + 14] = array[offset + 10];
+        m[mOffset + 16] = array[offset + 12];
+        m[mOffset + 17] = array[offset + 13];
+        m[mOffset + 18] = array[offset + 14];
+    }
+    setTransformMatricesFromArray(motionStatesPtr, array, offset = 0) {
+        const m = motionStatesPtr.array;
+        const count = this._count;
+        let mOffset = 0;
+        let aOffset = offset;
+        for (let i = 0; i < count; ++i) {
+            m[mOffset + 4] = array[aOffset];
+            m[mOffset + 8] = array[aOffset + 1];
+            m[mOffset + 12] = array[aOffset + 2];
+            m[mOffset + 5] = array[aOffset + 4];
+            m[mOffset + 9] = array[aOffset + 5];
+            m[mOffset + 13] = array[aOffset + 6];
+            m[mOffset + 6] = array[aOffset + 8];
+            m[mOffset + 10] = array[aOffset + 9];
+            m[mOffset + 14] = array[aOffset + 10];
+            m[mOffset + 16] = array[aOffset + 12];
+            m[mOffset + 17] = array[aOffset + 13];
+            m[mOffset + 18] = array[aOffset + 14];
+            mOffset += 20 /* Constants.MotionStateSizeInFloat32Array */;
+            aOffset += 16;
+        }
+    }
+}
+
 ;// ./src/Runtime/Impl/Immediate/immediateRigidBodyImpl.ts
 class ImmediateRigidBodyImpl {
     shouldSync;
@@ -748,10 +989,7 @@ class ImmediateRigidBodyImpl {
     }
     getTransformMatrixToRef(motionStatePtr, result) {
         const m = motionStatePtr.array;
-        result.setRowFromFloats(0, m[4], m[8], m[12], 0);
-        result.setRowFromFloats(1, m[5], m[9], m[13], 0);
-        result.setRowFromFloats(2, m[6], m[10], m[14], 0);
-        result.setRowFromFloats(3, m[16], m[17], m[18], 1);
+        result.set(m[4], m[8], m[12], 0, m[5], m[9], m[13], 0, m[6], m[10], m[14], 0, m[16], m[17], m[18], 1);
         return result;
     }
     getTransformMatrixToArray(motionStatePtr, result, offset = 0) {
@@ -804,6 +1042,10 @@ var PhysicsRuntimeEvaluationType;
 
 
 
+
+
+
+
 class PhysicsRuntimeInner {
     _lock;
     _wasmInstance;
@@ -835,6 +1077,7 @@ function physicsRuntimeFinalizer(inner) {
 }
 const physicsRuntimeRegistryMap = new WeakMap();
 class PhysicsRuntime {
+    onTickObservable;
     /**
      * @internal
      */
@@ -849,11 +1092,18 @@ class PhysicsRuntime {
     _scene;
     _afterAnimationsBinded;
     _evaluationType;
+    useDeltaForWorldStep;
+    timeStep;
+    maxSubSteps;
+    fixedTimeStep;
+    _rigidBodyList;
+    _rigidBodyBundleList;
     /**
      * Creates a new physics runtime
      * @param wasmInstance The Bullet WASM instance
      */
     constructor(wasmInstance) {
+        this.onTickObservable = new observable/* Observable */.cP();
         this.wasmInstance = wasmInstance;
         const physicsWorld = new PhysicsWorld(this);
         const ptr = wasmInstance.createPhysicsRuntime(physicsWorld.ptr);
@@ -870,6 +1120,12 @@ class PhysicsRuntime {
         this._scene = null;
         this._afterAnimationsBinded = null;
         this._evaluationType = PhysicsRuntimeEvaluationType.Immediate;
+        this.useDeltaForWorldStep = true;
+        this.timeStep = 1 / 60;
+        this.maxSubSteps = 10;
+        this.fixedTimeStep = 1 / 60;
+        this._rigidBodyList = [];
+        this._rigidBodyBundleList = [];
     }
     dispose() {
         if (this._inner.ptr === 0) {
@@ -895,6 +1151,14 @@ class PhysicsRuntime {
             return new BufferedRigidBodyImpl();
         }
     }
+    createRigidBodyBundleImpl(bundle) {
+        if (this._evaluationType === PhysicsRuntimeEvaluationType.Immediate) {
+            return new ImmediateRigidBodyBundleImpl(bundle.count);
+        }
+        else {
+            return new BufferedRigidBodyBundleImpl(bundle.count);
+        }
+    }
     register(scene) {
         if (this._afterAnimationsBinded !== null)
             return;
@@ -917,18 +1181,81 @@ class PhysicsRuntime {
             this.unregister();
             return;
         }
-        const scene = this._scene;
-        if (scene !== null) {
-            deltaTime = scene.useConstantAnimationDeltaTime
-                ? 16
-                : Math.max(core_scene/* Scene */.Z.MinDeltaTime, Math.min(deltaTime, core_scene/* Scene */.Z.MaxDeltaTime));
+        if (this.useDeltaForWorldStep) {
+            const scene = this._scene;
+            if (scene !== null) {
+                deltaTime = scene.useConstantAnimationDeltaTime
+                    ? 16
+                    : Math.max(core_scene/* Scene */.Z.MinDeltaTime, Math.min(deltaTime, core_scene/* Scene */.Z.MaxDeltaTime));
+            }
+            else {
+                deltaTime = Math.max(core_scene/* Scene */.Z.MinDeltaTime, Math.min(deltaTime, core_scene/* Scene */.Z.MaxDeltaTime));
+            }
+            deltaTime /= 1000;
         }
         else {
-            deltaTime = Math.max(core_scene/* Scene */.Z.MinDeltaTime, Math.min(deltaTime, core_scene/* Scene */.Z.MaxDeltaTime));
+            deltaTime = this.timeStep;
         }
-        // TODO: Implement physics runtime evaluation
-        this._physicsWorld;
-        this._evaluationType;
+        this._physicsWorld.stepSimulation(deltaTime, this.maxSubSteps, this.fixedTimeStep);
+        this.onTickObservable.notifyObservers();
+    }
+    _gravity = new math_vector/* Vector3 */.Pq(0, -10, 0);
+    getGravityToRef(result) {
+        result.copyFrom(this._gravity);
+    }
+    setGravity(gravity) {
+        this._nullCheck();
+        this._gravity.copyFrom(gravity);
+        this._physicsWorld.setGravity(gravity);
+    }
+    addRigidBody(rigidBody) {
+        this._nullCheck();
+        const result = this._physicsWorld.addRigidBody(rigidBody);
+        if (result) {
+            this._rigidBodyList.push(rigidBody);
+        }
+        return result;
+    }
+    removeRigidBody(rigidBody) {
+        this._nullCheck();
+        const result = this._physicsWorld.removeRigidBody(rigidBody);
+        if (result) {
+            const index = this._rigidBodyList.indexOf(rigidBody);
+            if (index !== -1) {
+                this._rigidBodyList.splice(index, 1);
+            }
+        }
+        return result;
+    }
+    addRigidBodyBundle(rigidBodyBundle) {
+        this._nullCheck();
+        const result = this._physicsWorld.addRigidBodyBundle(rigidBodyBundle);
+        if (result) {
+            this._rigidBodyBundleList.push(rigidBodyBundle);
+        }
+        return result;
+    }
+    removeRigidBodyBundle(rigidBodyBundle) {
+        this._nullCheck();
+        const result = this._physicsWorld.removeRigidBodyBundle(rigidBodyBundle);
+        if (result) {
+            const index = this._rigidBodyBundleList.indexOf(rigidBodyBundle);
+            if (index !== -1) {
+                this._rigidBodyBundleList.splice(index, 1);
+            }
+        }
+        return result;
+    }
+    get rigidBodyList() {
+        return this._rigidBodyList;
+    }
+    addConstraint(constraint, disableCollisionsBetweenLinkedBodies) {
+        this._nullCheck();
+        return this._physicsWorld.addConstraint(constraint, disableCollisionsBetweenLinkedBodies);
+    }
+    removeConstraint(constraint) {
+        this._nullCheck();
+        return this._physicsWorld.removeConstraint(constraint);
     }
 }
 
@@ -1049,6 +1376,151 @@ function _assertBoolean(n) {
         throw new Error(`expected a boolean argument, found ${typeof(n)}`);
     }
 }
+
+function _assertNum(n) {
+    if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
+}
+/**
+* @param {number} physics_world
+* @returns {number}
+*/
+function createPhysicsRuntime(physics_world) {
+    _assertNum(physics_world);
+    const ret = wasm.createPhysicsRuntime(physics_world);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+*/
+function destroyPhysicsRuntime(physics_runtime) {
+    _assertNum(physics_runtime);
+    wasm.destroyPhysicsRuntime(physics_runtime);
+}
+
+/**
+* @param {number} physics_runtime
+* @returns {number}
+*/
+function physicsRuntimeGetLockStatePtr(physics_runtime) {
+    _assertNum(physics_runtime);
+    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
+    _assertNum(physics_runtime);
+    _assertNum(max_sub_steps);
+    wasm.physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
+}
+
+/**
+* @returns {number}
+*/
+function createPhysicsWorld() {
+    const ret = wasm.createPhysicsWorld();
+    return ret >>> 0;
+}
+
+/**
+* @param {number} world
+*/
+function destroyPhysicsWorld(world) {
+    _assertNum(world);
+    wasm.destroyPhysicsWorld(world);
+}
+
+/**
+* @param {number} world
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function physicsWorldSetGravity(world, x, y, z) {
+    _assertNum(world);
+    wasm.physicsWorldSetGravity(world, x, y, z);
+}
+
+/**
+* @param {number} world
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
+    _assertNum(world);
+    _assertNum(max_sub_steps);
+    wasm.physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
+}
+
+/**
+* @param {number} world
+* @param {number} rigidbody
+*/
+function physicsWorldAddRigidBody(world, rigidbody) {
+    _assertNum(world);
+    _assertNum(rigidbody);
+    wasm.physicsWorldAddRigidBody(world, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} rigidbody
+*/
+function physicsWorldRemoveRigidBody(world, rigidbody) {
+    _assertNum(world);
+    _assertNum(rigidbody);
+    wasm.physicsWorldRemoveRigidBody(world, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} bundle
+*/
+function physicsWorldAddRigidBodyBundle(world, bundle) {
+    _assertNum(world);
+    _assertNum(bundle);
+    wasm.physicsWorldAddRigidBodyBundle(world, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} bundle
+*/
+function physicsWorldRemoveRigidBodyBundle(world, bundle) {
+    _assertNum(world);
+    _assertNum(bundle);
+    wasm.physicsWorldRemoveRigidBodyBundle(world, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} constraint
+* @param {boolean} disable_collisions_between_linked_bodies
+*/
+function physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies) {
+    _assertNum(world);
+    _assertNum(constraint);
+    _assertBoolean(disable_collisions_between_linked_bodies);
+    wasm.physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies);
+}
+
+/**
+* @param {number} world
+* @param {number} constraint
+*/
+function physicsWorldRemoveConstraint(world, constraint) {
+    _assertNum(world);
+    _assertNum(constraint);
+    wasm.physicsWorldRemoveConstraint(world, constraint);
+}
+
 /**
 * @returns {number}
 */
@@ -1057,9 +1529,6 @@ function createMultiPhysicsWorld() {
     return ret >>> 0;
 }
 
-function _assertNum(n) {
-    if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
-}
 /**
 * @param {number} world
 */
@@ -1254,136 +1723,6 @@ function multiPhysicsWorldRemoveConstraint(world, world_id, constraint) {
 }
 
 /**
-*/
-function init() {
-    wasm.init();
-}
-
-/**
-* @param {number} size
-* @returns {number}
-*/
-function allocateBuffer(size) {
-    _assertNum(size);
-    const ret = wasm.allocateBuffer(size);
-    return ret >>> 0;
-}
-
-/**
-* Deallocate a buffer allocated by `allocateBuffer`.
-* # Safety
-* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
-* @param {number} ptr
-* @param {number} size
-*/
-function deallocateBuffer(ptr, size) {
-    _assertNum(ptr);
-    _assertNum(size);
-    wasm.deallocateBuffer(ptr, size);
-}
-
-/**
-* @returns {number}
-*/
-function createPhysicsWorld() {
-    const ret = wasm.createPhysicsWorld();
-    return ret >>> 0;
-}
-
-/**
-* @param {number} world
-*/
-function destroyPhysicsWorld(world) {
-    _assertNum(world);
-    wasm.destroyPhysicsWorld(world);
-}
-
-/**
-* @param {number} world
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function physicsWorldSetGravity(world, x, y, z) {
-    _assertNum(world);
-    wasm.physicsWorldSetGravity(world, x, y, z);
-}
-
-/**
-* @param {number} world
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
-    _assertNum(world);
-    _assertNum(max_sub_steps);
-    wasm.physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
-* @param {number} world
-* @param {number} rigidbody
-*/
-function physicsWorldAddRigidBody(world, rigidbody) {
-    _assertNum(world);
-    _assertNum(rigidbody);
-    wasm.physicsWorldAddRigidBody(world, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} rigidbody
-*/
-function physicsWorldRemoveRigidBody(world, rigidbody) {
-    _assertNum(world);
-    _assertNum(rigidbody);
-    wasm.physicsWorldRemoveRigidBody(world, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} bundle
-*/
-function physicsWorldAddRigidBodyBundle(world, bundle) {
-    _assertNum(world);
-    _assertNum(bundle);
-    wasm.physicsWorldAddRigidBodyBundle(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} bundle
-*/
-function physicsWorldRemoveRigidBodyBundle(world, bundle) {
-    _assertNum(world);
-    _assertNum(bundle);
-    wasm.physicsWorldRemoveRigidBodyBundle(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} constraint
-* @param {boolean} disable_collisions_between_linked_bodies
-*/
-function physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies) {
-    _assertNum(world);
-    _assertNum(constraint);
-    _assertBoolean(disable_collisions_between_linked_bodies);
-    wasm.physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies);
-}
-
-/**
-* @param {number} world
-* @param {number} constraint
-*/
-function physicsWorldRemoveConstraint(world, constraint) {
-    _assertNum(world);
-    _assertNum(constraint);
-    wasm.physicsWorldRemoveConstraint(world, constraint);
-}
-
-/**
 * @param {number} body_a
 * @param {number} body_b
 * @param {number} frame_a
@@ -1546,93 +1885,32 @@ function constraintSetDamping(ptr, index, damping) {
 }
 
 /**
-* @param {number} physics_world
+*/
+function init() {
+    wasm.init();
+}
+
+/**
+* @param {number} size
 * @returns {number}
 */
-function createPhysicsRuntime(physics_world) {
-    _assertNum(physics_world);
-    const ret = wasm.createPhysicsRuntime(physics_world);
+function allocateBuffer(size) {
+    _assertNum(size);
+    const ret = wasm.allocateBuffer(size);
     return ret >>> 0;
 }
 
 /**
-* @param {number} physics_runtime
-*/
-function destroyPhysicsRuntime(physics_runtime) {
-    _assertNum(physics_runtime);
-    wasm.destroyPhysicsRuntime(physics_runtime);
-}
-
-/**
-* @param {number} physics_runtime
-* @returns {number}
-*/
-function physicsRuntimeGetLockStatePtr(physics_runtime) {
-    _assertNum(physics_runtime);
-    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
-    _assertNum(physics_runtime);
-    _assertNum(max_sub_steps);
-    wasm.physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @returns {number}
-*/
-function createBoxShape(x, y, z) {
-    const ret = wasm.createBoxShape(x, y, z);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @returns {number}
-*/
-function createSphereShape(radius) {
-    const ret = wasm.createSphereShape(radius);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @param {number} height
-* @returns {number}
-*/
-function createCapsuleShape(radius, height) {
-    const ret = wasm.createCapsuleShape(radius, height);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} normal_x
-* @param {number} normal_y
-* @param {number} normal_z
-* @param {number} plane_constant
-* @returns {number}
-*/
-function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
-    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
-    return ret >>> 0;
-}
-
-/**
+* Deallocate a buffer allocated by `allocateBuffer`.
+* # Safety
+* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
 * @param {number} ptr
+* @param {number} size
 */
-function destroyShape(ptr) {
+function deallocateBuffer(ptr, size) {
     _assertNum(ptr);
-    wasm.destroyShape(ptr);
+    _assertNum(size);
+    wasm.deallocateBuffer(ptr, size);
 }
 
 /**
@@ -1727,6 +2005,56 @@ function rigidBodyBundleRestoreDynamic(ptr, index) {
     _assertNum(ptr);
     _assertNum(index);
     wasm.rigidBodyBundleRestoreDynamic(ptr, index);
+}
+
+/**
+* @param {number} x
+* @param {number} y
+* @param {number} z
+* @returns {number}
+*/
+function createBoxShape(x, y, z) {
+    const ret = wasm.createBoxShape(x, y, z);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @returns {number}
+*/
+function createSphereShape(radius) {
+    const ret = wasm.createSphereShape(radius);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @param {number} height
+* @returns {number}
+*/
+function createCapsuleShape(radius, height) {
+    const ret = wasm.createCapsuleShape(radius, height);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} normal_x
+* @param {number} normal_y
+* @param {number} normal_z
+* @param {number} plane_constant
+* @returns {number}
+*/
+function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
+    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyShape(ptr) {
+    _assertNum(ptr);
+    wasm.destroyShape(ptr);
 }
 
 function logError(f, args) {
@@ -2288,7 +2616,7 @@ class RigidBody {
         const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBody(infoPtr);
         const motionStatePtr = wasmInstance.rigidBodyGetMotionStatePtr(ptr);
-        this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, 80 / Float32Array.BYTES_PER_ELEMENT);
+        this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, 20 /* Constants.MotionStateSizeInFloat32Array */);
         this._inner = new RigidBodyInner(new WeakRef(runtime.wasmInstance), ptr, shape);
         this._worldReference = null;
         let registry = physicsRigidBodyRegistryMap.get(wasmInstance);
@@ -2381,7 +2709,6 @@ class RigidBody {
 }
 
 ;// ./src/Runtime/rigidBodyBundle.ts
-const motionStateSize = 80;
 class RigidBodyBundleInner {
     _wasmInstance;
     _ptr;
@@ -2434,6 +2761,7 @@ class RigidBodyBundle {
     _inner;
     _count;
     _worldReference;
+    impl;
     constructor(runtime, info) {
         if (info.ptr === 0) {
             throw new Error("Cannot create rigid body bundle with null pointer");
@@ -2454,7 +2782,7 @@ class RigidBodyBundle {
         const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBodyBundle(info.ptr, count);
         const motionStatesPtr = wasmInstance.rigidBodyBundleGetMotionStatesPtr(ptr);
-        this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * motionStateSize / Float32Array.BYTES_PER_ELEMENT);
+        this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * 80 /* Constants.MotionStateSize */ / Float32Array.BYTES_PER_ELEMENT);
         this._inner = new RigidBodyBundleInner(new WeakRef(runtime.wasmInstance), ptr, shapeReferences);
         this._count = count;
         this._worldReference = null;
@@ -2464,6 +2792,7 @@ class RigidBodyBundle {
             physicsRigidBodyBundleRegistryMap.set(wasmInstance, registry);
         }
         registry.register(this, this._inner, this);
+        this.impl = runtime.createRigidBodyBundleImpl(this);
     }
     dispose() {
         if (this._inner.ptr === 0) {
@@ -2533,70 +2862,27 @@ class RigidBodyBundle {
         if (index < 0 || this._count <= index) {
             throw new RangeError("Index out of range");
         }
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-        result.setRowFromFloats(0, motionStatesPtr[offset + 4], motionStatesPtr[offset + 8], motionStatesPtr[offset + 12], 0);
-        result.setRowFromFloats(1, motionStatesPtr[offset + 5], motionStatesPtr[offset + 9], motionStatesPtr[offset + 13], 0);
-        result.setRowFromFloats(2, motionStatesPtr[offset + 6], motionStatesPtr[offset + 10], motionStatesPtr[offset + 14], 0);
-        result.setRowFromFloats(3, motionStatesPtr[offset + 16], motionStatesPtr[offset + 17], motionStatesPtr[offset + 18], 1);
-        return result;
+        return this.impl.getTransformMatrixToRef(this._motionStatesPtr, index, result);
     }
     getTransformMatrixToArray(index, result, offset = 0) {
         this._nullCheck();
         if (index < 0 || this._count <= index) {
             throw new RangeError("Index out of range");
         }
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        const motionStateOffset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-        result[offset] = motionStatesPtr[motionStateOffset + 4];
-        result[offset + 1] = motionStatesPtr[motionStateOffset + 8];
-        result[offset + 2] = motionStatesPtr[motionStateOffset + 12];
-        result[offset + 3] = 0;
-        result[offset + 4] = motionStatesPtr[motionStateOffset + 5];
-        result[offset + 5] = motionStatesPtr[motionStateOffset + 9];
-        result[offset + 6] = motionStatesPtr[motionStateOffset + 13];
-        result[offset + 7] = 0;
-        result[offset + 8] = motionStatesPtr[motionStateOffset + 6];
-        result[offset + 9] = motionStatesPtr[motionStateOffset + 10];
-        result[offset + 10] = motionStatesPtr[motionStateOffset + 14];
-        result[offset + 11] = 0;
-        result[offset + 12] = motionStatesPtr[motionStateOffset + 16];
-        result[offset + 13] = motionStatesPtr[motionStateOffset + 17];
-        result[offset + 14] = motionStatesPtr[motionStateOffset + 18];
-        result[offset + 15] = 1;
+        this.impl.getTransformMatrixToArray(this._motionStatesPtr, index, result, offset);
     }
     getTransformMatricesToArray(result, offset = 0) {
         this._nullCheck();
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        for (let i = 0; i < this._count; ++i) {
-            const motionStateOffset = i * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-            result[offset] = motionStatesPtr[motionStateOffset + 4];
-            result[offset + 1] = motionStatesPtr[motionStateOffset + 8];
-            result[offset + 2] = motionStatesPtr[motionStateOffset + 12];
-            result[offset + 3] = 0;
-            result[offset + 4] = motionStatesPtr[motionStateOffset + 5];
-            result[offset + 5] = motionStatesPtr[motionStateOffset + 9];
-            result[offset + 6] = motionStatesPtr[motionStateOffset + 13];
-            result[offset + 7] = 0;
-            result[offset + 8] = motionStatesPtr[motionStateOffset + 6];
-            result[offset + 9] = motionStatesPtr[motionStateOffset + 10];
-            result[offset + 10] = motionStatesPtr[motionStateOffset + 14];
-            result[offset + 11] = 0;
-            result[offset + 12] = motionStatesPtr[motionStateOffset + 16];
-            result[offset + 13] = motionStatesPtr[motionStateOffset + 17];
-            result[offset + 14] = motionStatesPtr[motionStateOffset + 18];
-            result[offset + 15] = 1;
-            offset += 16;
-        }
+        this.impl.getTransformMatricesToArray(this._motionStatesPtr, result, offset);
     }
     setTransformMatrix(index, matrix) {
         this.setTransformMatrixFromArray(index, matrix.m, 0);
@@ -2606,49 +2892,20 @@ class RigidBodyBundle {
         if (index < 0 || this._count <= index) {
             throw new RangeError("Index out of range");
         }
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        const motionStateOffset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-        motionStatesPtr[motionStateOffset + 4] = array[offset];
-        motionStatesPtr[motionStateOffset + 8] = array[offset + 1];
-        motionStatesPtr[motionStateOffset + 12] = array[offset + 2];
-        motionStatesPtr[motionStateOffset + 5] = array[offset + 4];
-        motionStatesPtr[motionStateOffset + 9] = array[offset + 5];
-        motionStatesPtr[motionStateOffset + 13] = array[offset + 6];
-        motionStatesPtr[motionStateOffset + 6] = array[offset + 8];
-        motionStatesPtr[motionStateOffset + 10] = array[offset + 9];
-        motionStatesPtr[motionStateOffset + 14] = array[offset + 10];
-        motionStatesPtr[motionStateOffset + 16] = array[offset + 12];
-        motionStatesPtr[motionStateOffset + 17] = array[offset + 13];
-        motionStatesPtr[motionStateOffset + 18] = array[offset + 14];
+        this.impl.setTransformMatrixFromArray(this._motionStatesPtr, index, array, offset);
     }
     setTransformMatricesFromArray(array, offset = 0) {
         this._nullCheck();
         if (array.length < this._count * 16) {
             throw new RangeError("Array is too short");
         }
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        for (let i = 0; i < this._count; ++i) {
-            const motionStateOffset = i * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-            motionStatesPtr[motionStateOffset + 4] = array[offset];
-            motionStatesPtr[motionStateOffset + 8] = array[offset + 1];
-            motionStatesPtr[motionStateOffset + 12] = array[offset + 2];
-            motionStatesPtr[motionStateOffset + 5] = array[offset + 4];
-            motionStatesPtr[motionStateOffset + 9] = array[offset + 5];
-            motionStatesPtr[motionStateOffset + 13] = array[offset + 6];
-            motionStatesPtr[motionStateOffset + 6] = array[offset + 8];
-            motionStatesPtr[motionStateOffset + 10] = array[offset + 9];
-            motionStatesPtr[motionStateOffset + 14] = array[offset + 10];
-            motionStatesPtr[motionStateOffset + 16] = array[offset + 12];
-            motionStatesPtr[motionStateOffset + 17] = array[offset + 13];
-            motionStatesPtr[motionStateOffset + 18] = array[offset + 14];
-            offset += 16;
-        }
+        this.impl.setTransformMatricesFromArray(this._motionStatesPtr, array, offset);
     }
 }
 
@@ -3278,7 +3535,6 @@ class RigidBodyConstructionInfoList {
 
 
 
-
 class SceneBuilder {
     async build(_canvas, engine) {
         const scene = new core_scene/* Scene */.Z(engine);
@@ -3316,7 +3572,6 @@ class SceneBuilder {
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
         const runtime = new PhysicsRuntime(wasmInstance);
         runtime.register(scene);
-        const world = new PhysicsWorld(runtime);
         const matrix = new math_vector/* Matrix */.uq();
         {
             const ground = (0,planeBuilder/* CreatePlane */.x)("ground", { size: 120 }, scene);
@@ -3330,7 +3585,7 @@ class SceneBuilder {
             groundRbInfo.setInitialTransform(matrix);
             groundRbInfo.motionType = 1 /* MotionType.Static */;
             const groundRigidBody = new RigidBody(runtime, groundRbInfo);
-            world.addRigidBody(groundRigidBody);
+            runtime.addRigidBody(groundRigidBody);
         }
         const rbCount = 512 * 2;
         const baseBox = (0,boxBuilder/* CreateBox */.an)("box", { size: 2 }, scene);
@@ -3349,7 +3604,7 @@ class SceneBuilder {
             rbInfoList.setAngularDamping(i, 0.3);
         }
         const boxRigidBodyBundle = new RigidBodyBundle(runtime, rbInfoList);
-        world.addRigidBodyBundle(boxRigidBodyBundle);
+        runtime.addRigidBodyBundle(boxRigidBodyBundle);
         for (let i = 0; i < rbCount; i += 2) {
             const indices = [i, i + 1];
             const constraint = new Generic6DofSpringConstraint(runtime, boxRigidBodyBundle, indices, math_vector/* Matrix */.uq.Translation(0, -1.2, 0), math_vector/* Matrix */.uq.Translation(0, 1.2, 0), true);
@@ -3362,10 +3617,9 @@ class SceneBuilder {
                 constraint.setStiffness(i, 100);
                 constraint.setDamping(i, 1);
             }
-            world.addConstraint(constraint, false);
+            runtime.addConstraint(constraint, false);
         }
-        scene.onBeforeRenderObservable.add(() => {
-            world.stepSimulation(1 / 60, 10, 1 / 60);
+        runtime.onTickObservable.add(() => {
             boxRigidBodyBundle.getTransformMatricesToArray(rigidbodyMatrixBuffer);
             baseBox.thinInstanceBufferUpdated("matrix");
         });
@@ -3429,7 +3683,7 @@ class BaseRuntime {
 __webpack_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3720);
 /* harmony import */ var _baseRuntime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1478);
-/* harmony import */ var _Scene_physicsRuntimeTestScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6065);
+/* harmony import */ var _Scene_physicsRuntimeTestScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(818);
 
 
 
@@ -3465,7 +3719,7 @@ __webpack_async_result__();
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "12b1b102b7d2c59c3cad.wasm";
+module.exports = __webpack_require__.p + "5d4016f33b9589a0afa5.wasm";
 
 /***/ })
 
