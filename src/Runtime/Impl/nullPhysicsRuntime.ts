@@ -1,4 +1,6 @@
 import type { BulletWasmInstance } from "../bulletWasmInstance";
+import type { RigidBodyBundle } from "../rigidBodyBundle";
+import { ImmediateRigidBodyBundleImpl } from "./Immediate/immediateRigidBodyBundleImpl";
 import { ImmediateRigidBodyImpl } from "./Immediate/immediateRigidBodyImpl";
 import type { IRuntime } from "./IRuntime";
 
@@ -29,5 +31,9 @@ export class NullPhysicsRuntime implements IRuntime {
 
     public createRigidBodyImpl(): ImmediateRigidBodyImpl {
         return new ImmediateRigidBodyImpl();
+    }
+
+    public createRigidBodyBundleImpl(bundle: RigidBodyBundle): ImmediateRigidBodyBundleImpl {
+        return new ImmediateRigidBodyBundleImpl(bundle.count);
     }
 }

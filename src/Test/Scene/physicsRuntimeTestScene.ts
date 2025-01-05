@@ -20,7 +20,6 @@ import { PhysicsRuntime } from "@/Runtime/Impl/physicsRuntime";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { MotionType } from "@/Runtime/motionType";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
-import { PhysicsWorld } from "@/Runtime/physicsWorld";
 import { RigidBody } from "@/Runtime/rigidBody";
 import { RigidBodyBundle } from "@/Runtime/rigidBodyBundle";
 import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
@@ -71,7 +70,6 @@ export class SceneBuilder implements ISceneBuilder {
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
         const runtime = new PhysicsRuntime(wasmInstance);
         runtime.register(scene);
-        const world = new PhysicsWorld(runtime);
 
         const matrix = new Matrix();
 
@@ -89,7 +87,7 @@ export class SceneBuilder implements ISceneBuilder {
             groundRbInfo.motionType = MotionType.Static;
 
             const groundRigidBody = new RigidBody(runtime, groundRbInfo);
-            world.addRigidBody(groundRigidBody);
+            runtime.addRigidBody(groundRigidBody);
         }
 
         const rbCount = 512 * 2;
@@ -112,7 +110,7 @@ export class SceneBuilder implements ISceneBuilder {
             rbInfoList.setAngularDamping(i, 0.3);
         }
         const boxRigidBodyBundle = new RigidBodyBundle(runtime, rbInfoList);
-        world.addRigidBodyBundle(boxRigidBodyBundle);
+        runtime.addRigidBodyBundle(boxRigidBodyBundle);
 
         for (let i = 0; i < rbCount; i += 2) {
             const indices = [i, i + 1] as const;
@@ -126,11 +124,10 @@ export class SceneBuilder implements ISceneBuilder {
                 constraint.setStiffness(i, 100);
                 constraint.setDamping(i, 1);
             }
-            world.addConstraint(constraint, false);
+            runtime.addConstraint(constraint, false);
         }
 
-        scene.onBeforeRenderObservable.add(() => {
-            world.stepSimulation(1 / 60, 10, 1 / 60);
+        runtime.onTickObservable.add(() => {
             boxRigidBodyBundle.getTransformMatricesToArray(rigidbodyMatrixBuffer);
             baseBox.thinInstanceBufferUpdated("matrix");
         });

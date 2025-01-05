@@ -2,12 +2,12 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import { Constants } from "./constants";
+import type { IRigidBodyBundleImpl } from "./Impl/IRigidBodyBundleImpl";
 import type { IRuntime } from "./Impl/IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
-
-const motionStateSize = 80;
 
 class RigidBodyBundleInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
@@ -77,6 +77,8 @@ export class RigidBodyBundle {
 
     private _worldReference: Nullable<object>;
 
+    public impl: IRigidBodyBundleImpl;
+
     public constructor(runtime: IRuntime, info: RigidBodyConstructionInfoList) {
         if (info.ptr === 0) {
             throw new Error("Cannot create rigid body bundle with null pointer");
@@ -98,7 +100,7 @@ export class RigidBodyBundle {
         const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBodyBundle(info.ptr, count);
         const motionStatesPtr = wasmInstance.rigidBodyBundleGetMotionStatesPtr(ptr);
-        this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * motionStateSize / Float32Array.BYTES_PER_ELEMENT);
+        this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * Constants.MotionStateSize / Float32Array.BYTES_PER_ELEMENT);
         this._inner = new RigidBodyBundleInner(new WeakRef(runtime.wasmInstance), ptr, shapeReferences);
         this._count = count;
         this._worldReference = null;
@@ -110,6 +112,8 @@ export class RigidBodyBundle {
         }
 
         registry.register(this, this._inner, this);
+
+        this.impl = runtime.createRigidBodyBundleImpl(this);
     }
 
     public dispose(): void {
@@ -194,16 +198,10 @@ export class RigidBodyBundle {
             throw new RangeError("Index out of range");
         }
 
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        const offset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-        result.setRowFromFloats(0, motionStatesPtr[offset + 4], motionStatesPtr[offset + 8], motionStatesPtr[offset + 12], 0);
-        result.setRowFromFloats(1, motionStatesPtr[offset + 5], motionStatesPtr[offset + 9], motionStatesPtr[offset + 13], 0);
-        result.setRowFromFloats(2, motionStatesPtr[offset + 6], motionStatesPtr[offset + 10], motionStatesPtr[offset + 14], 0);
-        result.setRowFromFloats(3, motionStatesPtr[offset + 16], motionStatesPtr[offset + 17], motionStatesPtr[offset + 18], 1);
-        return result;
+        return this.impl.getTransformMatrixToRef(this._motionStatesPtr, index, result);
     }
 
     public getTransformMatrixToArray(index: number, result: Float32Array, offset: number = 0): void {
@@ -212,64 +210,18 @@ export class RigidBodyBundle {
             throw new RangeError("Index out of range");
         }
 
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        const motionStateOffset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-
-        result[offset] = motionStatesPtr[motionStateOffset + 4];
-        result[offset + 1] = motionStatesPtr[motionStateOffset + 8];
-        result[offset + 2] = motionStatesPtr[motionStateOffset + 12];
-        result[offset + 3] = 0;
-
-        result[offset + 4] = motionStatesPtr[motionStateOffset + 5];
-        result[offset + 5] = motionStatesPtr[motionStateOffset + 9];
-        result[offset + 6] = motionStatesPtr[motionStateOffset + 13];
-        result[offset + 7] = 0;
-
-        result[offset + 8] = motionStatesPtr[motionStateOffset + 6];
-        result[offset + 9] = motionStatesPtr[motionStateOffset + 10];
-        result[offset + 10] = motionStatesPtr[motionStateOffset + 14];
-        result[offset + 11] = 0;
-
-        result[offset + 12] = motionStatesPtr[motionStateOffset + 16];
-        result[offset + 13] = motionStatesPtr[motionStateOffset + 17];
-        result[offset + 14] = motionStatesPtr[motionStateOffset + 18];
-        result[offset + 15] = 1;
+        this.impl.getTransformMatrixToArray(this._motionStatesPtr, index, result, offset);
     }
 
     public getTransformMatricesToArray(result: Float32Array, offset: number = 0): void {
         this._nullCheck();
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        for (let i = 0; i < this._count; ++i) {
-            const motionStateOffset = i * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-
-            result[offset] = motionStatesPtr[motionStateOffset + 4];
-            result[offset + 1] = motionStatesPtr[motionStateOffset + 8];
-            result[offset + 2] = motionStatesPtr[motionStateOffset + 12];
-            result[offset + 3] = 0;
-
-            result[offset + 4] = motionStatesPtr[motionStateOffset + 5];
-            result[offset + 5] = motionStatesPtr[motionStateOffset + 9];
-            result[offset + 6] = motionStatesPtr[motionStateOffset + 13];
-            result[offset + 7] = 0;
-
-            result[offset + 8] = motionStatesPtr[motionStateOffset + 6];
-            result[offset + 9] = motionStatesPtr[motionStateOffset + 10];
-            result[offset + 10] = motionStatesPtr[motionStateOffset + 14];
-            result[offset + 11] = 0;
-
-            result[offset + 12] = motionStatesPtr[motionStateOffset + 16];
-            result[offset + 13] = motionStatesPtr[motionStateOffset + 17];
-            result[offset + 14] = motionStatesPtr[motionStateOffset + 18];
-            result[offset + 15] = 1;
-
-            offset += 16;
-        }
+        this.impl.getTransformMatricesToArray(this._motionStatesPtr, result, offset);
     }
 
     public setTransformMatrix(index: number, matrix: Matrix): void {
@@ -282,59 +234,21 @@ export class RigidBodyBundle {
             throw new RangeError("Index out of range");
         }
 
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        const motionStateOffset = index * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-
-        motionStatesPtr[motionStateOffset + 4] = array[offset];
-        motionStatesPtr[motionStateOffset + 8] = array[offset + 1];
-        motionStatesPtr[motionStateOffset + 12] = array[offset + 2];
-
-        motionStatesPtr[motionStateOffset + 5] = array[offset + 4];
-        motionStatesPtr[motionStateOffset + 9] = array[offset + 5];
-        motionStatesPtr[motionStateOffset + 13] = array[offset + 6];
-
-        motionStatesPtr[motionStateOffset + 6] = array[offset + 8];
-        motionStatesPtr[motionStateOffset + 10] = array[offset + 9];
-        motionStatesPtr[motionStateOffset + 14] = array[offset + 10];
-
-        motionStatesPtr[motionStateOffset + 16] = array[offset + 12];
-        motionStatesPtr[motionStateOffset + 17] = array[offset + 13];
-        motionStatesPtr[motionStateOffset + 18] = array[offset + 14];
+        this.impl.setTransformMatrixFromArray(this._motionStatesPtr, index, array, offset);
     }
 
-    public setTransformMatricesFromArray(array: DeepImmutable<number[]>, offset: number = 0): void {
+    public setTransformMatricesFromArray(array: DeepImmutable<ArrayLike<number>>, offset: number = 0): void {
         this._nullCheck();
         if (array.length < this._count * 16) {
             throw new RangeError("Array is too short");
         }
 
-        if (this._inner.hasReferences) {
+        if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        const motionStatesPtr = this._motionStatesPtr.array;
-        for (let i = 0; i < this._count; ++i) {
-            const motionStateOffset = i * motionStateSize / Float32Array.BYTES_PER_ELEMENT;
-
-            motionStatesPtr[motionStateOffset + 4] = array[offset];
-            motionStatesPtr[motionStateOffset + 8] = array[offset + 1];
-            motionStatesPtr[motionStateOffset + 12] = array[offset + 2];
-
-            motionStatesPtr[motionStateOffset + 5] = array[offset + 4];
-            motionStatesPtr[motionStateOffset + 9] = array[offset + 5];
-            motionStatesPtr[motionStateOffset + 13] = array[offset + 6];
-
-            motionStatesPtr[motionStateOffset + 6] = array[offset + 8];
-            motionStatesPtr[motionStateOffset + 10] = array[offset + 9];
-            motionStatesPtr[motionStateOffset + 14] = array[offset + 10];
-
-            motionStatesPtr[motionStateOffset + 16] = array[offset + 12];
-            motionStatesPtr[motionStateOffset + 17] = array[offset + 13];
-            motionStatesPtr[motionStateOffset + 18] = array[offset + 14];
-
-            offset += 16;
-        }
+        this.impl.setTransformMatricesFromArray(this._motionStatesPtr, array, offset);
     }
 }

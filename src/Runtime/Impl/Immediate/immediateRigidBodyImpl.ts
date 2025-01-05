@@ -5,7 +5,7 @@ import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 import type { IRigidBodyImpl } from "../IRigidBodyImpl";
 
 export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
-    public shouldSync: boolean;
+    public readonly shouldSync: boolean;
 
     public constructor() {
         this.shouldSync = true;
@@ -14,10 +14,12 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
     public getTransformMatrixToRef(motionStatePtr: IWasmTypedArray<Float32Array>, result: Matrix): Matrix {
         const m = motionStatePtr.array;
 
-        result.setRowFromFloats(0, m[4], m[8], m[12], 0);
-        result.setRowFromFloats(1, m[5], m[9], m[13], 0);
-        result.setRowFromFloats(2, m[6], m[10], m[14], 0);
-        result.setRowFromFloats(3, m[16], m[17], m[18], 1);
+        result.set(
+            m[4], m[8], m[12], 0,
+            m[5], m[9], m[13], 0,
+            m[6], m[10], m[14], 0,
+            m[16], m[17], m[18], 1
+        );
         return result;
     }
 

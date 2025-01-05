@@ -74,14 +74,18 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
         n[16] = m[12];
         n[17] = m[13];
         n[18] = m[14];
+
+        this._isWriteMatrixDirty = false;
     }
 
     public getTransformMatrixToRef(_motionStatePtr: IWasmTypedArray<Float32Array>, result: Matrix): Matrix {
         const m = this._readMatrix;
-        result.setRowFromFloats(0, m[0], m[1], m[2], 0);
-        result.setRowFromFloats(1, m[4], m[5], m[6], 0);
-        result.setRowFromFloats(2, m[8], m[9], m[10], 0);
-        result.setRowFromFloats(3, m[12], m[13], m[14], 1);
+        result.set(
+            m[0], m[1], m[2], 0,
+            m[4], m[5], m[6], 0,
+            m[8], m[9], m[10], 0,
+            m[12], m[13], m[14], 1
+        );
         return result;
     }
 

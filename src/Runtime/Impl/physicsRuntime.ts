@@ -1,11 +1,19 @@
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Observable } from "@babylonjs/core/Misc/observable";
 import { Scene } from "@babylonjs/core/scene";
 import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "../bulletWasmInstance";
+import type { Constraint } from "../constraint";
 import { WasmSpinlock } from "../Misc/wasmSpinlock";
 import { PhysicsWorld } from "../physicsWorld";
+import type { RigidBody } from "../rigidBody";
+import type { RigidBodyBundle } from "../rigidBodyBundle";
+import { BufferedRigidBodyBundleImpl } from "./Buffered/bufferedRigidBodyBundleImpl";
 import { BufferedRigidBodyImpl } from "./Buffered/bufferedRigidBodyImpl";
+import { ImmediateRigidBodyBundleImpl } from "./Immediate/immediateRigidBodyBundleImpl";
 import { ImmediateRigidBodyImpl } from "./Immediate/immediateRigidBodyImpl";
+import type { IRigidBodyBundleImpl } from "./IRigidBodyBundleImpl";
 import type { IRigidBodyImpl } from "./IRigidBodyImpl";
 import type { IRuntime } from "./IRuntime";
 import { PhysicsRuntimeEvaluationType } from "./physicsRuntimeEvaluationType";
@@ -49,6 +57,8 @@ function physicsRuntimeFinalizer(inner: PhysicsRuntimeInner): void {
 const physicsRuntimeRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<PhysicsRuntimeInner>>();
 
 export class PhysicsRuntime implements IRuntime {
+    public readonly onTickObservable: Observable<void>;
+
     /**
      * @internal
      */
@@ -69,11 +79,21 @@ export class PhysicsRuntime implements IRuntime {
 
     private readonly _evaluationType: PhysicsRuntimeEvaluationType;
 
+    public readonly useDeltaForWorldStep: boolean;
+    public readonly timeStep: number;
+    public readonly maxSubSteps: number;
+    public readonly fixedTimeStep: number;
+
+    private readonly _rigidBodyList: RigidBody[];
+    private readonly _rigidBodyBundleList: RigidBodyBundle[];
+
     /**
      * Creates a new physics runtime
      * @param wasmInstance The Bullet WASM instance
      */
     public constructor(wasmInstance: BulletWasmInstance) {
+        this.onTickObservable = new Observable<void>();
+
         this.wasmInstance = wasmInstance;
 
         const physicsWorld = new PhysicsWorld(this);
@@ -97,6 +117,14 @@ export class PhysicsRuntime implements IRuntime {
         this._afterAnimationsBinded = null;
 
         this._evaluationType = PhysicsRuntimeEvaluationType.Immediate;
+
+        this.useDeltaForWorldStep = true;
+        this.timeStep = 1 / 60;
+        this.maxSubSteps = 10;
+        this.fixedTimeStep = 1 / 60;
+
+        this._rigidBodyList = [];
+        this._rigidBodyBundleList = [];
     }
 
     public dispose(): void {
@@ -128,6 +156,14 @@ export class PhysicsRuntime implements IRuntime {
         }
     }
 
+    public createRigidBodyBundleImpl(bundle: RigidBodyBundle): IRigidBodyBundleImpl {
+        if (this._evaluationType === PhysicsRuntimeEvaluationType.Immediate) {
+            return new ImmediateRigidBodyBundleImpl(bundle.count);
+        } else {
+            return new BufferedRigidBodyBundleImpl(bundle.count);
+        }
+    }
+
     public register(scene: Scene): void {
         if (this._afterAnimationsBinded !== null) return;
         this._nullCheck();
@@ -153,17 +189,89 @@ export class PhysicsRuntime implements IRuntime {
             return;
         }
 
-        const scene = this._scene;
-        if (scene !== null) {
-            deltaTime = scene.useConstantAnimationDeltaTime
-                ? 16
-                : Math.max(Scene.MinDeltaTime, Math.min(deltaTime, Scene.MaxDeltaTime));
+        if (this.useDeltaForWorldStep) {
+            const scene = this._scene;
+            if (scene !== null) {
+                deltaTime = scene.useConstantAnimationDeltaTime
+                    ? 16
+                    : Math.max(Scene.MinDeltaTime, Math.min(deltaTime, Scene.MaxDeltaTime));
+            } else {
+                deltaTime = Math.max(Scene.MinDeltaTime, Math.min(deltaTime, Scene.MaxDeltaTime));
+            }
+            deltaTime /= 1000;
         } else {
-            deltaTime = Math.max(Scene.MinDeltaTime, Math.min(deltaTime, Scene.MaxDeltaTime));
+            deltaTime = this.timeStep;
         }
+        this._physicsWorld.stepSimulation(deltaTime, this.maxSubSteps, this.fixedTimeStep);
 
-        // TODO: Implement physics runtime evaluation
-        this._physicsWorld;
-        this._evaluationType;
+        this.onTickObservable.notifyObservers();
+    }
+
+    private readonly _gravity: Vector3 = new Vector3(0, -10, 0);
+
+    public getGravityToRef(result: Vector3): void {
+        result.copyFrom(this._gravity);
+    }
+
+    public setGravity(gravity: Vector3): void {
+        this._nullCheck();
+        this._gravity.copyFrom(gravity);
+        this._physicsWorld.setGravity(gravity);
+    }
+
+    public addRigidBody(rigidBody: RigidBody): boolean {
+        this._nullCheck();
+        const result = this._physicsWorld.addRigidBody(rigidBody);
+        if (result) {
+            this._rigidBodyList.push(rigidBody);
+        }
+        return result;
+    }
+
+    public removeRigidBody(rigidBody: RigidBody): boolean {
+        this._nullCheck();
+        const result = this._physicsWorld.removeRigidBody(rigidBody);
+        if (result) {
+            const index = this._rigidBodyList.indexOf(rigidBody);
+            if (index !== -1) {
+                this._rigidBodyList.splice(index, 1);
+            }
+        }
+        return result;
+    }
+
+    public addRigidBodyBundle(rigidBodyBundle: RigidBodyBundle): boolean {
+        this._nullCheck();
+        const result = this._physicsWorld.addRigidBodyBundle(rigidBodyBundle);
+        if (result) {
+            this._rigidBodyBundleList.push(rigidBodyBundle);
+        }
+        return result;
+    }
+
+    public removeRigidBodyBundle(rigidBodyBundle: RigidBodyBundle): boolean {
+        this._nullCheck();
+        const result = this._physicsWorld.removeRigidBodyBundle(rigidBodyBundle);
+        if (result) {
+            const index = this._rigidBodyBundleList.indexOf(rigidBodyBundle);
+            if (index !== -1) {
+                this._rigidBodyBundleList.splice(index, 1);
+            }
+        }
+        return result;
+    }
+
+    public get rigidBodyList(): readonly RigidBody[] {
+        return this._rigidBodyList;
+    }
+
+    public addConstraint(constraint: Constraint, disableCollisionsBetweenLinkedBodies: boolean): boolean {
+        this._nullCheck();
+        return this._physicsWorld.addConstraint(constraint, disableCollisionsBetweenLinkedBodies);
+    }
+
+    public removeConstraint(constraint: Constraint): boolean {
+        this._nullCheck();
+        return this._physicsWorld.removeConstraint(constraint);
     }
 }

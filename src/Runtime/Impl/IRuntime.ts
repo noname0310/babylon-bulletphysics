@@ -1,5 +1,7 @@
 import type { BulletWasmInstance } from "../bulletWasmInstance";
 import type { IWasmSpinLock } from "../Misc/IWasmSpinLock";
+import type { RigidBodyBundle } from "../rigidBodyBundle";
+import type { IRigidBodyBundleImpl } from "./IRigidBodyBundleImpl";
 import type { IRigidBodyImpl } from "./IRigidBodyImpl";
 
 /**
@@ -18,4 +20,6 @@ export interface IRuntime {
     readonly lock: IWasmSpinLock;
 
     createRigidBodyImpl(): IRigidBodyImpl;
+
+    createRigidBodyBundleImpl(bundle: RigidBodyBundle): IRigidBodyBundleImpl;
 }

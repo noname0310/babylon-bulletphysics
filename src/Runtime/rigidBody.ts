@@ -2,6 +2,7 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import { Constants } from "./constants";
 import type { IRigidBodyImpl } from "./Impl/IRigidBodyImpl";
 import type { IRuntime } from "./Impl/IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
@@ -119,7 +120,7 @@ export class RigidBody {
         const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBody(infoPtr);
         const motionStatePtr = wasmInstance.rigidBodyGetMotionStatePtr(ptr);
-        this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, 80 / Float32Array.BYTES_PER_ELEMENT);
+        this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, Constants.MotionStateSizeInFloat32Array);
         this._inner = new RigidBodyInner(new WeakRef(runtime.wasmInstance), ptr, shape);
         this._worldReference = null;
 
