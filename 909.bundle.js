@@ -5,7 +5,7 @@
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "5d4016f33b9589a0afa5.wasm";
+module.exports = __webpack_require__.p + "fbbf50527e8bea69c4ae.wasm";
 
 /***/ }),
 
