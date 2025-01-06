@@ -68,6 +68,15 @@ impl MotionState {
         raw.translation = Vec3::new(transform.w_axis.x, transform.w_axis.y, transform.w_axis.z);
     }
 
+    pub(crate) fn copy_from(&self, other: &Self) {
+        let raw = unsafe { &*(other.ptr as *const MotionStateRawRead) };
+        let raw_write = unsafe { &mut *(self.ptr as *mut MotionStateRawWrite) };
+        raw_write.matrix_rowx = raw.matrix_rowx.into();
+        raw_write.matrix_rowy = raw.matrix_rowy.into();
+        raw_write.matrix_rowz = raw.matrix_rowz.into();
+        raw_write.translation = raw.translation.into();
+    }
+
     pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
         self.ptr
     }
