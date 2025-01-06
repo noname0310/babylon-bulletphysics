@@ -38,6 +38,7 @@ pub(crate) struct RigidBodyConstructionInfo<'a> {
 pub(crate) struct RigidBody {
     inner: bind::rigidbody::RigidBody,
     motion_state: bind::motion_state::MotionState,
+    buffered_motion_state: Option<bind::motion_state::MotionState>,
     #[cfg(debug_assertions)]
     ref_count: u32,
     #[cfg(debug_assertions)]
@@ -62,6 +63,7 @@ impl RigidBody {
         Self {
             inner,
             motion_state,
+            buffered_motion_state: None,
             #[cfg(debug_assertions)]
             ref_count: 0,
             #[cfg(debug_assertions)]
@@ -79,6 +81,14 @@ impl RigidBody {
 
     pub(crate) fn get_motion_state_ptr(&mut self) -> *mut std::ffi::c_void {
         self.motion_state.ptr_mut()
+    }
+
+    pub(crate) fn get_buffered_motion_state_ptr(&mut self) -> *mut std::ffi::c_void {
+        if let Some(motion_state) = self.buffered_motion_state.as_mut() {
+            motion_state.ptr_mut()
+        } else {
+            self.motion_state.ptr_mut()
+        }
     }
 
     pub(crate) fn make_kinematic(&mut self) {
