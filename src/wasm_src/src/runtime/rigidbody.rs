@@ -399,8 +399,9 @@ impl RigidBodyBundleShadow {
     }
     
     pub(super) fn update_motion_state_bundle(&mut self) {
+        let buffered_motion_states = self.handle.get_mut().get_buffered_motion_states();
         for (i, shadow) in self.shadows.iter_mut().enumerate() {
-            let motion_state = self.handle.get_mut().get_buffered_motion_states().get_nth_motion_state_ptr_mut(i);
+            let motion_state = buffered_motion_states.get_nth_motion_state_ptr_mut(i);
             shadow.set_motion_state_from_raw(motion_state);
         }
     }
