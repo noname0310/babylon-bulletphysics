@@ -5,7 +5,7 @@
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "fc37b7c0a298db352f90.wasm";
+module.exports = __webpack_require__.p + "4c1393c313cd6665bc94.wasm";
 
 /***/ }),
 
@@ -276,6 +276,16 @@ function physicsWorldRemoveConstraint(world, constraint) {
 }
 
 /**
+* @param {number} world
+* @param {boolean} use_buffer
+*/
+function physicsWorldUseMotionStateBuffer(world, use_buffer) {
+    _assertNum(world);
+    _assertBoolean(use_buffer);
+    wasm.physicsWorldUseMotionStateBuffer(world, use_buffer);
+}
+
+/**
 * @returns {number}
 */
 function createMultiPhysicsWorld() {
@@ -474,6 +484,16 @@ function multiPhysicsWorldRemoveConstraint(world, world_id, constraint) {
     _assertNum(world_id);
     _assertNum(constraint);
     wasm.multiPhysicsWorldRemoveConstraint(world, world_id, constraint);
+}
+
+/**
+* @param {number} world
+* @param {boolean} use_buffer
+*/
+function multiPhysicsWorldUseMotionStateBuffer(world, use_buffer) {
+    _assertNum(world);
+    _assertBoolean(use_buffer);
+    wasm.multiPhysicsWorldUseMotionStateBuffer(world, use_buffer);
 }
 
 /**

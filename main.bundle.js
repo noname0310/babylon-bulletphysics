@@ -64,6 +64,7 @@ __webpack_require__.d(md_namespaceObject, {
   multiPhysicsWorldRemoveRigidBodyShadow: () => (multiPhysicsWorldRemoveRigidBodyShadow),
   multiPhysicsWorldSetGravity: () => (multiPhysicsWorldSetGravity),
   multiPhysicsWorldStepSimulation: () => (multiPhysicsWorldStepSimulation),
+  multiPhysicsWorldUseMotionStateBuffer: () => (multiPhysicsWorldUseMotionStateBuffer),
   physicsRuntimeBufferedStepSimulation: () => (physicsRuntimeBufferedStepSimulation),
   physicsRuntimeGetLockStatePtr: () => (physicsRuntimeGetLockStatePtr),
   physicsWorldAddConstraint: () => (physicsWorldAddConstraint),
@@ -74,6 +75,7 @@ __webpack_require__.d(md_namespaceObject, {
   physicsWorldRemoveRigidBodyBundle: () => (physicsWorldRemoveRigidBodyBundle),
   physicsWorldSetGravity: () => (physicsWorldSetGravity),
   physicsWorldStepSimulation: () => (physicsWorldStepSimulation),
+  physicsWorldUseMotionStateBuffer: () => (physicsWorldUseMotionStateBuffer),
   rigidBodyBundleGetBufferedMotionStatesPtr: () => (rigidBodyBundleGetBufferedMotionStatesPtr),
   rigidBodyBundleGetMotionStatesPtr: () => (rigidBodyBundleGetMotionStatesPtr),
   rigidBodyBundleMakeKinematic: () => (rigidBodyBundleMakeKinematic),
@@ -1524,6 +1526,16 @@ function physicsWorldRemoveConstraint(world, constraint) {
 }
 
 /**
+* @param {number} world
+* @param {boolean} use_buffer
+*/
+function physicsWorldUseMotionStateBuffer(world, use_buffer) {
+    _assertNum(world);
+    _assertBoolean(use_buffer);
+    wasm.physicsWorldUseMotionStateBuffer(world, use_buffer);
+}
+
+/**
 * @returns {number}
 */
 function createMultiPhysicsWorld() {
@@ -1722,6 +1734,16 @@ function multiPhysicsWorldRemoveConstraint(world, world_id, constraint) {
     _assertNum(world_id);
     _assertNum(constraint);
     wasm.multiPhysicsWorldRemoveConstraint(world, world_id, constraint);
+}
+
+/**
+* @param {number} world
+* @param {boolean} use_buffer
+*/
+function multiPhysicsWorldUseMotionStateBuffer(world, use_buffer) {
+    _assertNum(world);
+    _assertBoolean(use_buffer);
+    wasm.multiPhysicsWorldUseMotionStateBuffer(world, use_buffer);
 }
 
 /**
@@ -3741,7 +3763,7 @@ __webpack_async_result__();
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "fc37b7c0a298db352f90.wasm";
+module.exports = __webpack_require__.p + "4c1393c313cd6665bc94.wasm";
 
 /***/ })
 
