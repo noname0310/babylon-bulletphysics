@@ -74,9 +74,11 @@ __webpack_require__.d(md_namespaceObject, {
   physicsWorldRemoveRigidBodyBundle: () => (physicsWorldRemoveRigidBodyBundle),
   physicsWorldSetGravity: () => (physicsWorldSetGravity),
   physicsWorldStepSimulation: () => (physicsWorldStepSimulation),
+  rigidBodyBundleGetBufferedMotionStatesPtr: () => (rigidBodyBundleGetBufferedMotionStatesPtr),
   rigidBodyBundleGetMotionStatesPtr: () => (rigidBodyBundleGetMotionStatesPtr),
   rigidBodyBundleMakeKinematic: () => (rigidBodyBundleMakeKinematic),
   rigidBodyBundleRestoreDynamic: () => (rigidBodyBundleRestoreDynamic),
+  rigidBodyGetBufferedMotionStatePtr: () => (rigidBodyGetBufferedMotionStatePtr),
   rigidBodyGetMotionStatePtr: () => (rigidBodyGetMotionStatePtr),
   rigidBodyMakeKinematic: () => (rigidBodyMakeKinematic),
   rigidBodyRestoreDynamic: () => (rigidBodyRestoreDynamic),
@@ -1943,6 +1945,16 @@ function rigidBodyGetMotionStatePtr(ptr) {
 
 /**
 * @param {number} ptr
+* @returns {number}
+*/
+function rigidBodyGetBufferedMotionStatePtr(ptr) {
+    _assertNum(ptr);
+    const ret = wasm.rigidBodyGetBufferedMotionStatePtr(ptr);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
 */
 function rigidBodyMakeKinematic(ptr) {
     _assertNum(ptr);
@@ -1984,6 +1996,16 @@ function destroyRigidBodyBundle(ptr) {
 function rigidBodyBundleGetMotionStatesPtr(ptr) {
     _assertNum(ptr);
     const ret = wasm.rigidBodyBundleGetMotionStatesPtr(ptr);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+* @returns {number}
+*/
+function rigidBodyBundleGetBufferedMotionStatesPtr(ptr) {
+    _assertNum(ptr);
+    const ret = wasm.rigidBodyBundleGetBufferedMotionStatesPtr(ptr);
     return ret >>> 0;
 }
 
@@ -3719,7 +3741,7 @@ __webpack_async_result__();
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "1a0ab8ecb2e84a941ddc.wasm";
+module.exports = __webpack_require__.p + "fc37b7c0a298db352f90.wasm";
 
 /***/ })
 
