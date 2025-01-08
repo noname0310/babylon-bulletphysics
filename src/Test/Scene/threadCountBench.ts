@@ -77,7 +77,7 @@ export class SceneBuilder implements ISceneBuilder {
             ? await getBulletWasmInstance(new BulletWasmInstanceTypeSR())
             : await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
         const runtime = new NullPhysicsRuntime(wasmInstance);
-        const world = new MultiPhysicsWorld(runtime);
+        const world = new MultiPhysicsWorld(runtime, true);
 
         const matrix = new Matrix();
 
