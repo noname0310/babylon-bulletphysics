@@ -251,6 +251,12 @@ impl MultiPhysicsWorld {
         self.remove_world_if_empty(world_id);
     }
 
+    pub(crate) fn use_motion_state_buffer(&mut self, use_buffer: bool) {
+        for (_, world) in self.worlds.iter_mut() {
+            world.use_motion_state_buffer(use_buffer);
+        }
+    }
+
     pub(crate) fn create_handle(&mut self) -> MultiPhysicsWorldHandle {
         MultiPhysicsWorldHandle::new(self)
     }
@@ -435,4 +441,10 @@ pub fn multi_physics_world_remove_constraint(world: *mut usize, world_id: Physic
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let constraint = unsafe { &mut *(constraint as *mut Constraint) };
     world.remove_constraint(world_id, constraint.create_handle());
+}
+
+#[wasm_bindgen(js_name = "multiPhysicsWorldUseMotionStateBuffer")]
+pub fn multi_physics_world_use_motion_state_buffer(world: *mut usize, use_buffer: bool) {
+    let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
+    world.use_motion_state_buffer(use_buffer);
 }

@@ -91,6 +91,24 @@ impl RigidBody {
         }
     }
 
+    pub(crate) fn get_buffered_motion_state(&mut self) -> &mut bind::motion_state::MotionState {
+        if let Some(motion_state) = self.buffered_motion_state.as_mut() {
+            motion_state
+        } else {
+            &mut self.motion_state
+        }
+    }
+
+    pub(crate) fn init_buffered_motion_state(&mut self) {
+        if self.buffered_motion_state.is_none() {
+            self.buffered_motion_state = Some(bind::motion_state::MotionState::new(&self.motion_state.get_transform()));
+        }
+    }
+
+    pub(crate) fn clear_buffered_motion_state(&mut self) {
+        self.buffered_motion_state = None;
+    }
+
     pub(crate) fn make_kinematic(&mut self) {
         self.inner.make_kinematic();
     }
@@ -192,7 +210,8 @@ impl RigidBodyShadow {
         &mut self.inner
     }
 
-    pub(super) fn set_motion_state(&mut self, motion_state: &mut bind::motion_state::MotionState) {
+    pub(super) fn update_motion_state(&mut self) {
+        let motion_state = self.handle.get_mut().get_buffered_motion_state();
         self.inner.set_motion_state(motion_state);
     }
 

@@ -18,6 +18,8 @@ pub(crate) struct PhysicsWorld {
     ref_count: u32,
     #[cfg(debug_assertions)]
     handle_info: PhysicsWorldHandleInfo,
+    bodies: Vec<RigidBodyHandle>,
+    body_bundles: Vec<RigidBodyBundleHandle>,
     shadow_bodies: Vec<RigidBodyShadow>,
     shadow_body_bundles: Vec<RigidBodyBundleShadow>,
     object_count: i32,
@@ -36,6 +38,8 @@ impl PhysicsWorld {
                 body_bundles: Vec::new(),
                 constraints: Vec::new(),
             },
+            bodies: Vec::new(),
+            body_bundles: Vec::new(),
             shadow_bodies: Vec::new(),
             shadow_body_bundles: Vec::new(),
             object_count: 0,
@@ -61,6 +65,8 @@ impl PhysicsWorld {
         self.inner.add_rigidbody(rigidbody.get_mut().get_inner_mut());
         self.object_count += 1;
 
+        self.bodies.push(rigidbody.clone());
+        
         #[cfg(debug_assertions)]
         self.handle_info.bodies.push(rigidbody);
     }
@@ -75,6 +81,8 @@ impl PhysicsWorld {
 
         self.inner.remove_rigidbody(rigidbody.get_mut().get_inner_mut());
         self.object_count -= 1;
+
+        self.bodies.remove(self.bodies.iter().position(|b| *b == rigidbody).unwrap());
 
         #[cfg(debug_assertions)]
         {
@@ -96,6 +104,8 @@ impl PhysicsWorld {
         }
         self.object_count += 1;
 
+        self.body_bundles.push(bundle.clone());
+
         #[cfg(debug_assertions)]
         self.handle_info.body_bundles.push(bundle);
     }
@@ -112,6 +122,8 @@ impl PhysicsWorld {
             self.inner.remove_rigidbody(&mut bundle.get_mut().bodies_mut()[i]);
         }
         self.object_count -= 1;
+
+        self.body_bundles.remove(self.body_bundles.iter().position(|b| *b == bundle).unwrap());
 
         #[cfg(debug_assertions)]
         {
@@ -241,6 +253,24 @@ impl PhysicsWorld {
 
     pub(crate) fn is_empty(&self) -> bool {
         self.object_count == 0
+    }
+
+    pub(crate) fn use_motion_state_buffer(&mut self, use_buffer: bool) {
+        if use_buffer {
+            for body in self.bodies.iter_mut() {
+                let body = body.get_mut();
+                body.init_buffered_motion_state();
+            }
+        } else {
+            for body in self.bodies.iter_mut() {
+                let body = body.get_mut();
+                body.clear_buffered_motion_state();
+            }
+        }
+
+        for i in 0..self.shadow_bodies.len() {
+            self.shadow_bodies[i].update_motion_state();
+        }
     }
 
     pub(crate) fn create_handle(&mut self) -> PhysicsWorldHandle {
@@ -373,4 +403,10 @@ pub fn physics_world_remove_constraint(world: *mut usize, constraint: *mut usize
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
     let constraint = unsafe { &mut *(constraint as *mut Constraint) };
     world.remove_constraint(constraint.create_handle());
+}
+
+#[wasm_bindgen(js_name = "physicsWorldUseMotionStateBuffer")]
+pub fn physics_world_use_motion_state_buffer(world: *mut usize, use_buffer: bool) {
+    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
+    world.use_motion_state_buffer(use_buffer);
 }
