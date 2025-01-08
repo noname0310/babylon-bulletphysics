@@ -271,6 +271,9 @@ impl PhysicsWorld {
         for i in 0..self.shadow_bodies.len() {
             self.shadow_bodies[i].update_motion_state();
         }
+        for i in 0..self.shadow_body_bundles.len() {
+            self.shadow_body_bundles[i].update_motion_state_bundle();
+        }
     }
 
     pub(crate) fn create_handle(&mut self) -> PhysicsWorldHandle {

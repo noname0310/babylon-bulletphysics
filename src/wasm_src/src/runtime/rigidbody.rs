@@ -91,7 +91,7 @@ impl RigidBody {
         }
     }
 
-    pub(crate) fn get_buffered_motion_state(&mut self) -> &mut bind::motion_state::MotionState {
+    fn get_buffered_motion_state(&mut self) -> &mut bind::motion_state::MotionState {
         if let Some(motion_state) = self.buffered_motion_state.as_mut() {
             motion_state
         } else {
@@ -288,6 +288,14 @@ impl RigidBodyBundle {
         }
     }
 
+    fn get_buffered_motion_states(&mut self) -> &mut bind::motion_state::MotionStateBundle {
+        if let Some(motion_state_bundle) = self.buffered_motion_state_bundle.as_mut() {
+            motion_state_bundle
+        } else {
+            &mut self.motion_state_bundle
+        }
+    }
+
     pub(crate) fn make_kinematic(&mut self, index: usize) {
         self.bodies[index].make_kinematic();
     }
@@ -389,10 +397,10 @@ impl RigidBodyBundleShadow {
     pub(super) fn shadows_mut(&mut self) -> &mut [bind::rigidbody::RigidBodyShadow] {
         &mut self.shadows
     }
-
-    pub(super) fn set_motion_state_bundle(&mut self, motion_state_bundle: &mut bind::motion_state::MotionStateBundle) {
+    
+    pub(super) fn update_motion_state_bundle(&mut self) {
         for (i, shadow) in self.shadows.iter_mut().enumerate() {
-            let motion_state = motion_state_bundle.get_nth_motion_state_ptr_mut(i);
+            let motion_state = self.handle.get_mut().get_buffered_motion_states().get_nth_motion_state_ptr_mut(i);
             shadow.set_motion_state_from_raw(motion_state);
         }
     }
