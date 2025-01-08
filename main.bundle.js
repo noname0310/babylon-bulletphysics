@@ -1536,10 +1536,12 @@ function physicsWorldUseMotionStateBuffer(world, use_buffer) {
 }
 
 /**
+* @param {boolean} allow_dynamic_shadow
 * @returns {number}
 */
-function createMultiPhysicsWorld() {
-    const ret = wasm.createMultiPhysicsWorld();
+function createMultiPhysicsWorld(allow_dynamic_shadow) {
+    _assertBoolean(allow_dynamic_shadow);
+    const ret = wasm.createMultiPhysicsWorld(allow_dynamic_shadow);
     return ret >>> 0;
 }
 
@@ -3763,7 +3765,7 @@ __webpack_async_result__();
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "bef9a6da5e29962c11e7.wasm";
+module.exports = __webpack_require__.p + "f95372a74213a6b0591e.wasm";
 
 /***/ })
 
