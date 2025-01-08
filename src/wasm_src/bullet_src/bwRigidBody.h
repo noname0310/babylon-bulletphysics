@@ -66,6 +66,11 @@ public:
         return &m_body;
     }
 
+    void setMotionState(bwMotionState* motionState)
+    {
+        m_body.setMotionState(motionState);
+    }
+
     uint16_t getCollisionGroup() const;
 
     uint16_t getCollisionMask() const;
@@ -279,4 +284,10 @@ extern "C" void bw_destroy_rigidbody_shadow(void* shadow)
 {
     bwRigidBodyShadow* s = static_cast<bwRigidBodyShadow*>(shadow);
     delete s;
+}
+
+extern "C" void bw_rigidbody_shadow_set_motion_state(void* shadow, void* motionState)
+{
+    bwRigidBodyShadow* s = static_cast<bwRigidBodyShadow*>(shadow);
+    s->setMotionState(static_cast<bwMotionState*>(motionState));
 }

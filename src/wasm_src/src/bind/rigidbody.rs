@@ -16,6 +16,8 @@ extern "C" {
     fn bw_create_rigidbody_shadow(body: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
 
     fn bw_destroy_rigidbody_shadow(shadow: *mut std::ffi::c_void);
+
+    fn bw_rigidbody_shadow_set_motion_state(shadow: *mut std::ffi::c_void, motion_state: *mut std::ffi::c_void);
 }
 
 pub(crate) enum MotionType {
@@ -270,6 +272,14 @@ impl RigidBodyShadow {
 
     pub(super) fn ptr_mut(&mut self) -> *mut std::ffi::c_void {
         self.ptr
+    }
+
+    pub(crate) fn set_motion_state(&mut self, motion_state: &mut MotionState) {
+        unsafe { bw_rigidbody_shadow_set_motion_state(self.ptr_mut(), motion_state.ptr_mut()) };
+    }
+
+    pub(crate) fn set_motion_state_from_raw(&mut self, motion_state: *mut std::ffi::c_void) {
+        unsafe { bw_rigidbody_shadow_set_motion_state(self.ptr_mut(), motion_state) };
     }
 }
 
