@@ -25,10 +25,11 @@ pub(crate) struct MultiPhysicsWorld {
     handle_info: MultiPhysicsWorldHandleInfo,
     global_bodies: Vec<RigidBodyHandle>,
     global_body_bundles: Vec<RigidBodyBundleHandle>,
+    allow_dynamic_shadow: bool,
 }
 
 impl MultiPhysicsWorld {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(allow_dynamic_shadow: bool) -> Self {
         Self {
             worlds: FxHashMap::default(),
             #[cfg(debug_assertions)]
@@ -40,6 +41,7 @@ impl MultiPhysicsWorld {
             },
             global_bodies: Vec::new(),
             global_body_bundles: Vec::new(),
+            allow_dynamic_shadow,
         }
     }
 
@@ -50,7 +52,7 @@ impl MultiPhysicsWorld {
                 world.add_rigidbody_shadow(body.clone(), true);
             }
             for bundle in self.global_body_bundles.iter_mut() {
-                world.add_rigidbody_bundle_shadow(bundle.clone(), true);
+                world.add_rigidbody_bundle_shadow(bundle.clone(), self.allow_dynamic_shadow, true);
             }
             world
         })
@@ -201,7 +203,7 @@ impl MultiPhysicsWorld {
         }
 
         for (_, world) in self.worlds.iter_mut() {
-            world.add_rigidbody_bundle_shadow(bundle.clone(), true);
+            world.add_rigidbody_bundle_shadow(bundle.clone(), self.allow_dynamic_shadow, true);
         }
         self.global_body_bundles.push(bundle);
     }
@@ -225,6 +227,9 @@ impl MultiPhysicsWorld {
     }
 
     pub(crate) fn add_rigidbody_shadow(&mut self, world_id: PhysicsWorldId, rigidbody: RigidBodyHandle) {
+        if !rigidbody.get().get_inner().is_static_or_kinematic() && !self.allow_dynamic_shadow {
+            panic!("Dynamic shadow is not allowed");
+        }
         self.get_or_create_world(world_id).add_rigidbody_shadow(rigidbody, false);
     }
 
@@ -234,7 +239,8 @@ impl MultiPhysicsWorld {
     }
 
     pub(crate) fn add_rigidbody_bundle_shadow(&mut self, world_id: PhysicsWorldId, bundle: RigidBodyBundleHandle) {
-        self.get_or_create_world(world_id).add_rigidbody_bundle_shadow(bundle, false);
+        let allow_dynamic_shadow = self.allow_dynamic_shadow;
+        self.get_or_create_world(world_id).add_rigidbody_bundle_shadow(bundle, allow_dynamic_shadow, false);
     }
 
     pub(crate) fn remove_rigidbody_bundle_shadow(&mut self, world_id: PhysicsWorldId, bundle: RigidBodyBundleHandle) {
@@ -320,8 +326,8 @@ impl PartialEq for MultiPhysicsWorldHandle {
 impl Eq for MultiPhysicsWorldHandle {}
 
 #[wasm_bindgen(js_name = "createMultiPhysicsWorld")]
-pub fn create_multi_physics_world() -> *mut usize {
-    let world = MultiPhysicsWorld::new();
+pub fn create_multi_physics_world(allow_dynamic_shadow: bool) -> *mut usize {
+    let world = MultiPhysicsWorld::new(allow_dynamic_shadow);
     let world = Box::new(world);
     Box::into_raw(world) as *mut usize
 }

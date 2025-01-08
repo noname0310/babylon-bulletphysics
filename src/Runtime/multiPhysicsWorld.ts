@@ -317,10 +317,10 @@ export class MultiPhysicsWorld {
 
     private readonly _inner: MultiPhysicsWorldInner;
 
-    public constructor(runtime: IRuntime) {
+    public constructor(runtime: IRuntime, allowDynamicShadow: boolean) {
         this._runtime = runtime;
 
-        const ptr = runtime.wasmInstance.createMultiPhysicsWorld();
+        const ptr = runtime.wasmInstance.createMultiPhysicsWorld(allowDynamicShadow);
 
         this._inner = new MultiPhysicsWorldInner(new WeakRef(runtime), ptr);
 

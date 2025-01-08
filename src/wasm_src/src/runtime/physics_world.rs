@@ -23,6 +23,7 @@ pub(crate) struct PhysicsWorld {
     shadow_bodies: Vec<RigidBodyShadow>,
     shadow_body_bundles: Vec<RigidBodyBundleShadow>,
     object_count: i32,
+    use_motion_state_buffer: bool,
 }
 
 impl PhysicsWorld {
@@ -43,6 +44,7 @@ impl PhysicsWorld {
             shadow_bodies: Vec::new(),
             shadow_body_bundles: Vec::new(),
             object_count: 0,
+            use_motion_state_buffer: false,
         }
     }
 
@@ -66,6 +68,10 @@ impl PhysicsWorld {
         self.object_count += 1;
 
         self.bodies.push(rigidbody.clone());
+
+        if self.use_motion_state_buffer {
+            rigidbody.get_mut().init_buffered_motion_state();
+        }
         
         #[cfg(debug_assertions)]
         self.handle_info.bodies.push(rigidbody);
@@ -83,6 +89,10 @@ impl PhysicsWorld {
         self.object_count -= 1;
 
         self.bodies.remove(self.bodies.iter().position(|b| *b == rigidbody).unwrap());
+
+        if self.use_motion_state_buffer {
+            rigidbody.get_mut().clear_buffered_motion_state();
+        }
 
         #[cfg(debug_assertions)]
         {
@@ -106,6 +116,10 @@ impl PhysicsWorld {
 
         self.body_bundles.push(bundle.clone());
 
+        if self.use_motion_state_buffer {
+            bundle.get_mut().init_buffered_motion_state();
+        }
+
         #[cfg(debug_assertions)]
         self.handle_info.body_bundles.push(bundle);
     }
@@ -124,6 +138,10 @@ impl PhysicsWorld {
         self.object_count -= 1;
 
         self.body_bundles.remove(self.body_bundles.iter().position(|b| *b == bundle).unwrap());
+
+        if self.use_motion_state_buffer {
+            bundle.get_mut().clear_buffered_motion_state();
+        }
 
         #[cfg(debug_assertions)]
         {
@@ -173,7 +191,7 @@ impl PhysicsWorld {
         }
     }
 
-    pub(super) fn add_rigidbody_bundle_shadow(&mut self, mut bundle: RigidBodyBundleHandle, weak: bool) {
+    pub(super) fn add_rigidbody_bundle_shadow(&mut self, mut bundle: RigidBodyBundleHandle, include_dynamic: bool, weak: bool) {
         #[cfg(debug_assertions)]
         {
             if self.handle_info.body_bundles.iter().any(|b| *b == bundle) {
@@ -181,7 +199,7 @@ impl PhysicsWorld {
             }
         }
 
-        let mut shadow = bundle.create_shadow();
+        let mut shadow = bundle.create_shadow(include_dynamic);
         for i in 0..shadow.shadows().len() {
             self.inner.add_rigidbody_shadow(&mut shadow.shadows_mut()[i]);
         }
@@ -274,6 +292,8 @@ impl PhysicsWorld {
         for i in 0..self.shadow_body_bundles.len() {
             self.shadow_body_bundles[i].update_motion_state_bundle();
         }
+
+        self.use_motion_state_buffer = use_buffer;
     }
 
     pub(crate) fn create_handle(&mut self) -> PhysicsWorldHandle {

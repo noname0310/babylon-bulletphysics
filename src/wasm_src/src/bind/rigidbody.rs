@@ -13,7 +13,7 @@ extern "C" {
 
     fn bw_rigidbody_get_collision_flags(body: *mut std::ffi::c_void) -> i32;
 
-    fn bw_create_rigidbody_shadow(body: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
+    fn bw_create_rigidbody_shadow(body: *mut std::ffi::c_void, motion_state: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
 
     fn bw_destroy_rigidbody_shadow(shadow: *mut std::ffi::c_void);
 
@@ -260,9 +260,9 @@ pub(crate) struct RigidBodyShadow {
 }
 
 impl RigidBodyShadow {
-    pub(crate) fn new(body: &mut RigidBody) -> Self {
+    pub(crate) fn new(body: &mut RigidBody, motion_state: *mut std::ffi::c_void) -> Self {
         Self {
-            ptr: unsafe { bw_create_rigidbody_shadow(body.ptr_mut()) },
+            ptr: unsafe { bw_create_rigidbody_shadow(body.ptr_mut(), motion_state) },
         }
     }
 
@@ -273,12 +273,7 @@ impl RigidBodyShadow {
     pub(super) fn ptr_mut(&mut self) -> *mut std::ffi::c_void {
         self.ptr
     }
-
-    pub(crate) fn set_motion_state(&mut self, motion_state: &mut MotionState) {
-        unsafe { bw_rigidbody_shadow_set_motion_state(self.ptr_mut(), motion_state.ptr_mut()) };
-    }
-
-    pub(crate) fn set_motion_state_from_raw(&mut self, motion_state: *mut std::ffi::c_void) {
+    pub(crate) fn set_motion_state(&mut self, motion_state: *mut std::ffi::c_void) {
         unsafe { bw_rigidbody_shadow_set_motion_state(self.ptr_mut(), motion_state) };
     }
 }
