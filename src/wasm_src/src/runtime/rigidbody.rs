@@ -113,6 +113,12 @@ impl RigidBody {
         self.buffered_motion_state = None;
     }
 
+    pub(super) fn sync_buffered_motion_state(&mut self) {
+        if let Some(buffered_motion_state) = self.buffered_motion_state.as_mut() {
+            buffered_motion_state.copy_from(&self.motion_state);
+        }
+    }
+
     pub(crate) fn make_kinematic(&mut self) {
         self.inner.make_kinematic();
     }
@@ -315,6 +321,12 @@ impl RigidBodyBundle {
 
     pub(super) fn clear_buffered_motion_state(&mut self) {
         self.buffered_motion_state_bundle = None;
+    }
+
+    pub(super) fn sync_buffered_motion_state(&mut self) {
+        if let Some(buffered_motion_state_bundle) = self.buffered_motion_state_bundle.as_mut() {
+            buffered_motion_state_bundle.copy_from(&self.motion_state_bundle);
+        }
     }
 
     pub(crate) fn make_kinematic(&mut self, index: usize) {

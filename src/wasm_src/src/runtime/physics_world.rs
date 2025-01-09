@@ -53,6 +53,14 @@ impl PhysicsWorld {
     }
 
     pub(crate) fn step_simulation(&mut self, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
+        if self.use_motion_state_buffer {
+            for body in self.bodies.iter_mut() {
+                body.get_mut().sync_buffered_motion_state();
+            }
+            for bundle in self.body_bundles.iter_mut() {
+                bundle.get_mut().sync_buffered_motion_state();
+            }
+        }
         self.inner.step_simulation(time_step, max_sub_steps, fixed_time_step);
     }
 
