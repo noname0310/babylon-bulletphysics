@@ -164,14 +164,23 @@ export class PhysicsWorld {
         registry?.unregister(this);
     }
 
+    /**
+     * @internal
+     */
     public get ptr(): number {
         return this._inner.ptr;
     }
 
+    /**
+     * @internal
+     */
     public addReference(): void {
         this._inner.addReference();
     }
 
+    /**
+     * @internal
+     */
     public removeReference(): void {
         this._inner.removeReference();
     }

@@ -111,18 +111,30 @@ export abstract class Constraint {
         registry?.unregister(this);
     }
 
+    /**
+     * @internal
+     */
     public get ptr(): number {
         return this._inner.ptr;
     }
 
+    /**
+     * @internal
+     */
     public addReference(): void {
         this._inner.addReference();
     }
 
+    /**
+     * @internal
+     */
     public removeReference(): void {
         this._inner.removeReference();
     }
 
+    /**
+     * @internal
+     */
     public setWorldReference(worldReference: Nullable<object>): void {
         if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add constraint to multiple worlds");

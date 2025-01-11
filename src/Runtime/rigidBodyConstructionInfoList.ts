@@ -35,6 +35,9 @@ class RigidBodyConstructionInfoListInner {
         this._shapeReferences.fill(null);
     }
 
+    /**
+     * @internal
+     */
     public get ptr(): number {
         return this._ptr;
     }

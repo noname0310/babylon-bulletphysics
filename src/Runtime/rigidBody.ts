@@ -85,6 +85,7 @@ export class RigidBody {
     public readonly runtime: IRuntime;
 
     private readonly _motionStatePtr: IWasmTypedArray<Float32Array>;
+    private _bufferedMotionStatePtr: IWasmTypedArray<Float32Array>;
 
     private readonly _inner: RigidBodyInner;
 
@@ -121,6 +122,8 @@ export class RigidBody {
         const ptr = wasmInstance.createRigidBody(infoPtr);
         const motionStatePtr = wasmInstance.rigidBodyGetMotionStatePtr(ptr);
         this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        const bufferedMotionStatePtr = wasmInstance.rigidBodyGetBufferedMotionStatePtr(ptr);
+        this._bufferedMotionStatePtr = wasmInstance.createTypedArray(Float32Array, bufferedMotionStatePtr, Constants.MotionStateSizeInFloat32Array);
         this._inner = new RigidBodyInner(new WeakRef(runtime.wasmInstance), ptr, shape);
         this._worldReference = null;
 
@@ -146,18 +149,30 @@ export class RigidBody {
         registry?.unregister(this);
     }
 
+    /**
+     * @internal
+     */
     public get ptr(): number {
         return this._inner.ptr;
     }
 
+    /**
+     * @internal
+     */
     public addReference(): void {
         this._inner.addReference();
     }
 
+    /**
+     * @internal
+     */
     public removeReference(): void {
         this._inner.removeReference();
     }
 
+    /**
+     * @internal
+     */
     public setWorldReference(worldReference: Nullable<object>): void {
         if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add rigid body to multiple worlds");
@@ -173,8 +188,20 @@ export class RigidBody {
         }
     }
 
+    /**
+     * @internal
+     */
     public getWorldReference(): Nullable<object> {
         return this._worldReference;
+    }
+
+    /**
+     * @internal
+     */
+    public updateBufferedMotionState(): void {
+        this._nullCheck();
+        const bufferedMotionStatePtr = this.runtime.wasmInstance.rigidBodyGetBufferedMotionStatePtr(this._inner.ptr);
+        this._bufferedMotionStatePtr = this.runtime.wasmInstance.createTypedArray(Float32Array, bufferedMotionStatePtr, Constants.MotionStateSizeInFloat32Array);
     }
 
     private _nullCheck(): void {
@@ -204,8 +231,14 @@ export class RigidBody {
         if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        this.impl.getTransformMatrixToRef(this._motionStatePtr, result);
-        return result;
+
+        const m = this._bufferedMotionStatePtr.array;
+        return result.set(
+            m[4], m[8], m[12], 0,
+            m[5], m[9], m[13], 0,
+            m[6], m[10], m[14], 0,
+            m[16], m[17], m[18], 1
+        );
     }
 
     public getTransformMatrixToArray(result: Float32Array, offset: number = 0): void {
@@ -213,7 +246,28 @@ export class RigidBody {
         if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        this.impl.getTransformMatrixToArray(this._motionStatePtr, result, offset);
+
+        const m = this._bufferedMotionStatePtr.array;
+
+        result[offset] = m[4];
+        result[offset + 1] = m[8];
+        result[offset + 2] = m[12];
+        result[offset + 3] = 0;
+
+        result[offset + 4] = m[5];
+        result[offset + 5] = m[9];
+        result[offset + 6] = m[13];
+        result[offset + 7] = 0;
+
+        result[offset + 8] = m[6];
+        result[offset + 9] = m[10];
+        result[offset + 10] = m[14];
+        result[offset + 11] = 0;
+
+        result[offset + 12] = m[16];
+        result[offset + 13] = m[17];
+        result[offset + 14] = m[18];
+        result[offset + 15] = 1;
     }
 
     public setTransformMatrix(matrix: Matrix): void {
