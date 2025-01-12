@@ -315,7 +315,9 @@ impl RigidBodyBundle {
 
     pub(super) fn init_buffered_motion_state(&mut self) {
         if self.buffered_motion_state_bundle.is_none() {
-            self.buffered_motion_state_bundle = Some(bind::motion_state::MotionStateBundle::new(self.bodies.len()));
+            let buffered_motion_state_bundle = bind::motion_state::MotionStateBundle::new(self.bodies.len());
+            buffered_motion_state_bundle.copy_from(&self.motion_state_bundle);
+            self.buffered_motion_state_bundle = Some(buffered_motion_state_bundle);
         }
     }
 

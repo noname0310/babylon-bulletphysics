@@ -26,7 +26,13 @@ impl PhysicsRuntime {
 
     #[cfg(feature = "parallel")]
     pub(crate) fn buffered_step_simulation(mut runtime_handle: PhysicsRuntimeHandle, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
-        runtime_handle.get_mut().lock.store(1, atomic::Ordering::Release);
+        let runtime = runtime_handle.get_mut();
+        
+        let physics_world = runtime.physics_world_handle.get_mut();
+        physics_world.sync_buffered_motion_state();
+        
+        runtime.lock.store(1, atomic::Ordering::Release);
+        
         rayon::spawn(move || {
             let runtime = runtime_handle.get_mut();
 

@@ -27,7 +27,7 @@ pub(crate) struct PhysicsWorld {
 }
 
 impl PhysicsWorld {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(use_motion_state_buffer: bool) -> Self {
         let inner = bind::physics_world::PhysicsWorld::new();
         Self {
             inner,
@@ -44,7 +44,7 @@ impl PhysicsWorld {
             shadow_bodies: Vec::new(),
             shadow_body_bundles: Vec::new(),
             object_count: 0,
-            use_motion_state_buffer: false,
+            use_motion_state_buffer,
         }
     }
 
@@ -52,7 +52,7 @@ impl PhysicsWorld {
         self.inner.set_gravity(force.x, force.y, force.z);
     }
 
-    pub(crate) fn step_simulation(&mut self, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
+    pub(crate) fn sync_buffered_motion_state(&mut self) {
         if self.use_motion_state_buffer {
             for body in self.bodies.iter_mut() {
                 body.get_mut().sync_buffered_motion_state();
@@ -61,6 +61,9 @@ impl PhysicsWorld {
                 bundle.get_mut().sync_buffered_motion_state();
             }
         }
+    }
+
+    pub(crate) fn step_simulation(&mut self, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
         self.inner.step_simulation(time_step, max_sub_steps, fixed_time_step);
     }
 
@@ -244,7 +247,7 @@ impl PhysicsWorld {
         }
     }
 
-    pub(super) fn add_constraint(&mut self, mut constraint: ConstraintHandle, disable_collisions_between_linked_bodies: bool) {
+    pub(crate) fn add_constraint(&mut self, mut constraint: ConstraintHandle, disable_collisions_between_linked_bodies: bool) {
         #[cfg(debug_assertions)]
         {
             if self.handle_info.constraints.iter().any(|c| *c == constraint) {
@@ -281,16 +284,59 @@ impl PhysicsWorld {
         self.object_count == 0
     }
 
-    pub(crate) fn use_motion_state_buffer(&mut self, use_buffer: bool) {
+    pub(super) fn init_buffered_motion_state(&mut self) {
+        for body in self.bodies.iter_mut() {
+            body.get_mut().init_buffered_motion_state();
+        }
+        for bundle in self.body_bundles.iter_mut() {
+            bundle.get_mut().init_buffered_motion_state();
+        }
+    }
+
+    pub(super) fn clear_buffered_motion_state(&mut self) {
+        for body in self.bodies.iter_mut() {
+            body.get_mut().clear_buffered_motion_state();
+        }
+        for bundle in self.body_bundles.iter_mut() {
+            bundle.get_mut().clear_buffered_motion_state();
+        }
+    }
+
+    pub(super) fn update_shadow_motion_state(&mut self) {
+        for i in 0..self.shadow_bodies.len() {
+            self.shadow_bodies[i].update_motion_state();
+        }
+        for i in 0..self.shadow_body_bundles.len() {
+            self.shadow_body_bundles[i].update_motion_state_bundle();
+        }
+    }
+
+    pub(super) fn set_use_motion_state_buffer(&mut self, use_buffer: bool) {
+        self.use_motion_state_buffer = use_buffer;
+    }
+
+    pub(super) fn use_motion_state_buffer(&mut self, use_buffer: bool) {
+        if self.use_motion_state_buffer == use_buffer {
+            return;
+        }
+
         if use_buffer {
             for body in self.bodies.iter_mut() {
                 let body = body.get_mut();
                 body.init_buffered_motion_state();
             }
+            for bundle in self.body_bundles.iter_mut() {
+                let bundle = bundle.get_mut();
+                bundle.init_buffered_motion_state();
+            }
         } else {
             for body in self.bodies.iter_mut() {
                 let body = body.get_mut();
                 body.clear_buffered_motion_state();
+            }
+            for bundle in self.body_bundles.iter_mut() {
+                let bundle = bundle.get_mut();
+                bundle.clear_buffered_motion_state();
             }
         }
 
@@ -370,7 +416,7 @@ impl Eq for PhysicsWorldHandle {}
 
 #[wasm_bindgen(js_name = "createPhysicsWorld")]
 pub fn create_physics_world() -> *mut usize {
-    let world = PhysicsWorld::new();
+    let world = PhysicsWorld::new(false);
     let world = Box::new(world);
     Box::into_raw(world) as *mut usize
 }
@@ -391,6 +437,7 @@ pub fn physics_world_set_gravity(world: *mut usize, x: f32, y: f32, z: f32) {
 #[wasm_bindgen(js_name = "physicsWorldStepSimulation")]
 pub fn physics_world_step_simulation(world: *mut usize, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
+    world.sync_buffered_motion_state();
     world.step_simulation(time_step, max_sub_steps, fixed_time_step);
 }
 

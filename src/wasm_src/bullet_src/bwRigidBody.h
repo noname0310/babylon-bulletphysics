@@ -52,9 +52,7 @@ private:
     btRigidBody::btRigidBodyConstructionInfo createRigidBodyConstructionInfo(bwRigidBody* source, bwMotionState* motionState);
 
 public:
-    bwRigidBodyShadow(bwRigidBody* source, bwMotionState* motionState) : m_source(source), m_body(createRigidBodyConstructionInfo(source, motionState))
-    {
-    }
+    bwRigidBodyShadow(bwRigidBody* source, bwMotionState* motionState);
 
     btRigidBody* getBody()
     {
@@ -212,6 +210,19 @@ public:
         return new bwRigidBodyShadow(this, this->m_motionState);
     }
 };
+
+bwRigidBodyShadow::bwRigidBodyShadow(bwRigidBody* source, bwMotionState* motionState) : m_source(source), m_body(createRigidBodyConstructionInfo(source, motionState))
+{
+    if (source->getCollisionFlags() & btCollisionObject::CF_STATIC_OBJECT)
+    {
+        m_body.setCollisionFlags(m_body.getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
+    }
+    else
+    {
+        m_body.setCollisionFlags(m_body.getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+        m_body.setActivationState(DISABLE_DEACTIVATION);
+    }
+}
 
 btRigidBody::btRigidBodyConstructionInfo bwRigidBodyShadow::createRigidBodyConstructionInfo(bwRigidBody* source, bwMotionState* motionState)
 {
