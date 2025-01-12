@@ -2,14 +2,14 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 79603:
+/***/ 9603:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 module.exports = __webpack_require__.p + "51dc15d6386256fa925e.wasm";
 
 /***/ }),
 
-/***/ 57907:
+/***/ 7907:
 /***/ ((__unused_webpack___webpack_module__, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -977,7 +977,7 @@ async function __wbg_init(module_or_path, memory) {
     console.warn('using deprecated parameters for the initialization function; pass a single object instead')
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL(/* asset import */ __webpack_require__(79603), __webpack_require__.b);
+        module_or_path = new URL(/* asset import */ __webpack_require__(9603), __webpack_require__.b);
     }
     const imports = __wbg_get_imports();
 
@@ -1130,7 +1130,7 @@ onmessage = async ({ data: { receiver, ...initData } }) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__(57907);
+/******/ 	var __webpack_exports__ = __webpack_require__(7907);
 /******/ 	
 /******/ })()
 ;

@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 53133:
+/***/ 3133:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -93,31 +93,29 @@ __webpack_require__.d(mr_namespaceObject, {
 });
 
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/thinInstanceMesh.js
-var thinInstanceMesh = __webpack_require__(90203);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent.js
-var shadowGeneratorSceneComponent = __webpack_require__(33832);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/standardMaterial.js
-var standardMaterial = __webpack_require__(2093);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Cameras/arcRotateCamera.js
-var arcRotateCamera = __webpack_require__(7839);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/directionalLight.js
-var Lights_directionalLight = __webpack_require__(52046);
+var thinInstanceMesh = __webpack_require__(203);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent.js + 6 modules
+var shadowGeneratorSceneComponent = __webpack_require__(483);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/standardMaterial.js + 8 modules
+var standardMaterial = __webpack_require__(8227);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Cameras/arcRotateCamera.js + 13 modules
+var arcRotateCamera = __webpack_require__(7456);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/directionalLight.js + 1 modules
+var Lights_directionalLight = __webpack_require__(5581);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/hemisphericLight.js
-var Lights_hemisphericLight = __webpack_require__(71513);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGenerator.js
-var Shadows_shadowGenerator = __webpack_require__(18595);
+var Lights_hemisphericLight = __webpack_require__(1513);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGenerator.js + 2 modules
+var Shadows_shadowGenerator = __webpack_require__(9711);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.color.js
-var math_color = __webpack_require__(26041);
+var math_color = __webpack_require__(6041);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
-var math_vector = __webpack_require__(79923);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/Builders/boxBuilder.js
-var boxBuilder = __webpack_require__(96793);
+var math_vector = __webpack_require__(9923);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/Builders/boxBuilder.js + 2 modules
+var boxBuilder = __webpack_require__(9899);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/Builders/planeBuilder.js
-var planeBuilder = __webpack_require__(58144);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/scene.js + 2 modules
-var core_scene = __webpack_require__(87491);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/inspector/dist/babylon.inspector.bundle.max.js
-var babylon_inspector_bundle_max = __webpack_require__(35652);
+var planeBuilder = __webpack_require__(8144);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/scene.js + 14 modules
+var core_scene = __webpack_require__(554);
 ;// ./src/Runtime/Misc/wasmSharedTypedArray.ts
 /**
  * Safe typed array pointer for WASM shared memory
@@ -454,7 +452,7 @@ class Generic6DofSpringConstraint extends Constraint {
 }
 
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/observable.js
-var observable = __webpack_require__(99848);
+var observable = __webpack_require__(9848);
 ;// ./src/Runtime/Misc/wasmSpinlock.ts
 /**
  * Spinlock for WASM runtime synchronization
@@ -2472,7 +2470,7 @@ async function __wbg_init(module_or_path, memory) {
     console.warn('using deprecated parameters for the initialization function; pass a single object instead')
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL(/* asset import */ __webpack_require__(79603), __webpack_require__.b);
+        module_or_path = new URL(/* asset import */ __webpack_require__(9603), __webpack_require__.b);
     }
     const imports = __wbg_get_imports();
 
@@ -3735,7 +3733,6 @@ class RigidBodyConstructionInfoList {
 
 
 
-
 class SceneBuilder {
     async build(_canvas, engine) {
         const scene = new core_scene/* Scene */.Z(engine);
@@ -3769,7 +3766,6 @@ class SceneBuilder {
         shadowGenerator.forceBackFacesOnly = false;
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = Shadows_shadowGenerator/* ShadowGenerator */.o.QUALITY_MEDIUM;
-        babylon_inspector_bundle_max.Inspector.Show(scene, { enablePopup: false });
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), 6);
         const runtime = new MultiPhysicsRuntime(wasmInstance, true);
         runtime.register(scene);
@@ -3851,7 +3847,7 @@ class SceneBuilder {
 
 /***/ }),
 
-/***/ 81478:
+/***/ 1478:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -3898,13 +3894,13 @@ class BaseRuntime {
 
 /***/ }),
 
-/***/ 12089:
+/***/ 2089:
 /***/ ((module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(93856);
-/* harmony import */ var _baseRuntime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(81478);
-/* harmony import */ var _Scene_multiPhysicsRuntimeShadowTestScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(53133);
+/* harmony import */ var _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3720);
+/* harmony import */ var _baseRuntime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1478);
+/* harmony import */ var _Scene_multiPhysicsRuntimeShadowTestScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3133);
 
 
 
@@ -3937,7 +3933,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 79603:
+/***/ 9603:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 module.exports = __webpack_require__.p + "51dc15d6386256fa925e.wasm";
@@ -3964,7 +3960,7 @@ module.exports = __webpack_require__.p + "51dc15d6386256fa925e.wasm";
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -4087,12 +4083,25 @@ module.exports = __webpack_require__.p + "51dc15d6386256fa925e.wasm";
 /******/ 		};
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/ensure chunk */
+/******/ 	(() => {
+/******/ 		__webpack_require__.f = {};
+/******/ 		// This file contains only the entry chunk.
+/******/ 		// The chunk loading function for additional chunks
+/******/ 		__webpack_require__.e = (chunkId) => {
+/******/ 			return Promise.all(Object.keys(__webpack_require__.f).reduce((promises, key) => {
+/******/ 				__webpack_require__.f[key](chunkId, promises);
+/******/ 				return promises;
+/******/ 			}, []));
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/get javascript chunk filename */
 /******/ 	(() => {
 /******/ 		// This function allow to reference async chunks
 /******/ 		__webpack_require__.u = (chunkId) => {
 /******/ 			// return url for filenames based on template
-/******/ 			return "" + chunkId + ".bundle.js";
+/******/ 			return "" + ({"71":"glslShaders","126":"wgslShaders"}[chunkId] || chunkId) + ".bundle.js";
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -4111,6 +4120,52 @@ module.exports = __webpack_require__.p + "51dc15d6386256fa925e.wasm";
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
 /******/ 	(() => {
 /******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/load script */
+/******/ 	(() => {
+/******/ 		var inProgress = {};
+/******/ 		var dataWebpackPrefix = "babylon-bulletphysics:";
+/******/ 		// loadScript function to load a script via script tag
+/******/ 		__webpack_require__.l = (url, done, key, chunkId) => {
+/******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
+/******/ 			var script, needAttach;
+/******/ 			if(key !== undefined) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				for(var i = 0; i < scripts.length; i++) {
+/******/ 					var s = scripts[i];
+/******/ 					if(s.getAttribute("src") == url || s.getAttribute("data-webpack") == dataWebpackPrefix + key) { script = s; break; }
+/******/ 				}
+/******/ 			}
+/******/ 			if(!script) {
+/******/ 				needAttach = true;
+/******/ 				script = document.createElement('script');
+/******/ 		
+/******/ 				script.charset = 'utf-8';
+/******/ 				script.timeout = 120;
+/******/ 				if (__webpack_require__.nc) {
+/******/ 					script.setAttribute("nonce", __webpack_require__.nc);
+/******/ 				}
+/******/ 				script.setAttribute("data-webpack", dataWebpackPrefix + key);
+/******/ 		
+/******/ 				script.src = url;
+/******/ 			}
+/******/ 			inProgress[url] = [done];
+/******/ 			var onScriptComplete = (prev, event) => {
+/******/ 				// avoid mem leaks in IE.
+/******/ 				script.onerror = script.onload = null;
+/******/ 				clearTimeout(timeout);
+/******/ 				var doneFns = inProgress[url];
+/******/ 				delete inProgress[url];
+/******/ 				script.parentNode && script.parentNode.removeChild(script);
+/******/ 				doneFns && doneFns.forEach((fn) => (fn(event)));
+/******/ 				if(prev) return prev(event);
+/******/ 			}
+/******/ 			var timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), 120000);
+/******/ 			script.onerror = onScriptComplete.bind(null, script.onerror);
+/******/ 			script.onload = onScriptComplete.bind(null, script.onload);
+/******/ 			needAttach && document.head.appendChild(script);
+/******/ 		};
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
@@ -4158,7 +4213,44 @@ module.exports = __webpack_require__.p + "51dc15d6386256fa925e.wasm";
 /******/ 			792: 0
 /******/ 		};
 /******/ 		
-/******/ 		// no chunk on demand loading
+/******/ 		__webpack_require__.f.j = (chunkId, promises) => {
+/******/ 				// JSONP chunk loading for javascript
+/******/ 				var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
+/******/ 				if(installedChunkData !== 0) { // 0 means "already installed".
+/******/ 		
+/******/ 					// a Promise means "currently loading".
+/******/ 					if(installedChunkData) {
+/******/ 						promises.push(installedChunkData[2]);
+/******/ 					} else {
+/******/ 						if(true) { // all chunks have JS
+/******/ 							// setup Promise in chunk cache
+/******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
+/******/ 							promises.push(installedChunkData[2] = promise);
+/******/ 		
+/******/ 							// start chunk loading
+/******/ 							var url = __webpack_require__.p + __webpack_require__.u(chunkId);
+/******/ 							// create error before stack unwound to get useful stacktrace later
+/******/ 							var error = new Error();
+/******/ 							var loadingEnded = (event) => {
+/******/ 								if(__webpack_require__.o(installedChunks, chunkId)) {
+/******/ 									installedChunkData = installedChunks[chunkId];
+/******/ 									if(installedChunkData !== 0) installedChunks[chunkId] = undefined;
+/******/ 									if(installedChunkData) {
+/******/ 										var errorType = event && (event.type === 'load' ? 'missing' : event.type);
+/******/ 										var realSrc = event && event.target && event.target.src;
+/******/ 										error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
+/******/ 										error.name = 'ChunkLoadError';
+/******/ 										error.type = errorType;
+/******/ 										error.request = realSrc;
+/******/ 										installedChunkData[1](error);
+/******/ 									}
+/******/ 								}
+/******/ 							};
+/******/ 							__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
+/******/ 						}
+/******/ 					}
+/******/ 				}
+/******/ 		};
 /******/ 		
 /******/ 		// no prefetching
 /******/ 		
@@ -4205,7 +4297,7 @@ module.exports = __webpack_require__.p + "51dc15d6386256fa925e.wasm";
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [652], () => (__webpack_require__(12089)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [621], () => (__webpack_require__(2089)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
