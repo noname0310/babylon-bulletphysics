@@ -77,7 +77,8 @@ export class PhysicsRuntime implements IRuntime {
     private _scene: Nullable<Scene>;
     private _afterAnimationsBinded: Nullable<() => void>;
 
-    private readonly _evaluationType: PhysicsRuntimeEvaluationType;
+    private _evaluationType: PhysicsRuntimeEvaluationType;
+    private _usingWasmBackBuffer: boolean;
 
     public readonly useDeltaForWorldStep: boolean;
     public readonly timeStep: number;
@@ -117,6 +118,7 @@ export class PhysicsRuntime implements IRuntime {
         this._afterAnimationsBinded = null;
 
         this._evaluationType = PhysicsRuntimeEvaluationType.Immediate;
+        this._usingWasmBackBuffer = false;
 
         this.useDeltaForWorldStep = true;
         this.timeStep = 1 / 60;
@@ -189,6 +191,7 @@ export class PhysicsRuntime implements IRuntime {
             return;
         }
 
+        // compute delta time
         if (this.useDeltaForWorldStep) {
             const scene = this._scene;
             if (scene !== null) {
@@ -202,9 +205,90 @@ export class PhysicsRuntime implements IRuntime {
         } else {
             deltaTime = this.timeStep;
         }
-        this._physicsWorld.stepSimulation(deltaTime, this.maxSubSteps, this.fixedTimeStep);
+
+        if (this._evaluationType === PhysicsRuntimeEvaluationType.Buffered) {
+            if (this.wasmInstance.physicsRuntimeBufferedStepSimulation === undefined) { // single thread environment fallback
+                this._physicsWorld.stepSimulation(deltaTime, this.maxSubSteps, this.fixedTimeStep);
+            }
+
+            this.lock.wait(); // ensure that the runtime is not evaluating the world
+
+            // desync buffer
+            if (this._usingWasmBackBuffer === false) {
+                this._usingWasmBackBuffer = true;
+
+                this.wasmInstance.physicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, true);
+
+                const rigidBodyList = this._rigidBodyList;
+                for (let i = 0; i < rigidBodyList.length; ++i) {
+                    rigidBodyList[i].updateBufferedMotionState();
+                }
+                const rigidBodyBundleList = this._rigidBodyBundleList;
+                for (let i = 0; i < rigidBodyBundleList.length; ++i) {
+                    rigidBodyBundleList[i].updateBufferedMotionStates();
+                }
+            }
+
+            this.wasmInstance.physicsRuntimeBufferedStepSimulation(this._inner.ptr, deltaTime, this.maxSubSteps, this.fixedTimeStep);
+        } else {
+            // sync buffer
+            if (this._usingWasmBackBuffer === true) {
+                this.lock.wait(); // ensure that the runtime is not evaluating animations
+                this._usingWasmBackBuffer = false;
+
+                this.wasmInstance.physicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, false);
+
+                const rigidBodyList = this._rigidBodyList;
+                for (let i = 0; i < rigidBodyList.length; ++i) {
+                    rigidBodyList[i].updateBufferedMotionState();
+                }
+                const rigidBodyBundleList = this._rigidBodyBundleList;
+                for (let i = 0; i < rigidBodyBundleList.length; ++i) {
+                    rigidBodyBundleList[i].updateBufferedMotionStates();
+                }
+            }
+
+            this._physicsWorld.stepSimulation(deltaTime, this.maxSubSteps, this.fixedTimeStep);
+        }
 
         this.onTickObservable.notifyObservers();
+    }
+
+    /**
+     * Animation evaluation type
+     */
+    public get evaluationType(): PhysicsRuntimeEvaluationType {
+        return this._evaluationType;
+    }
+
+    public set evaluationType(value: PhysicsRuntimeEvaluationType) {
+        if (this._evaluationType === value) return;
+
+        if (value === PhysicsRuntimeEvaluationType.Buffered) {
+            this._evaluationType = value;
+        } else {
+            this._evaluationType = value;
+        }
+
+        if (value === PhysicsRuntimeEvaluationType.Buffered) {
+            const rigidBodyList = this._rigidBodyList;
+            for (let i = 0; i < rigidBodyList.length; ++i) {
+                rigidBodyList[i].impl = new BufferedRigidBodyImpl();
+            }
+            const rigidBodyBundleList = this._rigidBodyBundleList;
+            for (let i = 0; i < rigidBodyBundleList.length; ++i) {
+                rigidBodyBundleList[i].impl = new BufferedRigidBodyBundleImpl(rigidBodyBundleList[i].count);
+            }
+        } else {
+            const rigidBodyList = this._rigidBodyList;
+            for (let i = 0; i < rigidBodyList.length; ++i) {
+                rigidBodyList[i].impl = new ImmediateRigidBodyImpl();
+            }
+            const rigidBodyBundleList = this._rigidBodyBundleList;
+            for (let i = 0; i < rigidBodyBundleList.length; ++i) {
+                rigidBodyBundleList[i].impl = new ImmediateRigidBodyBundleImpl(rigidBodyBundleList[i].count);
+            }
+        }
     }
 
     private readonly _gravity: Vector3 = new Vector3(0, -10, 0);

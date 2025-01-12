@@ -17,6 +17,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
 import { PhysicsRuntime } from "@/Runtime/Impl/physicsRuntime";
+import { PhysicsRuntimeEvaluationType } from "@/Runtime/Impl/physicsRuntimeEvaluationType";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { MotionType } from "@/Runtime/motionType";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
@@ -70,6 +71,7 @@ export class SceneBuilder implements ISceneBuilder {
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 1);
         const runtime = new PhysicsRuntime(wasmInstance);
         runtime.register(scene);
+        runtime.evaluationType = PhysicsRuntimeEvaluationType.Buffered;
 
         const matrix = new Matrix();
 
