@@ -67,7 +67,7 @@ export class SceneBuilder implements ISceneBuilder {
 
         // Inspector.Show(scene, { enablePopup: false });
 
-        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 1);
         const runtime = new PhysicsRuntime(wasmInstance);
         runtime.register(scene);
 
