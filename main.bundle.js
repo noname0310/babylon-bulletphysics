@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 9582:
+/***/ 53133:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -92,106 +92,32 @@ __webpack_require__.d(mr_namespaceObject, {
   wbg_rayon_start_worker: () => (wbg_rayon_start_worker)
 });
 
-// NAMESPACE OBJECT: ./src/wasm/sr/index.js
-var sr_namespaceObject = {};
-__webpack_require__.r(sr_namespaceObject);
-__webpack_require__.d(sr_namespaceObject, {
-  allocateBuffer: () => (sr_allocateBuffer),
-  constraintEnableSpring: () => (sr_constraintEnableSpring),
-  constraintSetAngularLowerLimit: () => (sr_constraintSetAngularLowerLimit),
-  constraintSetAngularUpperLimit: () => (sr_constraintSetAngularUpperLimit),
-  constraintSetDamping: () => (sr_constraintSetDamping),
-  constraintSetLinearLowerLimit: () => (sr_constraintSetLinearLowerLimit),
-  constraintSetLinearUpperLimit: () => (sr_constraintSetLinearUpperLimit),
-  constraintSetStiffness: () => (sr_constraintSetStiffness),
-  createBoxShape: () => (sr_createBoxShape),
-  createCapsuleShape: () => (sr_createCapsuleShape),
-  createGeneric6DofConstraint: () => (sr_createGeneric6DofConstraint),
-  createGeneric6DofConstraintFromBundle: () => (sr_createGeneric6DofConstraintFromBundle),
-  createGeneric6DofSpringConstraint: () => (sr_createGeneric6DofSpringConstraint),
-  createGeneric6DofSpringConstraintFromBundle: () => (sr_createGeneric6DofSpringConstraintFromBundle),
-  createMultiPhysicsRuntime: () => (sr_createMultiPhysicsRuntime),
-  createMultiPhysicsWorld: () => (sr_createMultiPhysicsWorld),
-  createPhysicsRuntime: () => (sr_createPhysicsRuntime),
-  createPhysicsWorld: () => (sr_createPhysicsWorld),
-  createRigidBody: () => (sr_createRigidBody),
-  createRigidBodyBundle: () => (sr_createRigidBodyBundle),
-  createSphereShape: () => (sr_createSphereShape),
-  createStaticPlaneShape: () => (sr_createStaticPlaneShape),
-  deallocateBuffer: () => (sr_deallocateBuffer),
-  "default": () => (sr),
-  destroyConstraint: () => (sr_destroyConstraint),
-  destroyMultiPhysicsRuntime: () => (sr_destroyMultiPhysicsRuntime),
-  destroyMultiPhysicsWorld: () => (sr_destroyMultiPhysicsWorld),
-  destroyPhysicsRuntime: () => (sr_destroyPhysicsRuntime),
-  destroyPhysicsWorld: () => (sr_destroyPhysicsWorld),
-  destroyRigidBody: () => (sr_destroyRigidBody),
-  destroyRigidBodyBundle: () => (sr_destroyRigidBodyBundle),
-  destroyShape: () => (sr_destroyShape),
-  init: () => (sr_init),
-  initSync: () => (sr_initSync),
-  multiPhysicsRuntimeGetLockStatePtr: () => (sr_multiPhysicsRuntimeGetLockStatePtr),
-  multiPhysicsWorldAddConstraint: () => (sr_multiPhysicsWorldAddConstraint),
-  multiPhysicsWorldAddRigidBody: () => (sr_multiPhysicsWorldAddRigidBody),
-  multiPhysicsWorldAddRigidBodyBundle: () => (sr_multiPhysicsWorldAddRigidBodyBundle),
-  multiPhysicsWorldAddRigidBodyBundleShadow: () => (sr_multiPhysicsWorldAddRigidBodyBundleShadow),
-  multiPhysicsWorldAddRigidBodyBundleToGlobal: () => (sr_multiPhysicsWorldAddRigidBodyBundleToGlobal),
-  multiPhysicsWorldAddRigidBodyShadow: () => (sr_multiPhysicsWorldAddRigidBodyShadow),
-  multiPhysicsWorldAddRigidBodyToGlobal: () => (sr_multiPhysicsWorldAddRigidBodyToGlobal),
-  multiPhysicsWorldRemoveConstraint: () => (sr_multiPhysicsWorldRemoveConstraint),
-  multiPhysicsWorldRemoveRigidBody: () => (sr_multiPhysicsWorldRemoveRigidBody),
-  multiPhysicsWorldRemoveRigidBodyBundle: () => (sr_multiPhysicsWorldRemoveRigidBodyBundle),
-  multiPhysicsWorldRemoveRigidBodyBundleFromGlobal: () => (sr_multiPhysicsWorldRemoveRigidBodyBundleFromGlobal),
-  multiPhysicsWorldRemoveRigidBodyBundleShadow: () => (sr_multiPhysicsWorldRemoveRigidBodyBundleShadow),
-  multiPhysicsWorldRemoveRigidBodyFromGlobal: () => (sr_multiPhysicsWorldRemoveRigidBodyFromGlobal),
-  multiPhysicsWorldRemoveRigidBodyShadow: () => (sr_multiPhysicsWorldRemoveRigidBodyShadow),
-  multiPhysicsWorldSetGravity: () => (sr_multiPhysicsWorldSetGravity),
-  multiPhysicsWorldStepSimulation: () => (sr_multiPhysicsWorldStepSimulation),
-  multiPhysicsWorldUseMotionStateBuffer: () => (sr_multiPhysicsWorldUseMotionStateBuffer),
-  physicsRuntimeGetLockStatePtr: () => (sr_physicsRuntimeGetLockStatePtr),
-  physicsWorldAddConstraint: () => (sr_physicsWorldAddConstraint),
-  physicsWorldAddRigidBody: () => (sr_physicsWorldAddRigidBody),
-  physicsWorldAddRigidBodyBundle: () => (sr_physicsWorldAddRigidBodyBundle),
-  physicsWorldRemoveConstraint: () => (sr_physicsWorldRemoveConstraint),
-  physicsWorldRemoveRigidBody: () => (sr_physicsWorldRemoveRigidBody),
-  physicsWorldRemoveRigidBodyBundle: () => (sr_physicsWorldRemoveRigidBodyBundle),
-  physicsWorldSetGravity: () => (sr_physicsWorldSetGravity),
-  physicsWorldStepSimulation: () => (sr_physicsWorldStepSimulation),
-  physicsWorldUseMotionStateBuffer: () => (sr_physicsWorldUseMotionStateBuffer),
-  rigidBodyBundleGetBufferedMotionStatesPtr: () => (sr_rigidBodyBundleGetBufferedMotionStatesPtr),
-  rigidBodyBundleGetMotionStatesPtr: () => (sr_rigidBodyBundleGetMotionStatesPtr),
-  rigidBodyBundleMakeKinematic: () => (sr_rigidBodyBundleMakeKinematic),
-  rigidBodyBundleRestoreDynamic: () => (sr_rigidBodyBundleRestoreDynamic),
-  rigidBodyGetBufferedMotionStatePtr: () => (sr_rigidBodyGetBufferedMotionStatePtr),
-  rigidBodyGetMotionStatePtr: () => (sr_rigidBodyGetMotionStatePtr),
-  rigidBodyMakeKinematic: () => (sr_rigidBodyMakeKinematic),
-  rigidBodyRestoreDynamic: () => (sr_rigidBodyRestoreDynamic)
-});
-
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/thinInstanceMesh.js
-var thinInstanceMesh = __webpack_require__(203);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent.js + 6 modules
-var shadowGeneratorSceneComponent = __webpack_require__(483);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/standardMaterial.js + 8 modules
-var standardMaterial = __webpack_require__(8227);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Cameras/arcRotateCamera.js + 13 modules
-var arcRotateCamera = __webpack_require__(7456);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/directionalLight.js + 1 modules
-var Lights_directionalLight = __webpack_require__(5581);
+var thinInstanceMesh = __webpack_require__(90203);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent.js
+var shadowGeneratorSceneComponent = __webpack_require__(33832);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/standardMaterial.js
+var standardMaterial = __webpack_require__(2093);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Cameras/arcRotateCamera.js
+var arcRotateCamera = __webpack_require__(7839);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/directionalLight.js
+var Lights_directionalLight = __webpack_require__(52046);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/hemisphericLight.js
-var Lights_hemisphericLight = __webpack_require__(1513);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGenerator.js + 2 modules
-var Shadows_shadowGenerator = __webpack_require__(9711);
+var Lights_hemisphericLight = __webpack_require__(71513);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGenerator.js
+var Shadows_shadowGenerator = __webpack_require__(18595);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.color.js
-var math_color = __webpack_require__(6041);
+var math_color = __webpack_require__(26041);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
-var math_vector = __webpack_require__(9923);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/Builders/boxBuilder.js + 2 modules
-var boxBuilder = __webpack_require__(9899);
+var math_vector = __webpack_require__(79923);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/Builders/boxBuilder.js
+var boxBuilder = __webpack_require__(96793);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/Builders/planeBuilder.js
-var planeBuilder = __webpack_require__(8144);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/scene.js + 14 modules
-var core_scene = __webpack_require__(554);
+var planeBuilder = __webpack_require__(58144);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/scene.js + 2 modules
+var core_scene = __webpack_require__(87491);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/inspector/dist/babylon.inspector.bundle.max.js
+var babylon_inspector_bundle_max = __webpack_require__(35652);
 ;// ./src/Runtime/Misc/wasmSharedTypedArray.ts
 /**
  * Safe typed array pointer for WASM shared memory
@@ -528,7 +454,7 @@ class Generic6DofSpringConstraint extends Constraint {
 }
 
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/observable.js
-var observable = __webpack_require__(9848);
+var observable = __webpack_require__(99848);
 ;// ./src/Runtime/Misc/wasmSpinlock.ts
 /**
  * Spinlock for WASM runtime synchronization
@@ -1645,26 +1571,6 @@ async function startWorkers(module, memory, builder) {
 
 let wasm;
 
-const heap = new Array(128).fill(undefined);
-
-heap.push(undefined, null, true, false);
-
-function getObject(idx) { return heap[idx]; }
-
-let heap_next = heap.length;
-
-function dropObject(idx) {
-    if (idx < 132) return;
-    heap[idx] = heap_next;
-    heap_next = idx;
-}
-
-function takeObject(idx) {
-    const ret = getObject(idx);
-    dropObject(idx);
-    return ret;
-}
-
 const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
 
 if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
@@ -1683,6 +1589,12 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8ArrayMemory0().slice(ptr, ptr + len));
 }
 
+const heap = new Array(128).fill(undefined);
+
+heap.push(undefined, null, true, false);
+
+let heap_next = heap.length;
+
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);
     const idx = heap_next;
@@ -1690,6 +1602,20 @@ function addHeapObject(obj) {
 
     heap[idx] = obj;
     return idx;
+}
+
+function getObject(idx) { return heap[idx]; }
+
+function dropObject(idx) {
+    if (idx < 132) return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
 }
 /**
 * @param {number} info
@@ -1958,151 +1884,6 @@ function multiPhysicsWorldUseMotionStateBuffer(world, use_buffer) {
 }
 
 /**
-* @param {number} physics_world
-* @returns {number}
-*/
-function createMultiPhysicsRuntime(physics_world) {
-    const ret = wasm.createMultiPhysicsRuntime(physics_world);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-*/
-function destroyMultiPhysicsRuntime(physics_runtime) {
-    wasm.destroyMultiPhysicsRuntime(physics_runtime);
-}
-
-/**
-* @param {number} runtime
-* @returns {number}
-*/
-function multiPhysicsRuntimeGetLockStatePtr(runtime) {
-    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
-    wasm.multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @returns {number}
-*/
-function createBoxShape(x, y, z) {
-    const ret = wasm.createBoxShape(x, y, z);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @returns {number}
-*/
-function createSphereShape(radius) {
-    const ret = wasm.createSphereShape(radius);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @param {number} height
-* @returns {number}
-*/
-function createCapsuleShape(radius, height) {
-    const ret = wasm.createCapsuleShape(radius, height);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} normal_x
-* @param {number} normal_y
-* @param {number} normal_z
-* @param {number} plane_constant
-* @returns {number}
-*/
-function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
-    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyShape(ptr) {
-    wasm.destroyShape(ptr);
-}
-
-/**
-* @param {number} physics_world
-* @returns {number}
-*/
-function createPhysicsRuntime(physics_world) {
-    const ret = wasm.createPhysicsRuntime(physics_world);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-*/
-function destroyPhysicsRuntime(physics_runtime) {
-    wasm.destroyPhysicsRuntime(physics_runtime);
-}
-
-/**
-* @param {number} physics_runtime
-* @returns {number}
-*/
-function physicsRuntimeGetLockStatePtr(physics_runtime) {
-    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
-    wasm.physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
-*/
-function init() {
-    wasm.init();
-}
-
-/**
-* @param {number} size
-* @returns {number}
-*/
-function allocateBuffer(size) {
-    const ret = wasm.allocateBuffer(size);
-    return ret >>> 0;
-}
-
-/**
-* Deallocate a buffer allocated by `allocateBuffer`.
-* # Safety
-* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
-* @param {number} ptr
-* @param {number} size
-*/
-function deallocateBuffer(ptr, size) {
-    wasm.deallocateBuffer(ptr, size);
-}
-
-/**
 * @returns {number}
 */
 function createPhysicsWorld() {
@@ -2192,6 +1973,116 @@ function physicsWorldRemoveConstraint(world, constraint) {
 */
 function physicsWorldUseMotionStateBuffer(world, use_buffer) {
     wasm.physicsWorldUseMotionStateBuffer(world, use_buffer);
+}
+
+/**
+* @param {number} physics_world
+* @returns {number}
+*/
+function createMultiPhysicsRuntime(physics_world) {
+    const ret = wasm.createMultiPhysicsRuntime(physics_world);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+*/
+function destroyMultiPhysicsRuntime(physics_runtime) {
+    wasm.destroyMultiPhysicsRuntime(physics_runtime);
+}
+
+/**
+* @param {number} runtime
+* @returns {number}
+*/
+function multiPhysicsRuntimeGetLockStatePtr(runtime) {
+    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
+    wasm.multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
+}
+
+/**
+*/
+function init() {
+    wasm.init();
+}
+
+/**
+* @param {number} size
+* @returns {number}
+*/
+function allocateBuffer(size) {
+    const ret = wasm.allocateBuffer(size);
+    return ret >>> 0;
+}
+
+/**
+* Deallocate a buffer allocated by `allocateBuffer`.
+* # Safety
+* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
+* @param {number} ptr
+* @param {number} size
+*/
+function deallocateBuffer(ptr, size) {
+    wasm.deallocateBuffer(ptr, size);
+}
+
+/**
+* @param {number} x
+* @param {number} y
+* @param {number} z
+* @returns {number}
+*/
+function createBoxShape(x, y, z) {
+    const ret = wasm.createBoxShape(x, y, z);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @returns {number}
+*/
+function createSphereShape(radius) {
+    const ret = wasm.createSphereShape(radius);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @param {number} height
+* @returns {number}
+*/
+function createCapsuleShape(radius, height) {
+    const ret = wasm.createCapsuleShape(radius, height);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} normal_x
+* @param {number} normal_y
+* @param {number} normal_z
+* @param {number} plane_constant
+* @returns {number}
+*/
+function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
+    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyShape(ptr) {
+    wasm.destroyShape(ptr);
 }
 
 /**
@@ -2322,6 +2213,41 @@ function constraintSetDamping(ptr, index, damping) {
     wasm.constraintSetDamping(ptr, index, damping);
 }
 
+/**
+* @param {number} physics_world
+* @returns {number}
+*/
+function createPhysicsRuntime(physics_world) {
+    const ret = wasm.createPhysicsRuntime(physics_world);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+*/
+function destroyPhysicsRuntime(physics_runtime) {
+    wasm.destroyPhysicsRuntime(physics_runtime);
+}
+
+/**
+* @param {number} physics_runtime
+* @returns {number}
+*/
+function physicsRuntimeGetLockStatePtr(physics_runtime) {
+    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
+    wasm.physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
+}
+
 function handleError(f, args) {
     try {
         return f.apply(this, args);
@@ -2426,12 +2352,12 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-        takeObject(arg0);
-    };
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
         const ret = getStringFromWasm0(arg0, arg1);
         return addHeapObject(ret);
+    };
+    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+        takeObject(arg0);
     };
     imports.wbg.__wbg_instanceof_Window_5012736c80a01584 = function(arg0) {
         let result;
@@ -2442,6 +2368,9 @@ function __wbg_get_imports() {
         }
         const ret = result;
         return ret;
+    };
+    imports.wbg.__wbg_error_09480e4aadca50ad = function(arg0) {
+        console.error(getObject(arg0));
     };
     imports.wbg.__wbg_log_b103404cc5920657 = function(arg0) {
         console.log(getObject(arg0));
@@ -2543,7 +2472,7 @@ async function __wbg_init(module_or_path, memory) {
     console.warn('using deprecated parameters for the initialization function; pass a single object instead')
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL(/* asset import */ __webpack_require__(9603), __webpack_require__.b);
+        module_or_path = new URL(/* asset import */ __webpack_require__(79603), __webpack_require__.b);
     }
     const imports = __wbg_get_imports();
 
@@ -2581,796 +2510,6 @@ async function __wbg_init(module_or_path, memory) {
 class BulletWasmInstanceTypeMR {
     getWasmInstanceInner() {
         return mr_namespaceObject;
-    }
-}
-
-;// ./src/wasm/sr/index.js
-let sr_wasm;
-
-const sr_cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
-
-if (typeof TextDecoder !== 'undefined') { sr_cachedTextDecoder.decode(); };
-
-let sr_cachedUint8ArrayMemory0 = null;
-
-function sr_getUint8ArrayMemory0() {
-    if (sr_cachedUint8ArrayMemory0 === null || sr_cachedUint8ArrayMemory0.byteLength === 0) {
-        sr_cachedUint8ArrayMemory0 = new Uint8Array(sr_wasm.memory.buffer);
-    }
-    return sr_cachedUint8ArrayMemory0;
-}
-
-function sr_getStringFromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return sr_cachedTextDecoder.decode(sr_getUint8ArrayMemory0().subarray(ptr, ptr + len));
-}
-
-const sr_heap = new Array(128).fill(undefined);
-
-sr_heap.push(undefined, null, true, false);
-
-let sr_heap_next = sr_heap.length;
-
-function sr_addHeapObject(obj) {
-    if (sr_heap_next === sr_heap.length) sr_heap.push(sr_heap.length + 1);
-    const idx = sr_heap_next;
-    sr_heap_next = sr_heap[idx];
-
-    sr_heap[idx] = obj;
-    return idx;
-}
-
-function sr_getObject(idx) { return sr_heap[idx]; }
-
-function sr_dropObject(idx) {
-    if (idx < 132) return;
-    sr_heap[idx] = sr_heap_next;
-    sr_heap_next = idx;
-}
-
-function sr_takeObject(idx) {
-    const ret = sr_getObject(idx);
-    sr_dropObject(idx);
-    return ret;
-}
-/**
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @returns {number}
-*/
-function sr_createBoxShape(x, y, z) {
-    const ret = sr_wasm.createBoxShape(x, y, z);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @returns {number}
-*/
-function sr_createSphereShape(radius) {
-    const ret = sr_wasm.createSphereShape(radius);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @param {number} height
-* @returns {number}
-*/
-function sr_createCapsuleShape(radius, height) {
-    const ret = sr_wasm.createCapsuleShape(radius, height);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} normal_x
-* @param {number} normal_y
-* @param {number} normal_z
-* @param {number} plane_constant
-* @returns {number}
-*/
-function sr_createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
-    const ret = sr_wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function sr_destroyShape(ptr) {
-    sr_wasm.destroyShape(ptr);
-}
-
-/**
-* @param {number} info
-* @returns {number}
-*/
-function sr_createRigidBody(info) {
-    const ret = sr_wasm.createRigidBody(info);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function sr_destroyRigidBody(ptr) {
-    sr_wasm.destroyRigidBody(ptr);
-}
-
-/**
-* @param {number} ptr
-* @returns {number}
-*/
-function sr_rigidBodyGetMotionStatePtr(ptr) {
-    const ret = sr_wasm.rigidBodyGetMotionStatePtr(ptr);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-* @returns {number}
-*/
-function sr_rigidBodyGetBufferedMotionStatePtr(ptr) {
-    const ret = sr_wasm.rigidBodyGetBufferedMotionStatePtr(ptr);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function sr_rigidBodyMakeKinematic(ptr) {
-    sr_wasm.rigidBodyMakeKinematic(ptr);
-}
-
-/**
-* @param {number} ptr
-*/
-function sr_rigidBodyRestoreDynamic(ptr) {
-    sr_wasm.rigidBodyRestoreDynamic(ptr);
-}
-
-/**
-* @param {number} info_list
-* @param {number} len
-* @returns {number}
-*/
-function sr_createRigidBodyBundle(info_list, len) {
-    const ret = sr_wasm.createRigidBodyBundle(info_list, len);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function sr_destroyRigidBodyBundle(ptr) {
-    sr_wasm.destroyRigidBodyBundle(ptr);
-}
-
-/**
-* @param {number} ptr
-* @returns {number}
-*/
-function sr_rigidBodyBundleGetMotionStatesPtr(ptr) {
-    const ret = sr_wasm.rigidBodyBundleGetMotionStatesPtr(ptr);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-* @returns {number}
-*/
-function sr_rigidBodyBundleGetBufferedMotionStatesPtr(ptr) {
-    const ret = sr_wasm.rigidBodyBundleGetBufferedMotionStatesPtr(ptr);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-*/
-function sr_rigidBodyBundleMakeKinematic(ptr, index) {
-    sr_wasm.rigidBodyBundleMakeKinematic(ptr, index);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-*/
-function sr_rigidBodyBundleRestoreDynamic(ptr, index) {
-    sr_wasm.rigidBodyBundleRestoreDynamic(ptr, index);
-}
-
-/**
-* @param {boolean} allow_dynamic_shadow
-* @returns {number}
-*/
-function sr_createMultiPhysicsWorld(allow_dynamic_shadow) {
-    const ret = sr_wasm.createMultiPhysicsWorld(allow_dynamic_shadow);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} world
-*/
-function sr_destroyMultiPhysicsWorld(world) {
-    sr_wasm.destroyMultiPhysicsWorld(world);
-}
-
-/**
-* @param {number} world
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function sr_multiPhysicsWorldSetGravity(world, x, y, z) {
-    sr_wasm.multiPhysicsWorldSetGravity(world, x, y, z);
-}
-
-/**
-* @param {number} world
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function sr_multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
-    sr_wasm.multiPhysicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} rigidbody
-*/
-function sr_multiPhysicsWorldAddRigidBody(world, world_id, rigidbody) {
-    sr_wasm.multiPhysicsWorldAddRigidBody(world, world_id, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} rigidbody
-*/
-function sr_multiPhysicsWorldRemoveRigidBody(world, world_id, rigidbody) {
-    sr_wasm.multiPhysicsWorldRemoveRigidBody(world, world_id, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} bundle
-*/
-function sr_multiPhysicsWorldAddRigidBodyBundle(world, world_id, bundle) {
-    sr_wasm.multiPhysicsWorldAddRigidBodyBundle(world, world_id, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} bundle
-*/
-function sr_multiPhysicsWorldRemoveRigidBodyBundle(world, world_id, bundle) {
-    sr_wasm.multiPhysicsWorldRemoveRigidBodyBundle(world, world_id, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} rigidbody
-*/
-function sr_multiPhysicsWorldAddRigidBodyToGlobal(world, rigidbody) {
-    sr_wasm.multiPhysicsWorldAddRigidBodyToGlobal(world, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} rigidbody
-*/
-function sr_multiPhysicsWorldRemoveRigidBodyFromGlobal(world, rigidbody) {
-    sr_wasm.multiPhysicsWorldRemoveRigidBodyFromGlobal(world, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} bundle
-*/
-function sr_multiPhysicsWorldAddRigidBodyBundleToGlobal(world, bundle) {
-    sr_wasm.multiPhysicsWorldAddRigidBodyBundleToGlobal(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} bundle
-*/
-function sr_multiPhysicsWorldRemoveRigidBodyBundleFromGlobal(world, bundle) {
-    sr_wasm.multiPhysicsWorldRemoveRigidBodyBundleFromGlobal(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} rigidbody
-*/
-function sr_multiPhysicsWorldAddRigidBodyShadow(world, world_id, rigidbody) {
-    sr_wasm.multiPhysicsWorldAddRigidBodyShadow(world, world_id, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} rigidbody
-*/
-function sr_multiPhysicsWorldRemoveRigidBodyShadow(world, world_id, rigidbody) {
-    sr_wasm.multiPhysicsWorldRemoveRigidBodyShadow(world, world_id, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} bundle
-*/
-function sr_multiPhysicsWorldAddRigidBodyBundleShadow(world, world_id, bundle) {
-    sr_wasm.multiPhysicsWorldAddRigidBodyBundleShadow(world, world_id, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} bundle
-*/
-function sr_multiPhysicsWorldRemoveRigidBodyBundleShadow(world, world_id, bundle) {
-    sr_wasm.multiPhysicsWorldRemoveRigidBodyBundleShadow(world, world_id, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} constraint
-* @param {boolean} disable_collisions_between_linked_bodies
-*/
-function sr_multiPhysicsWorldAddConstraint(world, world_id, constraint, disable_collisions_between_linked_bodies) {
-    sr_wasm.multiPhysicsWorldAddConstraint(world, world_id, constraint, disable_collisions_between_linked_bodies);
-}
-
-/**
-* @param {number} world
-* @param {number} world_id
-* @param {number} constraint
-*/
-function sr_multiPhysicsWorldRemoveConstraint(world, world_id, constraint) {
-    sr_wasm.multiPhysicsWorldRemoveConstraint(world, world_id, constraint);
-}
-
-/**
-* @param {number} world
-* @param {boolean} use_buffer
-*/
-function sr_multiPhysicsWorldUseMotionStateBuffer(world, use_buffer) {
-    sr_wasm.multiPhysicsWorldUseMotionStateBuffer(world, use_buffer);
-}
-
-/**
-* @returns {number}
-*/
-function sr_createPhysicsWorld() {
-    const ret = sr_wasm.createPhysicsWorld();
-    return ret >>> 0;
-}
-
-/**
-* @param {number} world
-*/
-function sr_destroyPhysicsWorld(world) {
-    sr_wasm.destroyPhysicsWorld(world);
-}
-
-/**
-* @param {number} world
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function sr_physicsWorldSetGravity(world, x, y, z) {
-    sr_wasm.physicsWorldSetGravity(world, x, y, z);
-}
-
-/**
-* @param {number} world
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function sr_physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
-    sr_wasm.physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
-* @param {number} world
-* @param {number} rigidbody
-*/
-function sr_physicsWorldAddRigidBody(world, rigidbody) {
-    sr_wasm.physicsWorldAddRigidBody(world, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} rigidbody
-*/
-function sr_physicsWorldRemoveRigidBody(world, rigidbody) {
-    sr_wasm.physicsWorldRemoveRigidBody(world, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} bundle
-*/
-function sr_physicsWorldAddRigidBodyBundle(world, bundle) {
-    sr_wasm.physicsWorldAddRigidBodyBundle(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} bundle
-*/
-function sr_physicsWorldRemoveRigidBodyBundle(world, bundle) {
-    sr_wasm.physicsWorldRemoveRigidBodyBundle(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} constraint
-* @param {boolean} disable_collisions_between_linked_bodies
-*/
-function sr_physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies) {
-    sr_wasm.physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies);
-}
-
-/**
-* @param {number} world
-* @param {number} constraint
-*/
-function sr_physicsWorldRemoveConstraint(world, constraint) {
-    sr_wasm.physicsWorldRemoveConstraint(world, constraint);
-}
-
-/**
-* @param {number} world
-* @param {boolean} use_buffer
-*/
-function sr_physicsWorldUseMotionStateBuffer(world, use_buffer) {
-    sr_wasm.physicsWorldUseMotionStateBuffer(world, use_buffer);
-}
-
-/**
-* @param {number} body_a
-* @param {number} body_b
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function sr_createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
-    const ret = sr_wasm.createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_bundle
-* @param {number} body_a_index
-* @param {number} body_b_index
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function sr_createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
-    const ret = sr_wasm.createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_a
-* @param {number} body_b
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function sr_createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
-    const ret = sr_wasm.createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_bundle
-* @param {number} body_a_index
-* @param {number} body_b_index
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function sr_createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
-    const ret = sr_wasm.createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function sr_destroyConstraint(ptr) {
-    sr_wasm.destroyConstraint(ptr);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function sr_constraintSetLinearLowerLimit(ptr, x, y, z) {
-    sr_wasm.constraintSetLinearLowerLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function sr_constraintSetLinearUpperLimit(ptr, x, y, z) {
-    sr_wasm.constraintSetLinearUpperLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function sr_constraintSetAngularLowerLimit(ptr, x, y, z) {
-    sr_wasm.constraintSetAngularLowerLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function sr_constraintSetAngularUpperLimit(ptr, x, y, z) {
-    sr_wasm.constraintSetAngularUpperLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {boolean} on_off
-*/
-function sr_constraintEnableSpring(ptr, index, on_off) {
-    sr_wasm.constraintEnableSpring(ptr, index, on_off);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {number} stiffness
-*/
-function sr_constraintSetStiffness(ptr, index, stiffness) {
-    sr_wasm.constraintSetStiffness(ptr, index, stiffness);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {number} damping
-*/
-function sr_constraintSetDamping(ptr, index, damping) {
-    sr_wasm.constraintSetDamping(ptr, index, damping);
-}
-
-/**
-* @param {number} physics_world
-* @returns {number}
-*/
-function sr_createMultiPhysicsRuntime(physics_world) {
-    const ret = sr_wasm.createMultiPhysicsRuntime(physics_world);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-*/
-function sr_destroyMultiPhysicsRuntime(physics_runtime) {
-    sr_wasm.destroyMultiPhysicsRuntime(physics_runtime);
-}
-
-/**
-* @param {number} runtime
-* @returns {number}
-*/
-function sr_multiPhysicsRuntimeGetLockStatePtr(runtime) {
-    const ret = sr_wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_world
-* @returns {number}
-*/
-function sr_createPhysicsRuntime(physics_world) {
-    const ret = sr_wasm.createMultiPhysicsRuntime(physics_world);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-*/
-function sr_destroyPhysicsRuntime(physics_runtime) {
-    sr_wasm.destroyMultiPhysicsRuntime(physics_runtime);
-}
-
-/**
-* @param {number} physics_runtime
-* @returns {number}
-*/
-function sr_physicsRuntimeGetLockStatePtr(physics_runtime) {
-    const ret = sr_wasm.multiPhysicsRuntimeGetLockStatePtr(physics_runtime);
-    return ret >>> 0;
-}
-
-/**
-*/
-function sr_init() {
-    sr_wasm.init();
-}
-
-/**
-* @param {number} size
-* @returns {number}
-*/
-function sr_allocateBuffer(size) {
-    const ret = sr_wasm.allocateBuffer(size);
-    return ret >>> 0;
-}
-
-/**
-* Deallocate a buffer allocated by `allocateBuffer`.
-* # Safety
-* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
-* @param {number} ptr
-* @param {number} size
-*/
-function sr_deallocateBuffer(ptr, size) {
-    sr_wasm.deallocateBuffer(ptr, size);
-}
-
-async function sr_wbg_load(module, imports) {
-    if (typeof Response === 'function' && module instanceof Response) {
-        if (typeof WebAssembly.instantiateStreaming === 'function') {
-            try {
-                return await WebAssembly.instantiateStreaming(module, imports);
-
-            } catch (e) {
-                if (module.headers.get('Content-Type') != 'application/wasm') {
-                    console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
-
-                } else {
-                    throw e;
-                }
-            }
-        }
-
-        const bytes = await module.arrayBuffer();
-        return await WebAssembly.instantiate(bytes, imports);
-
-    } else {
-        const instance = await WebAssembly.instantiate(module, imports);
-
-        if (instance instanceof WebAssembly.Instance) {
-            return { instance, module };
-
-        } else {
-            return instance;
-        }
-    }
-}
-
-function sr_wbg_get_imports() {
-    const imports = {};
-    imports.wbg = {};
-    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
-        const ret = sr_getStringFromWasm0(arg0, arg1);
-        return sr_addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-        sr_takeObject(arg0);
-    };
-    imports.wbg.__wbg_log_b103404cc5920657 = function(arg0) {
-        console.log(sr_getObject(arg0));
-    };
-    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
-        throw new Error(sr_getStringFromWasm0(arg0, arg1));
-    };
-
-    return imports;
-}
-
-function sr_wbg_init_memory(imports, memory) {
-
-}
-
-function sr_wbg_finalize_init(instance, module) {
-    sr_wasm = instance.exports;
-    sr_wbg_init.__wbindgen_wasm_module = module;
-    sr_cachedUint8ArrayMemory0 = null;
-
-
-
-    return sr_wasm;
-}
-
-function sr_initSync(module) {
-    if (sr_wasm !== undefined) return sr_wasm;
-
-
-    if (typeof module !== 'undefined' && Object.getPrototypeOf(module) === Object.prototype)
-    ({module} = module)
-    else
-    console.warn('using deprecated parameters for `initSync()`; pass a single object instead')
-
-    const imports = sr_wbg_get_imports();
-
-    sr_wbg_init_memory(imports);
-
-    if (!(module instanceof WebAssembly.Module)) {
-        module = new WebAssembly.Module(module);
-    }
-
-    const instance = new WebAssembly.Instance(module, imports);
-
-    return sr_wbg_finalize_init(instance, module);
-}
-
-async function sr_wbg_init(module_or_path) {
-    if (sr_wasm !== undefined) return sr_wasm;
-
-
-    if (typeof module_or_path !== 'undefined' && Object.getPrototypeOf(module_or_path) === Object.prototype)
-    ({module_or_path} = module_or_path)
-    else
-    console.warn('using deprecated parameters for the initialization function; pass a single object instead')
-
-    if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL(/* asset import */ __webpack_require__(8865), __webpack_require__.b);
-    }
-    const imports = sr_wbg_get_imports();
-
-    if (typeof module_or_path === 'string' || (typeof Request === 'function' && module_or_path instanceof Request) || (typeof URL === 'function' && module_or_path instanceof URL)) {
-        module_or_path = fetch(module_or_path);
-    }
-
-    sr_wbg_init_memory(imports);
-
-    const { instance, module } = await sr_wbg_load(await module_or_path, imports);
-
-    return sr_wbg_finalize_init(instance, module);
-}
-
-
-/* harmony default export */ const sr = (sr_wbg_init);
-
-;// ./src/Runtime/InstanceType/singleRelease.ts
-
-/**
- * Singlethreaded release build BulletWasmInstanceType
- *
- * Requirements for use:
- *
- * - Browser that supports WebAssembly
- */
-class BulletWasmInstanceTypeSR {
-    getWasmInstanceInner() {
-        return sr_namespaceObject;
     }
 }
 
@@ -4573,7 +3712,7 @@ class RigidBodyConstructionInfoList {
     }
 }
 
-;// ./src/Test/Scene/multiPhysicsRuntimeTestScene.ts
+;// ./src/Test/Scene/multiPhysicsRuntimeShadowTestScene.ts
 
 
 
@@ -4630,12 +3769,9 @@ class SceneBuilder {
         shadowGenerator.forceBackFacesOnly = false;
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = Shadows_shadowGenerator/* ShadowGenerator */.o.QUALITY_MEDIUM;
-        // Inspector.Show(scene, { enablePopup: false });
-        const threadCount = 32;
-        const wasmInstance = threadCount === 1
-            ? await getBulletWasmInstance(new BulletWasmInstanceTypeSR())
-            : await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
-        const runtime = new MultiPhysicsRuntime(wasmInstance, false);
+        babylon_inspector_bundle_max.Inspector.Show(scene, { enablePopup: false });
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), 6);
+        const runtime = new MultiPhysicsRuntime(wasmInstance, true);
         runtime.register(scene);
         runtime.evaluationType = PhysicsRuntimeEvaluationType.Buffered;
         const matrix = new math_vector/* Matrix */.uq();
@@ -4657,9 +3793,9 @@ class SceneBuilder {
         const baseBox = (0,boxBuilder/* CreateBox */.an)("box", { size: 2 }, scene);
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
-        const rowCount = 4;
-        const columnCount = 8;
-        const margin = 60;
+        const rowCount = 2;
+        const columnCount = 3;
+        const margin = 40;
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
         const boxShape = new PhysicsBoxShape(runtime, new math_vector/* Vector3 */.Pq(1, 1, 1));
@@ -4680,6 +3816,12 @@ class SceneBuilder {
                 }
                 const boxRigidBodyBundle = new RigidBodyBundle(runtime, rbInfoList);
                 runtime.addRigidBodyBundle(boxRigidBodyBundle, worldId);
+                for (let k = 0; k < rowCount * columnCount; ++k) {
+                    if (k === worldId) {
+                        continue;
+                    }
+                    runtime.addRigidBodyBundleShadow(boxRigidBodyBundle, k);
+                }
                 for (let k = 0; k < rbCount; k += 2) {
                     const indices = [k, k + 1];
                     const constraint = new Generic6DofSpringConstraint(runtime, boxRigidBodyBundle, indices, math_vector/* Matrix */.uq.Translation(0, -1.2, 0), math_vector/* Matrix */.uq.Translation(0, 1.2, 0), true);
@@ -4709,7 +3851,7 @@ class SceneBuilder {
 
 /***/ }),
 
-/***/ 1478:
+/***/ 81478:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -4756,13 +3898,13 @@ class BaseRuntime {
 
 /***/ }),
 
-/***/ 2089:
+/***/ 12089:
 /***/ ((module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3720);
-/* harmony import */ var _baseRuntime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1478);
-/* harmony import */ var _Scene_multiPhysicsRuntimeTestScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9582);
+/* harmony import */ var _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(93856);
+/* harmony import */ var _baseRuntime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(81478);
+/* harmony import */ var _Scene_multiPhysicsRuntimeShadowTestScene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(53133);
 
 
 
@@ -4787,7 +3929,7 @@ const engine = new _babylonjs_core_Engines_engine__WEBPACK_IMPORTED_MODULE_0__/*
 _baseRuntime__WEBPACK_IMPORTED_MODULE_1__/* .BaseRuntime */ .y.Create({
     canvas,
     engine,
-    sceneBuilder: new _Scene_multiPhysicsRuntimeTestScene__WEBPACK_IMPORTED_MODULE_2__/* .SceneBuilder */ .u()
+    sceneBuilder: new _Scene_multiPhysicsRuntimeShadowTestScene__WEBPACK_IMPORTED_MODULE_2__/* .SceneBuilder */ .u()
 }).then(runtime => runtime.run());
 
 __webpack_async_result__();
@@ -4795,17 +3937,10 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 9603:
+/***/ 79603:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "85d83c7d37071a3c583e.wasm";
-
-/***/ }),
-
-/***/ 8865:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-module.exports = __webpack_require__.p + "edd41e99c4575ef2e1a1.wasm";
+module.exports = __webpack_require__.p + "51dc15d6386256fa925e.wasm";
 
 /***/ })
 
@@ -4829,7 +3964,7 @@ module.exports = __webpack_require__.p + "edd41e99c4575ef2e1a1.wasm";
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -4952,25 +4087,12 @@ module.exports = __webpack_require__.p + "edd41e99c4575ef2e1a1.wasm";
 /******/ 		};
 /******/ 	})();
 /******/ 	
-/******/ 	/* webpack/runtime/ensure chunk */
-/******/ 	(() => {
-/******/ 		__webpack_require__.f = {};
-/******/ 		// This file contains only the entry chunk.
-/******/ 		// The chunk loading function for additional chunks
-/******/ 		__webpack_require__.e = (chunkId) => {
-/******/ 			return Promise.all(Object.keys(__webpack_require__.f).reduce((promises, key) => {
-/******/ 				__webpack_require__.f[key](chunkId, promises);
-/******/ 				return promises;
-/******/ 			}, []));
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/get javascript chunk filename */
 /******/ 	(() => {
 /******/ 		// This function allow to reference async chunks
 /******/ 		__webpack_require__.u = (chunkId) => {
 /******/ 			// return url for filenames based on template
-/******/ 			return "" + ({"71":"glslShaders","126":"wgslShaders"}[chunkId] || chunkId) + ".bundle.js";
+/******/ 			return "" + chunkId + ".bundle.js";
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -4989,52 +4111,6 @@ module.exports = __webpack_require__.p + "edd41e99c4575ef2e1a1.wasm";
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
 /******/ 	(() => {
 /******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/load script */
-/******/ 	(() => {
-/******/ 		var inProgress = {};
-/******/ 		var dataWebpackPrefix = "babylon-bulletphysics:";
-/******/ 		// loadScript function to load a script via script tag
-/******/ 		__webpack_require__.l = (url, done, key, chunkId) => {
-/******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
-/******/ 			var script, needAttach;
-/******/ 			if(key !== undefined) {
-/******/ 				var scripts = document.getElementsByTagName("script");
-/******/ 				for(var i = 0; i < scripts.length; i++) {
-/******/ 					var s = scripts[i];
-/******/ 					if(s.getAttribute("src") == url || s.getAttribute("data-webpack") == dataWebpackPrefix + key) { script = s; break; }
-/******/ 				}
-/******/ 			}
-/******/ 			if(!script) {
-/******/ 				needAttach = true;
-/******/ 				script = document.createElement('script');
-/******/ 		
-/******/ 				script.charset = 'utf-8';
-/******/ 				script.timeout = 120;
-/******/ 				if (__webpack_require__.nc) {
-/******/ 					script.setAttribute("nonce", __webpack_require__.nc);
-/******/ 				}
-/******/ 				script.setAttribute("data-webpack", dataWebpackPrefix + key);
-/******/ 		
-/******/ 				script.src = url;
-/******/ 			}
-/******/ 			inProgress[url] = [done];
-/******/ 			var onScriptComplete = (prev, event) => {
-/******/ 				// avoid mem leaks in IE.
-/******/ 				script.onerror = script.onload = null;
-/******/ 				clearTimeout(timeout);
-/******/ 				var doneFns = inProgress[url];
-/******/ 				delete inProgress[url];
-/******/ 				script.parentNode && script.parentNode.removeChild(script);
-/******/ 				doneFns && doneFns.forEach((fn) => (fn(event)));
-/******/ 				if(prev) return prev(event);
-/******/ 			}
-/******/ 			var timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), 120000);
-/******/ 			script.onerror = onScriptComplete.bind(null, script.onerror);
-/******/ 			script.onload = onScriptComplete.bind(null, script.onload);
-/******/ 			needAttach && document.head.appendChild(script);
-/******/ 		};
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
@@ -5082,44 +4158,7 @@ module.exports = __webpack_require__.p + "edd41e99c4575ef2e1a1.wasm";
 /******/ 			792: 0
 /******/ 		};
 /******/ 		
-/******/ 		__webpack_require__.f.j = (chunkId, promises) => {
-/******/ 				// JSONP chunk loading for javascript
-/******/ 				var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
-/******/ 				if(installedChunkData !== 0) { // 0 means "already installed".
-/******/ 		
-/******/ 					// a Promise means "currently loading".
-/******/ 					if(installedChunkData) {
-/******/ 						promises.push(installedChunkData[2]);
-/******/ 					} else {
-/******/ 						if(true) { // all chunks have JS
-/******/ 							// setup Promise in chunk cache
-/******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
-/******/ 							promises.push(installedChunkData[2] = promise);
-/******/ 		
-/******/ 							// start chunk loading
-/******/ 							var url = __webpack_require__.p + __webpack_require__.u(chunkId);
-/******/ 							// create error before stack unwound to get useful stacktrace later
-/******/ 							var error = new Error();
-/******/ 							var loadingEnded = (event) => {
-/******/ 								if(__webpack_require__.o(installedChunks, chunkId)) {
-/******/ 									installedChunkData = installedChunks[chunkId];
-/******/ 									if(installedChunkData !== 0) installedChunks[chunkId] = undefined;
-/******/ 									if(installedChunkData) {
-/******/ 										var errorType = event && (event.type === 'load' ? 'missing' : event.type);
-/******/ 										var realSrc = event && event.target && event.target.src;
-/******/ 										error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
-/******/ 										error.name = 'ChunkLoadError';
-/******/ 										error.type = errorType;
-/******/ 										error.request = realSrc;
-/******/ 										installedChunkData[1](error);
-/******/ 									}
-/******/ 								}
-/******/ 							};
-/******/ 							__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
-/******/ 						}
-/******/ 					}
-/******/ 				}
-/******/ 		};
+/******/ 		// no chunk on demand loading
 /******/ 		
 /******/ 		// no prefetching
 /******/ 		
@@ -5166,7 +4205,7 @@ module.exports = __webpack_require__.p + "edd41e99c4575ef2e1a1.wasm";
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [621], () => (__webpack_require__(2089)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [652], () => (__webpack_require__(12089)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
