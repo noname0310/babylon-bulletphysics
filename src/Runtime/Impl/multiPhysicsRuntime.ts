@@ -99,9 +99,9 @@ export class MultiPhysicsRuntime implements IRuntime {
         this.wasmInstance = wasmInstance;
 
         const physicsWorld = new MultiPhysicsWorld(this, allowDynamicShadow);
-        const ptr = wasmInstance.createPhysicsRuntime(physicsWorld.ptr);
+        const ptr = wasmInstance.createMultiPhysicsRuntime(physicsWorld.ptr);
 
-        const lockPtr = wasmInstance.physicsRuntimeGetLockStatePtr(ptr);
+        const lockPtr = wasmInstance.multiPhysicsRuntimeGetLockStatePtr(ptr);
         this.lock = new WasmSpinlock(wasmInstance.createTypedArray(Uint8Array, lockPtr, 1));
 
         this._inner = new MultiPhysicsRuntimeInner(this.lock, new WeakRef(wasmInstance), ptr, physicsWorld);
@@ -208,7 +208,7 @@ export class MultiPhysicsRuntime implements IRuntime {
         }
 
         if (this._evaluationType === PhysicsRuntimeEvaluationType.Buffered) {
-            if (this.wasmInstance.physicsRuntimeBufferedStepSimulation === undefined) { // single thread environment fallback
+            if (this.wasmInstance.multiPhysicsRuntimeBufferedStepSimulation === undefined) { // single thread environment fallback
                 this._physicsWorld.stepSimulation(deltaTime, this.maxSubSteps, this.fixedTimeStep);
             }
 
@@ -218,7 +218,7 @@ export class MultiPhysicsRuntime implements IRuntime {
             if (this._usingWasmBackBuffer === false) {
                 this._usingWasmBackBuffer = true;
 
-                this.wasmInstance.physicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, true);
+                this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, true);
 
                 const rigidBodyList = this._rigidBodyList;
                 for (let i = 0; i < rigidBodyList.length; ++i) {
@@ -230,14 +230,14 @@ export class MultiPhysicsRuntime implements IRuntime {
                 }
             }
 
-            this.wasmInstance.physicsRuntimeBufferedStepSimulation(this._inner.ptr, deltaTime, this.maxSubSteps, this.fixedTimeStep);
+            this.wasmInstance.multiPhysicsRuntimeBufferedStepSimulation(this._inner.ptr, deltaTime, this.maxSubSteps, this.fixedTimeStep);
         } else {
             // sync buffer
             if (this._usingWasmBackBuffer === true) {
                 this.lock.wait(); // ensure that the runtime is not evaluating animations
                 this._usingWasmBackBuffer = false;
 
-                this.wasmInstance.physicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, false);
+                this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, false);
 
                 const rigidBodyList = this._rigidBodyList;
                 for (let i = 0; i < rigidBodyList.length; ++i) {
