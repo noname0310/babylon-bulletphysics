@@ -29,6 +29,7 @@ __webpack_require__.d(md_namespaceObject, {
   createGeneric6DofConstraintFromBundle: () => (createGeneric6DofConstraintFromBundle),
   createGeneric6DofSpringConstraint: () => (createGeneric6DofSpringConstraint),
   createGeneric6DofSpringConstraintFromBundle: () => (createGeneric6DofSpringConstraintFromBundle),
+  createMultiPhysicsRuntime: () => (createMultiPhysicsRuntime),
   createMultiPhysicsWorld: () => (createMultiPhysicsWorld),
   createPhysicsRuntime: () => (createPhysicsRuntime),
   createPhysicsWorld: () => (createPhysicsWorld),
@@ -39,6 +40,7 @@ __webpack_require__.d(md_namespaceObject, {
   deallocateBuffer: () => (deallocateBuffer),
   "default": () => (md),
   destroyConstraint: () => (destroyConstraint),
+  destroyMultiPhysicsRuntime: () => (destroyMultiPhysicsRuntime),
   destroyMultiPhysicsWorld: () => (destroyMultiPhysicsWorld),
   destroyPhysicsRuntime: () => (destroyPhysicsRuntime),
   destroyPhysicsWorld: () => (destroyPhysicsWorld),
@@ -48,6 +50,8 @@ __webpack_require__.d(md_namespaceObject, {
   init: () => (init),
   initSync: () => (initSync),
   initThreadPool: () => (initThreadPool),
+  multiPhysicsRuntimeBufferedStepSimulation: () => (multiPhysicsRuntimeBufferedStepSimulation),
+  multiPhysicsRuntimeGetLockStatePtr: () => (multiPhysicsRuntimeGetLockStatePtr),
   multiPhysicsWorldAddConstraint: () => (multiPhysicsWorldAddConstraint),
   multiPhysicsWorldAddRigidBody: () => (multiPhysicsWorldAddRigidBody),
   multiPhysicsWorldAddRigidBodyBundle: () => (multiPhysicsWorldAddRigidBodyBundle),
@@ -1314,6 +1318,50 @@ function _assertBoolean(n) {
         throw new Error(`expected a boolean argument, found ${typeof(n)}`);
     }
 }
+
+function _assertNum(n) {
+    if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
+}
+/**
+* @param {number} physics_world
+* @returns {number}
+*/
+function createMultiPhysicsRuntime(physics_world) {
+    _assertNum(physics_world);
+    const ret = wasm.createMultiPhysicsRuntime(physics_world);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+*/
+function destroyMultiPhysicsRuntime(physics_runtime) {
+    _assertNum(physics_runtime);
+    wasm.destroyMultiPhysicsRuntime(physics_runtime);
+}
+
+/**
+* @param {number} runtime
+* @returns {number}
+*/
+function multiPhysicsRuntimeGetLockStatePtr(runtime) {
+    _assertNum(runtime);
+    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
+    _assertNum(physics_runtime);
+    _assertNum(max_sub_steps);
+    wasm.multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
+}
+
 /**
 * @param {number} x
 * @param {number} y
@@ -1356,9 +1404,6 @@ function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
     return ret >>> 0;
 }
 
-function _assertNum(n) {
-    if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
-}
 /**
 * @param {number} ptr
 */
@@ -3825,7 +3870,7 @@ __webpack_async_result__();
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "dfe8c21ab53c8362cf61.wasm";
+module.exports = __webpack_require__.p + "a57ff67f81feb1af9e3f.wasm";
 
 /***/ })
 
