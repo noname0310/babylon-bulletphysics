@@ -3598,7 +3598,7 @@ class SceneBuilder {
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = Shadows_shadowGenerator/* ShadowGenerator */.o.QUALITY_MEDIUM;
         // Inspector.Show(scene, { enablePopup: false });
-        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD());
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 1);
         const runtime = new PhysicsRuntime(wasmInstance);
         runtime.register(scene);
         const matrix = new math_vector/* Matrix */.uq();
