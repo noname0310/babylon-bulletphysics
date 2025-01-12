@@ -268,6 +268,8 @@ impl MultiPhysicsWorld {
     }
 }
 
+unsafe impl Send for MultiPhysicsWorld {}
+
 #[cfg(debug_assertions)]
 impl Drop for MultiPhysicsWorld {
     fn drop(&mut self) {

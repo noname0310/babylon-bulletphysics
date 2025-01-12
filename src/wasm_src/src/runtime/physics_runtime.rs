@@ -24,13 +24,6 @@ impl PhysicsRuntime {
         &self.lock as *const atomic::AtomicU8 as *const u8
     }
 
-    // pub(crate) fn swap_world_matrix_buffer(&mut self) {
-    //     let physics_world = self.physics_world_handle.get_mut();
-    //     for rigidBody in &mut physics_world. {
-    //         rigidBody.swap_buffer();
-    //     }
-    // }
-
     #[cfg(feature = "parallel")]
     pub(crate) fn buffered_step_simulation(mut runtime_handle: PhysicsRuntimeHandle, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
         runtime_handle.get_mut().lock.store(1, atomic::Ordering::Release);
