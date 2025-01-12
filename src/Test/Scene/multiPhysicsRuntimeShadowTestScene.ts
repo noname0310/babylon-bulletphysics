@@ -12,7 +12,6 @@ import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { CreatePlane } from "@babylonjs/core/Meshes/Builders/planeBuilder";
 import { Scene } from "@babylonjs/core/scene";
-import { Inspector } from "@babylonjs/inspector";
 
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
@@ -65,8 +64,6 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.forceBackFacesOnly = false;
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
-
-        Inspector.Show(scene, { enablePopup: false });
 
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), 6);
         const runtime = new MultiPhysicsRuntime(wasmInstance, true);
