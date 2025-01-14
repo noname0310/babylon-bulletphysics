@@ -127,7 +127,7 @@ pub fn multi_physics_runtime_get_lock_state_ptr(runtime: *mut usize) -> *const u
 
 #[cfg(feature = "parallel")]
 #[wasm_bindgen(js_name = "multiPhysicsRuntimeBufferedStepSimulation")]
-pub fn physics_runtime_buffered_step_simulation(physics_runtime: *mut usize, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
+pub fn multi_physics_runtime_buffered_step_simulation(physics_runtime: *mut usize, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
     let physics_runtime = unsafe { &mut *(physics_runtime as *mut MultiPhysicsRuntime) };
     MultiPhysicsRuntime::buffered_step_simulation(physics_runtime.create_handle(), time_step, max_sub_steps, fixed_time_step);
 }
