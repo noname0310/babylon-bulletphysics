@@ -80,7 +80,6 @@ impl MultiPhysicsWorld {
 
     pub(crate) fn sync_buffered_motion_state(&mut self) {
         if !self.use_motion_state_buffer {
-            web_sys::console::error_1(&"Motion state buffer is not enabled".into());
             return;
         }
         for (_, world) in self.worlds.iter_mut() {
