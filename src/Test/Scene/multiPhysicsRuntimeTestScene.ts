@@ -17,8 +17,8 @@ import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
 import { MultiPhysicsRuntime } from "@/Runtime/Impl/multiPhysicsRuntime";
 import { PhysicsRuntimeEvaluationType } from "@/Runtime/Impl/physicsRuntimeEvaluationType";
-import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
-import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
+import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
+import { BulletWasmInstanceTypeSD } from "@/Runtime/InstanceType/singleDebug";
 import { MotionType } from "@/Runtime/motionType";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
 import { RigidBody } from "@/Runtime/rigidBody";
@@ -71,8 +71,8 @@ export class SceneBuilder implements ISceneBuilder {
         const threadCount: number = 32;
 
         const wasmInstance = threadCount === 1
-            ? await getBulletWasmInstance(new BulletWasmInstanceTypeSR())
-            : await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
+            ? await getBulletWasmInstance(new BulletWasmInstanceTypeSD())
+            : await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), threadCount);
         const runtime = new MultiPhysicsRuntime(wasmInstance, false);
         runtime.register(scene);
         runtime.evaluationType = PhysicsRuntimeEvaluationType.Buffered;

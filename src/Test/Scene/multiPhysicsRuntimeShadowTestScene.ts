@@ -17,7 +17,7 @@ import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
 import { MultiPhysicsRuntime } from "@/Runtime/Impl/multiPhysicsRuntime";
 import { PhysicsRuntimeEvaluationType } from "@/Runtime/Impl/physicsRuntimeEvaluationType";
-import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
+import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { MotionType } from "@/Runtime/motionType";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
 import { RigidBody } from "@/Runtime/rigidBody";
@@ -65,7 +65,7 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
 
-        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), 6);
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 32);
         const runtime = new MultiPhysicsRuntime(wasmInstance, true);
         runtime.register(scene);
         runtime.evaluationType = PhysicsRuntimeEvaluationType.Buffered;
