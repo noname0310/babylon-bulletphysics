@@ -4195,7 +4195,7 @@ __webpack_async_result__();
 /***/ 9845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "4c501506f52e89e32fd9.wasm";
+module.exports = __webpack_require__.p + "67e018383ec1c8757e08.wasm";
 
 /***/ })
 
