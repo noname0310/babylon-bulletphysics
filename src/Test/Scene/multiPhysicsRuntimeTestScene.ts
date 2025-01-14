@@ -73,7 +73,10 @@ export class SceneBuilder implements ISceneBuilder {
         const wasmInstance = threadCount === 1
             ? await getBulletWasmInstance(new BulletWasmInstanceTypeSD())
             : await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), threadCount);
-        const runtime = new MultiPhysicsRuntime(wasmInstance, false);
+        const runtime = new MultiPhysicsRuntime(wasmInstance, {
+            allowDynamicShadow: true,
+            preserveBackBuffer: true
+        });
         runtime.register(scene);
         runtime.evaluationType = PhysicsRuntimeEvaluationType.Buffered;
 

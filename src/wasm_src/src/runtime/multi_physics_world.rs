@@ -180,6 +180,7 @@ impl MultiPhysicsWorld {
                 panic!("RigidBody already added to the global world");
             }
         }
+        // check if the rigidbody is dynamic on js side
 
         for (_, world) in self.worlds.iter_mut() {
             world.add_rigidbody_shadow(rigidbody.clone(), true);
@@ -212,6 +213,7 @@ impl MultiPhysicsWorld {
                 panic!("RigidBodyBundle already added to the global world");
             }
         }
+        // check if the rigidbody is dynamic on js side
 
         for (_, world) in self.worlds.iter_mut() {
             world.add_rigidbody_bundle_shadow(bundle.clone(), self.allow_dynamic_shadow, true);
@@ -241,8 +243,10 @@ impl MultiPhysicsWorld {
         if !rigidbody.get().get_inner().is_static_or_kinematic() && !self.allow_dynamic_shadow {
             panic!("Dynamic shadow is not allowed");
         }
-        // TODO: check self using buffered motion state
-        // TODO: if is dynamic and rigidbody is not in any world, panic
+        // if self.allow_dynamic_shadow && !self.use_motion_state_buffer {
+        //     panic!("Dynamic shadow requires motion state buffer");
+        // }
+        // if is dynamic and rigidbody is not in any world, throw error on js side
         self.get_or_create_world(world_id).add_rigidbody_shadow(rigidbody, false);
     }
 
@@ -253,8 +257,10 @@ impl MultiPhysicsWorld {
 
     pub(crate) fn add_rigidbody_bundle_shadow(&mut self, world_id: PhysicsWorldId, bundle: RigidBodyBundleHandle) {
         let allow_dynamic_shadow = self.allow_dynamic_shadow;
-        // TODO: check self using buffered motion state
-        // TODO: if is dynamic and rigidbody is not in any world, panic
+        // if allow_dynamic_shadow && !self.use_motion_state_buffer {
+        //     panic!("Dynamic shadow requires motion state buffer");
+        // }
+        // if is dynamic and rigidbody is not in any world, throw error on js side
         self.get_or_create_world(world_id).add_rigidbody_bundle_shadow(bundle, allow_dynamic_shadow, false);
     }
 

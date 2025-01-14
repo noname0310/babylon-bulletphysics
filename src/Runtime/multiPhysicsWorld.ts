@@ -397,6 +397,9 @@ export class MultiPhysicsWorld {
     }
 
     public removeRigidBody(rigidBody: RigidBody, worldId: number): boolean {
+        if (rigidBody.hasShadows) {
+            throw new Error("Cannot remove rigid body that has shadows");
+        }
         this._nullCheck();
         if (this._inner.removeRigidBodyReference(rigidBody)) {
             this._runtime.lock.wait();
@@ -420,6 +423,9 @@ export class MultiPhysicsWorld {
     }
 
     public removeRigidBodyBundle(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
+        if (rigidBodyBundle.hasShadows) {
+            throw new Error("Cannot remove rigid body bundle that has shadows");
+        }
         this._nullCheck();
         if (this._inner.removeRigidBodyBundleReference(rigidBodyBundle)) {
             this._runtime.lock.wait();
@@ -432,6 +438,9 @@ export class MultiPhysicsWorld {
     public addRigidBodyToGlobal(rigidBody: RigidBody): boolean {
         if (rigidBody.runtime !== this._runtime) {
             throw new Error("Cannot add rigid body from a different runtime");
+        }
+        if (rigidBody.isDynamic) {
+            throw new Error("Cannot add dynamic rigid body to global");
         }
         this._nullCheck();
         if (this._inner.addRigidBodyGlobalReference(rigidBody)) {
@@ -456,6 +465,9 @@ export class MultiPhysicsWorld {
         if (rigidBodyBundle.runtime !== this._runtime) {
             throw new Error("Cannot add rigid body bundle from a different runtime");
         }
+        if (rigidBodyBundle.isContainsDynamic) {
+            throw new Error("Cannot add dynamic rigid body bundle to global");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleGlobalReference(rigidBodyBundle)) {
             this._runtime.lock.wait();
@@ -479,10 +491,14 @@ export class MultiPhysicsWorld {
         if (rigidBody.runtime !== this._runtime) {
             throw new Error("Cannot add rigid body from a different runtime");
         }
+        if (rigidBody.isDynamic && rigidBody.getWorldReference() === null) {
+            throw new Error("You must add dynamic rigid body first to the world before adding it as a shadow");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyShadowReference(rigidBody, worldId)) {
             this._runtime.lock.wait();
             this._runtime.wasmInstance.multiPhysicsWorldAddRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            rigidBody.addShadowReference();
             return true;
         }
         return false;
@@ -493,6 +509,7 @@ export class MultiPhysicsWorld {
         if (this._inner.removeRigidBodyShadowReference(rigidBody, worldId)) {
             this._runtime.lock.wait();
             this._runtime.wasmInstance.multiPhysicsWorldRemoveRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            rigidBody.removeShadowReference();
             return true;
         }
         return false;
@@ -502,10 +519,14 @@ export class MultiPhysicsWorld {
         if (rigidBodyBundle.runtime !== this._runtime) {
             throw new Error("Cannot add rigid body bundle from a different runtime");
         }
+        if (rigidBodyBundle.isContainsDynamic && rigidBodyBundle.getWorldReference() === null) {
+            throw new Error("You must add dynamic rigid body bundle first to the world before adding it as a shadow");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
             this._runtime.lock.wait();
             this._runtime.wasmInstance.multiPhysicsWorldAddRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            rigidBodyBundle.addShadowReference();
             return true;
         }
         return false;
@@ -516,6 +537,7 @@ export class MultiPhysicsWorld {
         if (this._inner.removeRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
             this._runtime.lock.wait();
             this._runtime.wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            rigidBodyBundle.removeShadowReference();
             return true;
         }
         return false;

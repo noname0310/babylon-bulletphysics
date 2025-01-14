@@ -221,11 +221,11 @@ export class PhysicsRuntime implements IRuntime {
 
                 const rigidBodyList = this._rigidBodyList;
                 for (let i = 0; i < rigidBodyList.length; ++i) {
-                    rigidBodyList[i].updateBufferedMotionState();
+                    rigidBodyList[i].updateBufferedMotionState(false);
                 }
                 const rigidBodyBundleList = this._rigidBodyBundleList;
                 for (let i = 0; i < rigidBodyBundleList.length; ++i) {
-                    rigidBodyBundleList[i].updateBufferedMotionStates();
+                    rigidBodyBundleList[i].updateBufferedMotionStates(false);
                 }
             }
 
@@ -240,11 +240,11 @@ export class PhysicsRuntime implements IRuntime {
 
                 const rigidBodyList = this._rigidBodyList;
                 for (let i = 0; i < rigidBodyList.length; ++i) {
-                    rigidBodyList[i].updateBufferedMotionState();
+                    rigidBodyList[i].updateBufferedMotionState(false);
                 }
                 const rigidBodyBundleList = this._rigidBodyBundleList;
                 for (let i = 0; i < rigidBodyBundleList.length; ++i) {
-                    rigidBodyBundleList[i].updateBufferedMotionStates();
+                    rigidBodyBundleList[i].updateBufferedMotionStates(false);
                 }
             }
 

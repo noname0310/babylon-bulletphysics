@@ -18,6 +18,11 @@ import type { IRigidBodyImpl } from "./IRigidBodyImpl";
 import type { IRuntime } from "./IRuntime";
 import { PhysicsRuntimeEvaluationType } from "./physicsRuntimeEvaluationType";
 
+export interface MultiPhysicsRuntimeCreationOptions {
+    allowDynamicShadow?: boolean;
+    preserveBackBuffer?: boolean;
+}
+
 class MultiPhysicsRuntimeInner {
     private readonly _lock: WasmSpinlock;
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
@@ -79,6 +84,9 @@ export class MultiPhysicsRuntime implements IRuntime {
 
     private _evaluationType: PhysicsRuntimeEvaluationType;
     private _usingWasmBackBuffer: boolean;
+    private _rigidBodyUsingBackBuffer: boolean;
+    private readonly _preserveBackBuffer: boolean;
+    private _dynamicShadowCount: number;
 
     public readonly useDeltaForWorldStep: boolean;
     public readonly timeStep: number;
@@ -91,9 +99,14 @@ export class MultiPhysicsRuntime implements IRuntime {
     /**
      * Creates a new physics runtime
      * @param wasmInstance The Bullet WASM instance
-     * @param allowDynamicShadow Whether to allow dynamic shadow
+     * @param options The creation options
      */
-    public constructor(wasmInstance: BulletWasmInstance, allowDynamicShadow: boolean) {
+    public constructor(wasmInstance: BulletWasmInstance, options: MultiPhysicsRuntimeCreationOptions = {}) {
+        const {
+            allowDynamicShadow = false,
+            preserveBackBuffer = false
+        } = options;
+
         this.onTickObservable = new Observable<void>();
 
         this.wasmInstance = wasmInstance;
@@ -103,6 +116,10 @@ export class MultiPhysicsRuntime implements IRuntime {
 
         const lockPtr = wasmInstance.multiPhysicsRuntimeGetLockStatePtr(ptr);
         this.lock = new WasmSpinlock(wasmInstance.createTypedArray(Uint8Array, lockPtr, 1));
+
+        if (preserveBackBuffer) {
+            wasmInstance.multiPhysicsWorldUseMotionStateBuffer(physicsWorld.ptr, true);
+        }
 
         this._inner = new MultiPhysicsRuntimeInner(this.lock, new WeakRef(wasmInstance), ptr, physicsWorld);
         this._physicsWorld = physicsWorld;
@@ -119,7 +136,10 @@ export class MultiPhysicsRuntime implements IRuntime {
         this._afterAnimationsBinded = null;
 
         this._evaluationType = PhysicsRuntimeEvaluationType.Immediate;
-        this._usingWasmBackBuffer = false;
+        this._usingWasmBackBuffer = preserveBackBuffer;
+        this._rigidBodyUsingBackBuffer = false;
+        this._preserveBackBuffer = preserveBackBuffer;
+        this._dynamicShadowCount = 0;
 
         this.useDeltaForWorldStep = true;
         this.timeStep = 1 / 60;
@@ -215,37 +235,49 @@ export class MultiPhysicsRuntime implements IRuntime {
             this.lock.wait(); // ensure that the runtime is not evaluating the world
 
             // desync buffer
-            if (this._usingWasmBackBuffer === false) {
-                this._usingWasmBackBuffer = true;
-
+            if (!this._preserveBackBuffer && !this._usingWasmBackBuffer) {
                 this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, true);
+                this._usingWasmBackBuffer = true;
+            }
+
+            if (this._rigidBodyUsingBackBuffer === false) {
+                this._rigidBodyUsingBackBuffer = true;
 
                 const rigidBodyList = this._rigidBodyList;
                 for (let i = 0; i < rigidBodyList.length; ++i) {
-                    rigidBodyList[i].updateBufferedMotionState();
+                    rigidBodyList[i].updateBufferedMotionState(false);
                 }
                 const rigidBodyBundleList = this._rigidBodyBundleList;
                 for (let i = 0; i < rigidBodyBundleList.length; ++i) {
-                    rigidBodyBundleList[i].updateBufferedMotionStates();
+                    rigidBodyBundleList[i].updateBufferedMotionStates(false);
                 }
             }
 
             this.wasmInstance.multiPhysicsRuntimeBufferedStepSimulation(this._inner.ptr, deltaTime, this.maxSubSteps, this.fixedTimeStep);
         } else {
-            // sync buffer
-            if (this._usingWasmBackBuffer === true) {
+            if (this._preserveBackBuffer) {
                 this.lock.wait(); // ensure that the runtime is not evaluating animations
-                this._usingWasmBackBuffer = false;
+            }
+
+            // sync buffer
+            if (!this._preserveBackBuffer && this._usingWasmBackBuffer && this._dynamicShadowCount === 0) {
+                this.lock.wait(); // ensure that the runtime is not evaluating animations
 
                 this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, false);
+                this._usingWasmBackBuffer = false;
+            }
+
+            if (this._rigidBodyUsingBackBuffer === true) {
+                this.lock.wait(); // ensure that the runtime is not evaluating animations
+                this._rigidBodyUsingBackBuffer = false;
 
                 const rigidBodyList = this._rigidBodyList;
                 for (let i = 0; i < rigidBodyList.length; ++i) {
-                    rigidBodyList[i].updateBufferedMotionState();
+                    rigidBodyList[i].updateBufferedMotionState(true);
                 }
                 const rigidBodyBundleList = this._rigidBodyBundleList;
                 for (let i = 0; i < rigidBodyBundleList.length; ++i) {
-                    rigidBodyBundleList[i].updateBufferedMotionStates();
+                    rigidBodyBundleList[i].updateBufferedMotionStates(true);
                 }
             }
 
@@ -309,6 +341,9 @@ export class MultiPhysicsRuntime implements IRuntime {
         const result = this._physicsWorld.addRigidBody(rigidBody, worldId);
         if (result) {
             this._rigidBodyList.push(rigidBody);
+            if (this._rigidBodyUsingBackBuffer) {
+                rigidBody.updateBufferedMotionState(false);
+            }
         }
         return result;
     }
@@ -321,6 +356,7 @@ export class MultiPhysicsRuntime implements IRuntime {
             if (index !== -1) {
                 this._rigidBodyList.splice(index, 1);
             }
+            rigidBody.updateBufferedMotionState(false);
         }
         return result;
     }
@@ -330,6 +366,9 @@ export class MultiPhysicsRuntime implements IRuntime {
         const result = this._physicsWorld.addRigidBodyBundle(rigidBodyBundle, worldId);
         if (result) {
             this._rigidBodyBundleList.push(rigidBodyBundle);
+            if (this._rigidBodyUsingBackBuffer) {
+                rigidBodyBundle.updateBufferedMotionStates(false);
+            }
         }
         return result;
     }
@@ -342,6 +381,7 @@ export class MultiPhysicsRuntime implements IRuntime {
             if (index !== -1) {
                 this._rigidBodyBundleList.splice(index, 1);
             }
+            rigidBodyBundle.updateBufferedMotionStates(false);
         }
         return result;
     }
@@ -390,10 +430,29 @@ export class MultiPhysicsRuntime implements IRuntime {
 
     public addRigidBodyShadow(rigidBody: RigidBody, worldId: number): boolean {
         this._nullCheck();
+
+        let backBufferUpdated = false;
+
+        if (!this._usingWasmBackBuffer) {
+            this.lock.wait(); // ensure that the runtime is not evaluating animations
+            this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, true);
+            this._usingWasmBackBuffer = true;
+            backBufferUpdated = true;
+        }
         const result = this._physicsWorld.addRigidBodyShadow(rigidBody, worldId);
         if (result) {
             this._rigidBodyList.push(rigidBody);
+            this._dynamicShadowCount += 1;
+        } else {
+            if (/* !this._preserveBackBuffer && */ this._dynamicShadowCount === 0 && backBufferUpdated) {
+                this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, false);
+                this._usingWasmBackBuffer = false;
+            }
         }
+
+        // we don't need updateBufferedMotionState immediately
+        // because the buffered motion state has same value with the immediate motion state in the time of adding shadow
+
         return result;
     }
 
@@ -405,16 +464,60 @@ export class MultiPhysicsRuntime implements IRuntime {
             if (index !== -1) {
                 this._rigidBodyList.splice(index, 1);
             }
+            this._dynamicShadowCount -= 1;
         }
+
+        let backBufferUpdated = false;
+
+        if (
+            !this._preserveBackBuffer && // if back buffer is preserved, we should not desync it
+            this._dynamicShadowCount === 0 &&
+            this._usingWasmBackBuffer &&
+            this._evaluationType !== PhysicsRuntimeEvaluationType.Buffered // if the evaluation type is buffered, we should not desync it
+        ) {
+            this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, false);
+            this._usingWasmBackBuffer = false;
+            backBufferUpdated = true;
+        }
+
+        if (backBufferUpdated && this._rigidBodyUsingBackBuffer) {
+            this._rigidBodyUsingBackBuffer = false;
+
+            const rigidBodyList = this._rigidBodyList;
+            for (let i = 0; i < rigidBodyList.length; ++i) {
+                rigidBodyList[i].updateBufferedMotionState(true);
+            }
+            const rigidBodyBundleList = this._rigidBodyBundleList;
+            for (let i = 0; i < rigidBodyBundleList.length; ++i) {
+                rigidBodyBundleList[i].updateBufferedMotionStates(true);
+            }
+        }
+
         return result;
     }
 
     public addRigidBodyBundleShadow(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
         this._nullCheck();
+
+        let backBufferUpdated = false;
+
+        if (!this._usingWasmBackBuffer) {
+            this.lock.wait(); // ensure that the runtime is not evaluating animations
+            this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, true);
+            this._usingWasmBackBuffer = true;
+            backBufferUpdated = true;
+        }
         const result = this._physicsWorld.addRigidBodyBundleShadow(rigidBodyBundle, worldId);
         if (result) {
             this._rigidBodyBundleList.push(rigidBodyBundle);
+            this._dynamicShadowCount += 1;
+        } else {
+            if (/* !this._preserveBackBuffer && */ this._dynamicShadowCount === 0 && backBufferUpdated) {
+                this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, false);
+                this._usingWasmBackBuffer = false;
+            }
         }
+
         return result;
     }
 
@@ -426,7 +529,35 @@ export class MultiPhysicsRuntime implements IRuntime {
             if (index !== -1) {
                 this._rigidBodyBundleList.splice(index, 1);
             }
+            this._dynamicShadowCount -= 1;
         }
+
+        let backBufferUpdated = false;
+
+        if (
+            !this._preserveBackBuffer && // if back buffer is preserved, we should not desync it
+            this._dynamicShadowCount === 0 &&
+            this._usingWasmBackBuffer &&
+            this._evaluationType !== PhysicsRuntimeEvaluationType.Buffered // if the evaluation type is buffered, we should not desync it
+        ) {
+            this.wasmInstance.multiPhysicsWorldUseMotionStateBuffer(this._physicsWorld.ptr, false);
+            this._usingWasmBackBuffer = false;
+            backBufferUpdated = true;
+        }
+
+        if (backBufferUpdated && this._rigidBodyUsingBackBuffer) {
+            this._rigidBodyUsingBackBuffer = false;
+
+            const rigidBodyList = this._rigidBodyList;
+            for (let i = 0; i < rigidBodyList.length; ++i) {
+                rigidBodyList[i].updateBufferedMotionState(true);
+            }
+            const rigidBodyBundleList = this._rigidBodyBundleList;
+            for (let i = 0; i < rigidBodyBundleList.length; ++i) {
+                rigidBodyBundleList[i].updateBufferedMotionStates(true);
+            }
+        }
+
         return result;
     }
 

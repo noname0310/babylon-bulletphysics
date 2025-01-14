@@ -6,6 +6,7 @@ import { Constants } from "./constants";
 import type { IRigidBodyImpl } from "./Impl/IRigidBodyImpl";
 import type { IRuntime } from "./Impl/IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
+import { MotionType } from "./motionType";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfo } from "./rigidBodyConstructionInfo";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
@@ -32,6 +33,7 @@ class RigidBodyInner {
     private _ptr: number;
     private _shapeReference: Nullable<PhysicsShape>;
     private _referenceCount: number;
+    private _shadowCount: number;
 
     public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, shapeReference: PhysicsShape) {
         this._wasmInstance = wasmInstance;
@@ -39,11 +41,16 @@ class RigidBodyInner {
         this._shapeReference = shapeReference;
         shapeReference.addReference();
         this._referenceCount = 0;
+        this._shadowCount = 0;
     }
 
     public dispose(): void {
         if (this._referenceCount > 0) {
             throw new Error("Cannot dispose rigid body while it still has references");
+        }
+
+        if (this._shadowCount > 0) {
+            throw new Error("Cannot dispose rigid body while it still has shadows");
         }
 
         if (this._ptr === 0) {
@@ -73,6 +80,18 @@ class RigidBodyInner {
     public get hasReferences(): boolean {
         return 0 < this._referenceCount;
     }
+
+    public addShadow(): void {
+        this._shadowCount += 1;
+    }
+
+    public removeShadow(): void {
+        this._shadowCount -= 1;
+    }
+
+    public get hasShadows(): boolean {
+        return 0 < this._shadowCount;
+    }
 }
 
 function rigidBodyFinalizer(inner: RigidBodyInner): void {
@@ -92,6 +111,7 @@ export class RigidBody {
     private _worldReference: Nullable<object>;
 
     public impl: IRigidBodyImpl;
+    public readonly isDynamic: boolean;
 
     public constructor(runtime: IRuntime, info: RigidBodyConstructionInfo);
 
@@ -136,6 +156,9 @@ export class RigidBody {
         registry.register(this, this._inner, this);
 
         this.impl = runtime.createRigidBodyImpl();
+        this.isDynamic = n !== undefined
+            ? (info as RigidBodyConstructionInfoList).getMotionType(n) === MotionType.Dynamic
+            : (info as RigidBodyConstructionInfo).motionType === MotionType.Dynamic;
     }
 
     public dispose(): void {
@@ -173,6 +196,27 @@ export class RigidBody {
     /**
      * @internal
      */
+    public addShadowReference(): void {
+        this._inner.addShadow();
+    }
+
+    /**
+     * @internal
+     */
+    public removeShadowReference(): void {
+        this._inner.removeShadow();
+    }
+
+    /**
+     * @internal
+     */
+    public get hasShadows(): boolean {
+        return this._inner.hasShadows;
+    }
+
+    /**
+     * @internal
+     */
     public setWorldReference(worldReference: Nullable<object>): void {
         if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add rigid body to multiple worlds");
@@ -198,10 +242,15 @@ export class RigidBody {
     /**
      * @internal
      */
-    public updateBufferedMotionState(): void {
+    public updateBufferedMotionState(forceUseFrontBuffer: boolean): void {
         this._nullCheck();
-        const bufferedMotionStatePtr = this.runtime.wasmInstance.rigidBodyGetBufferedMotionStatePtr(this._inner.ptr);
-        this._bufferedMotionStatePtr = this.runtime.wasmInstance.createTypedArray(Float32Array, bufferedMotionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        if (forceUseFrontBuffer) {
+            const motionStatePtr = this.runtime.wasmInstance.rigidBodyGetMotionStatePtr(this._inner.ptr);
+            this._bufferedMotionStatePtr = this.runtime.wasmInstance.createTypedArray(Float32Array, motionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        } else {
+            const bufferedMotionStatePtr = this.runtime.wasmInstance.rigidBodyGetBufferedMotionStatePtr(this._inner.ptr);
+            this._bufferedMotionStatePtr = this.runtime.wasmInstance.createTypedArray(Float32Array, bufferedMotionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        }
     }
 
     private _nullCheck(): void {

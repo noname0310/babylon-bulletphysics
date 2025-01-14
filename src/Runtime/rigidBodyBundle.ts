@@ -6,6 +6,7 @@ import { Constants } from "./constants";
 import type { IRigidBodyBundleImpl } from "./Impl/IRigidBodyBundleImpl";
 import type { IRuntime } from "./Impl/IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
+import { MotionType } from "./motionType";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
 
@@ -14,6 +15,7 @@ class RigidBodyBundleInner {
     private _ptr: number;
     private readonly _shapeReferences: Set<PhysicsShape>;
     private _referenceCount: number;
+    private _shadowCount: number;
 
     public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, shapeReferences: Set<PhysicsShape>) {
         this._wasmInstance = wasmInstance;
@@ -23,6 +25,7 @@ class RigidBodyBundleInner {
             shape.addReference();
         }
         this._referenceCount = 0;
+        this._shadowCount = 0;
     }
 
     public dispose(): void {
@@ -59,6 +62,18 @@ class RigidBodyBundleInner {
     public get hasReferences(): boolean {
         return 0 < this._referenceCount;
     }
+
+    public addShadow(): void {
+        this._shadowCount += 1;
+    }
+
+    public removeShadow(): void {
+        this._shadowCount -= 1;
+    }
+
+    public get hasShadows(): boolean {
+        return 0 < this._shadowCount;
+    }
 }
 
 function rigidBodyBundleFinalizer(inner: RigidBodyBundleInner): void {
@@ -79,6 +94,7 @@ export class RigidBodyBundle {
     private _worldReference: Nullable<object>;
 
     public impl: IRigidBodyBundleImpl;
+    public readonly isContainsDynamic: boolean;
 
     public constructor(runtime: IRuntime, info: RigidBodyConstructionInfoList) {
         if (info.ptr === 0) {
@@ -101,9 +117,9 @@ export class RigidBodyBundle {
         const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBodyBundle(info.ptr, count);
         const motionStatesPtr = wasmInstance.rigidBodyBundleGetMotionStatesPtr(ptr);
-        this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * Constants.MotionStateSize / Float32Array.BYTES_PER_ELEMENT);
+        this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * Constants.MotionStateSizeInFloat32Array);
         const bufferedMotionStatesPtr = wasmInstance.rigidBodyBundleGetBufferedMotionStatesPtr(ptr);
-        this._bufferedMotionStatesPtr = wasmInstance.createTypedArray(Float32Array, bufferedMotionStatesPtr, count * Constants.MotionStateSize / Float32Array.BYTES_PER_ELEMENT);
+        this._bufferedMotionStatesPtr = wasmInstance.createTypedArray(Float32Array, bufferedMotionStatesPtr, count * Constants.MotionStateSizeInFloat32Array);
         this._inner = new RigidBodyBundleInner(new WeakRef(runtime.wasmInstance), ptr, shapeReferences);
         this._count = count;
         this._worldReference = null;
@@ -117,6 +133,14 @@ export class RigidBodyBundle {
         registry.register(this, this._inner, this);
 
         this.impl = runtime.createRigidBodyBundleImpl(this);
+        let isContainsDynamic = false;
+        for (let i = 0; i < count; ++i) {
+            if (info.getMotionType(i) === MotionType.Dynamic) {
+                isContainsDynamic = true;
+                break;
+            }
+        }
+        this.isContainsDynamic = isContainsDynamic;
     }
 
     public dispose(): void {
@@ -158,6 +182,27 @@ export class RigidBodyBundle {
     /**
      * @internal
      */
+    public addShadowReference(): void {
+        this._inner.addShadow();
+    }
+
+    /**
+     * @internal
+     */
+    public removeShadowReference(): void {
+        this._inner.removeShadow();
+    }
+
+    /**
+     * @internal
+     */
+    public get hasShadows(): boolean {
+        return this._inner.hasShadows;
+    }
+
+    /**
+     * @internal
+     */
     public setWorldReference(worldReference: Nullable<object>): void {
         if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add rigid body bundle to multiple worlds");
@@ -183,10 +228,15 @@ export class RigidBodyBundle {
     /**
      * @internal
      */
-    public updateBufferedMotionStates(): void {
+    public updateBufferedMotionStates(forceUseFrontBuffer: boolean): void {
         this._nullCheck();
-        const bufferedMotionStatesPtr = this.runtime.wasmInstance.rigidBodyBundleGetBufferedMotionStatesPtr(this._inner.ptr);
-        this._bufferedMotionStatesPtr = this.runtime.wasmInstance.createTypedArray(Float32Array, bufferedMotionStatesPtr, this._count * Constants.MotionStateSize / Float32Array.BYTES_PER_ELEMENT);
+        if (forceUseFrontBuffer) {
+            const motionStatesPtr = this.runtime.wasmInstance.rigidBodyBundleGetMotionStatesPtr(this._inner.ptr);
+            this._bufferedMotionStatesPtr = this.runtime.wasmInstance.createTypedArray(Float32Array, motionStatesPtr, this._count * Constants.MotionStateSizeInFloat32Array);
+        } else {
+            const bufferedMotionStatesPtr = this.runtime.wasmInstance.rigidBodyBundleGetBufferedMotionStatesPtr(this._inner.ptr);
+            this._bufferedMotionStatesPtr = this.runtime.wasmInstance.createTypedArray(Float32Array, bufferedMotionStatesPtr, this._count * Constants.MotionStateSizeInFloat32Array);
+        }
     }
 
 

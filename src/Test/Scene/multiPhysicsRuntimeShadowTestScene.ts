@@ -66,9 +66,12 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
 
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 32);
-        const runtime = new MultiPhysicsRuntime(wasmInstance, true);
+        const runtime = new MultiPhysicsRuntime(wasmInstance, {
+            allowDynamicShadow: true,
+            preserveBackBuffer: true
+        });
         runtime.register(scene);
-        runtime.evaluationType = PhysicsRuntimeEvaluationType.Buffered;
+        runtime.evaluationType = PhysicsRuntimeEvaluationType.Immediate;
 
         const matrix = new Matrix();
 
