@@ -4235,7 +4235,7 @@ class SceneBuilder {
         shadowGenerator.forceBackFacesOnly = false;
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = Shadows_shadowGenerator/* ShadowGenerator */.o.QUALITY_MEDIUM;
-        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 32);
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 4);
         const runtime = new MultiPhysicsRuntime(wasmInstance, {
             allowDynamicShadow: true,
             preserveBackBuffer: true
@@ -4262,10 +4262,29 @@ class SceneBuilder {
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
         const rowCount = 2;
-        const columnCount = 3;
-        const margin = 40;
+        const columnCount = 2;
+        const margin = 20;
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
+        const rigidbodyColorBuffer = new Float32Array(rbCount * 4 * rowCount * columnCount);
+        const colorTable = [
+            "#ff0000",
+            "#00ff00",
+            "#0000ff",
+            "#ffff00",
+            "#ff00ff",
+            "#00ffff"
+        ];
+        for (let i = 0; i < rowCount * columnCount; ++i) {
+            const color = math_color/* Color4 */.ov.FromHexString(colorTable[i % colorTable.length]);
+            for (let j = 0; j < rbCount; ++j) {
+                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 0] = color.r;
+                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 1] = color.g;
+                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 2] = color.b;
+                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 3] = color.a;
+            }
+        }
+        baseBox.thinInstanceSetBuffer("color", rigidbodyColorBuffer, 4, false);
         const boxShape = new PhysicsBoxShape(runtime, new math_vector/* Vector3 */.Pq(1, 1, 1));
         const bundles = [];
         for (let i = 0; i < rowCount; ++i)
