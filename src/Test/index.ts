@@ -2,13 +2,14 @@ import type { ISceneBuilder } from "./baseRuntime";
 import { buildSceneEntry } from "./buildSceneEntry";
 
 const scenes: [string, () => Promise<ISceneBuilder>][] = [
-    ["constraint test scene", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/constraintTestScene")).SceneBuilder()],
-    ["multi physics runtime shadow test scene", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiPhysicsRuntimeShadowTestScene")).SceneBuilder()],
-    ["multi physics runtime test scene", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiPhysicsRuntimeTestScene")).SceneBuilder()],
-    ["multi world600 body ammo bench", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiWorld600BodyAmmoBench")).SceneBuilder()],
-    ["multi world600 body bench", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiWorld600BodyBench")).SceneBuilder()],
-    ["multi world600 body bundle bench", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiWorld600BodyBundleBench")).SceneBuilder()],
-    ["physics runtime test scene", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/physicsRuntimeTestScene")).SceneBuilder()],
-    ["thread count bench", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/threadCountBench")).SceneBuilder()]
+    ["b1 multi world600 body", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b1MultiWorld600Body")).SceneBuilder()],
+    ["b1 multi world600 body ammo", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b1MultiWorld600BodyAmmo")).SceneBuilder()],
+    ["b1 multi world600 body bundle", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b1MultiWorld600BodyBundle")).SceneBuilder()],
+    ["b2 thread count", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b2ThreadCount")).SceneBuilder()],
+    ["b3 buffered eval with shadow", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b3BufferedEvalWithShadow")).SceneBuilder()],
+    ["t constraint", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tConstraint")).SceneBuilder()],
+    ["t multi physics runtime", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tMultiPhysicsRuntime")).SceneBuilder()],
+    ["t multi physics runtime shadow", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tMultiPhysicsRuntimeShadow")).SceneBuilder()],
+    ["t physics runtime", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tPhysicsRuntime")).SceneBuilder()]
 ];
 buildSceneEntry(scenes);
