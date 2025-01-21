@@ -1,7 +1,7 @@
 "use strict";
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[386],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[281],{
 
-/***/ 9386:
+/***/ 4281:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -22,7 +22,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babylonjs_core_scene__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(554);
 /* harmony import */ var _Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(6738);
 /* harmony import */ var _Runtime_constraint__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(7168);
-/* harmony import */ var _Runtime_Impl_multiPhysicsRuntime__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(3948);
+/* harmony import */ var _Runtime_Impl_physicsRuntime__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(5203);
 /* harmony import */ var _Runtime_Impl_physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(9009);
 /* harmony import */ var _Runtime_InstanceType_multiDebug__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(7002);
 /* harmony import */ var _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(6405);
@@ -88,10 +88,7 @@ class SceneBuilder {
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = _babylonjs_core_Lights_Shadows_shadowGenerator__WEBPACK_IMPORTED_MODULE_6__/* .ShadowGenerator */ .o.QUALITY_MEDIUM;
         const wasmInstance = await (0,_Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_12__/* .getBulletWasmInstance */ .e)(new _Runtime_InstanceType_multiDebug__WEBPACK_IMPORTED_MODULE_13__/* .BulletWasmInstanceTypeMD */ .t(), 4);
-        const runtime = new _Runtime_Impl_multiPhysicsRuntime__WEBPACK_IMPORTED_MODULE_14__/* .MultiPhysicsRuntime */ .h(wasmInstance, {
-            allowDynamicShadow: true,
-            preserveBackBuffer: true
-        });
+        const runtime = new _Runtime_Impl_physicsRuntime__WEBPACK_IMPORTED_MODULE_14__/* .PhysicsRuntime */ .w(wasmInstance);
         runtime.register(scene);
         runtime.evaluationType = _Runtime_Impl_physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_15__/* .PhysicsRuntimeEvaluationType */ .q.Immediate;
         const matrix = new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq();
@@ -107,7 +104,7 @@ class SceneBuilder {
             groundRbInfo.setInitialTransform(matrix);
             groundRbInfo.motionType = 1 /* MotionType.Static */;
             const groundRigidBody = new _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_18__/* .RigidBody */ .U(runtime, groundRbInfo);
-            runtime.addRigidBodyToGlobal(groundRigidBody);
+            runtime.addRigidBody(groundRigidBody);
         }
         const rbCount = 256 * 2;
         const baseBox = (0,_babylonjs_core_Meshes_Builders_boxBuilder__WEBPACK_IMPORTED_MODULE_9__/* .CreateBox */ .an)("box", { size: 2 }, scene);
@@ -118,30 +115,10 @@ class SceneBuilder {
         const margin = 20;
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
-        const rigidbodyColorBuffer = new Float32Array(rbCount * 4 * rowCount * columnCount);
-        const colorTable = [
-            "#ff0000",
-            "#00ff00",
-            "#0000ff",
-            "#ffff00",
-            "#ff00ff",
-            "#00ffff"
-        ];
-        for (let i = 0; i < rowCount * columnCount; ++i) {
-            const color = _babylonjs_core_Maths_math_color__WEBPACK_IMPORTED_MODULE_7__/* .Color4 */ .ov.FromHexString(colorTable[i % colorTable.length]);
-            for (let j = 0; j < rbCount; ++j) {
-                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 0] = color.r;
-                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 1] = color.g;
-                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 2] = color.b;
-                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 3] = color.a;
-            }
-        }
-        baseBox.thinInstanceSetBuffer("color", rigidbodyColorBuffer, 4, false);
         const boxShape = new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_16__/* .PhysicsBoxShape */ .SA(runtime, new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(1, 1, 1));
         const bundles = [];
         for (let i = 0; i < rowCount; ++i)
             for (let j = 0; j < columnCount; ++j) {
-                const worldId = i * columnCount + j;
                 const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
                 const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
                 const rbInfoList = new _Runtime_rigidBodyConstructionInfoList__WEBPACK_IMPORTED_MODULE_19__/* .RigidBodyConstructionInfoList */ .x(wasmInstance, rbCount);
@@ -154,13 +131,7 @@ class SceneBuilder {
                     rbInfoList.setAngularDamping(k, 0.3);
                 }
                 const boxRigidBodyBundle = new _Runtime_rigidBodyBundle__WEBPACK_IMPORTED_MODULE_20__/* .RigidBodyBundle */ .Y(runtime, rbInfoList);
-                runtime.addRigidBodyBundle(boxRigidBodyBundle, worldId);
-                for (let k = 0; k < rowCount * columnCount; ++k) {
-                    if (k === worldId) {
-                        continue;
-                    }
-                    runtime.addRigidBodyBundleShadow(boxRigidBodyBundle, k);
-                }
+                runtime.addRigidBodyBundle(boxRigidBodyBundle);
                 for (let k = 0; k < rbCount; k += 2) {
                     const indices = [k, k + 1];
                     const constraint = new _Runtime_constraint__WEBPACK_IMPORTED_MODULE_21__/* .Generic6DofSpringConstraint */ .vC(runtime, boxRigidBodyBundle, indices, _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.Translation(0, -1.2, 0), _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.Translation(0, 1.2, 0), true);
@@ -173,7 +144,7 @@ class SceneBuilder {
                         constraint.setStiffness(l, 100);
                         constraint.setDamping(l, 1);
                     }
-                    runtime.addConstraint(constraint, worldId, false);
+                    runtime.addConstraint(constraint, false);
                 }
                 bundles.push(boxRigidBodyBundle);
             }
@@ -188,7 +159,7 @@ class SceneBuilder {
             runtime.afterAnimations(1 / 60 * 1000);
             scene.render();
         });
-        benchHelper.sampleCount = 1000;
+        benchHelper.sampleCount = 5000;
         benchHelper.runBench();
         return scene;
     }
