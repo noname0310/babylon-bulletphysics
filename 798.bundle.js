@@ -1,7 +1,7 @@
 "use strict";
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[263],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[798],{
 
-/***/ 7263:
+/***/ 8798:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -21,19 +21,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babylonjs_core_Meshes_Builders_planeBuilder__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(8144);
 /* harmony import */ var _babylonjs_core_scene__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(554);
 /* harmony import */ var _Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(6738);
-/* harmony import */ var _Runtime_constraint__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(7168);
+/* harmony import */ var _Runtime_constraint__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(7168);
 /* harmony import */ var _Runtime_Impl_nullPhysicsRuntime__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(2090);
 /* harmony import */ var _Runtime_InstanceType_multiRelease__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(7744);
 /* harmony import */ var _Runtime_InstanceType_singleRelease__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(1167);
 /* harmony import */ var _Runtime_multiPhysicsWorld__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(5733);
 /* harmony import */ var _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(6405);
 /* harmony import */ var _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(1592);
-/* harmony import */ var _Runtime_rigidBodyBundle__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(7648);
 /* harmony import */ var _Runtime_rigidBodyConstructionInfo__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(5901);
-/* harmony import */ var _Runtime_rigidBodyConstructionInfoList__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(3477);
-/* harmony import */ var _Util_benchHelper__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(9800);
-
-
+/* harmony import */ var _Util_benchHelper__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(9800);
 
 
 
@@ -122,26 +118,32 @@ class SceneBuilder {
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
         const boxShape = new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_17__/* .PhysicsBoxShape */ .SA(runtime, new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(1, 1, 1));
-        const bundles = [];
+        const bodies = [];
         for (let i = 0; i < rowCount; ++i)
             for (let j = 0; j < columnCount; ++j) {
                 const worldId = i * columnCount + j;
                 const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
                 const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
-                const rbInfoList = new _Runtime_rigidBodyConstructionInfoList__WEBPACK_IMPORTED_MODULE_20__/* .RigidBodyConstructionInfoList */ .x(wasmInstance, rbCount);
+                const rbInfoList = [];
                 for (let k = 0; k < rbCount; ++k) {
-                    rbInfoList.setShape(k, boxShape);
+                    const rbInfo = new _Runtime_rigidBodyConstructionInfo__WEBPACK_IMPORTED_MODULE_18__/* .RigidBodyConstructionInfo */ .t(wasmInstance);
+                    rbInfo.shape = boxShape;
                     const initialTransform = _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
-                    rbInfoList.setInitialTransform(k, initialTransform);
-                    rbInfoList.setFriction(k, 1.0);
-                    rbInfoList.setLinearDamping(k, 0.3);
-                    rbInfoList.setAngularDamping(k, 0.3);
+                    rbInfo.setInitialTransform(initialTransform);
+                    rbInfo.friction = 1.0;
+                    rbInfo.linearDamping = 0.3;
+                    rbInfo.angularDamping = 0.3;
+                    rbInfoList.push(rbInfo);
                 }
-                const boxRigidBodyBundle = new _Runtime_rigidBodyBundle__WEBPACK_IMPORTED_MODULE_21__/* .RigidBodyBundle */ .Y(runtime, rbInfoList);
-                world.addRigidBodyBundle(boxRigidBodyBundle, worldId);
+                for (let k = 0; k < rbCount; ++k) {
+                    const rbInfo = rbInfoList[k];
+                    const rigidBody = new _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_19__/* .RigidBody */ .U(runtime, rbInfo);
+                    world.addRigidBody(rigidBody, worldId);
+                    bodies.push(rigidBody);
+                }
                 for (let k = 0; k < rbCount; k += 2) {
-                    const indices = [k, k + 1];
-                    const constraint = new _Runtime_constraint__WEBPACK_IMPORTED_MODULE_22__/* .Generic6DofSpringConstraint */ .vC(runtime, boxRigidBodyBundle, indices, _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.Translation(0, -1.2, 0), _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.Translation(0, 1.2, 0), true);
+                    const indices = [worldId * rbCount + k, worldId * rbCount + k + 1];
+                    const constraint = new _Runtime_constraint__WEBPACK_IMPORTED_MODULE_20__/* .Generic6DofSpringConstraint */ .vC(runtime, bodies[indices[0]], bodies[indices[1]], _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.Translation(0, -1.2, 0), _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.Translation(0, 1.2, 0), true);
                     constraint.setLinearLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(0, 0, 0));
                     constraint.setLinearUpperLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(0, 0, 0));
                     constraint.setAngularLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(Math.PI / 4, 0, 0));
@@ -153,18 +155,15 @@ class SceneBuilder {
                     }
                     world.addConstraint(constraint, worldId, false);
                 }
-                bundles.push(boxRigidBodyBundle);
             }
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
-        const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_23__/* .BenchHelper */ .X(() => {
+        const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_21__/* .BenchHelper */ .X(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bundles.length; ++i) {
-                const bundle = bundles[i];
-                const startOffset = i * rbCount * 16;
-                for (let j = 0; j < rbCount; ++j) {
-                    bundle.getTransformMatrixToRef(j, matrix);
-                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
-                }
+            for (let i = 0; i < bodies.length; ++i) {
+                const body = bodies[i];
+                const startOffset = i * 16;
+                body.getTransformMatrixToRef(matrix);
+                matrix.copyToArray(rigidbodyMatrixBuffer, startOffset);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
             scene.render();
@@ -172,8 +171,8 @@ class SceneBuilder {
         benchHelper.runBench();
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bundles.length; ++i) {
-                bundles[i].getTransformMatricesToArray(rigidbodyMatrixBuffer, i * rbCount * 16);
+            for (let i = 0; i < bodies.length; ++i) {
+                bodies[i].getTransformMatrixToArray(rigidbodyMatrixBuffer, i * 16);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
         });

@@ -1,7 +1,7 @@
 "use strict";
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[914],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[386],{
 
-/***/ 3914:
+/***/ 9386:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -30,6 +30,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Runtime_rigidBodyBundle__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(7648);
 /* harmony import */ var _Runtime_rigidBodyConstructionInfo__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(5901);
 /* harmony import */ var _Runtime_rigidBodyConstructionInfoList__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(3477);
+/* harmony import */ var _Util_benchHelper__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(9800);
+
 
 
 
@@ -175,13 +177,67 @@ class SceneBuilder {
                 }
                 bundles.push(boxRigidBodyBundle);
             }
+        console.log("Rigid body count:", rbCount * rowCount * columnCount);
         runtime.onTickObservable.add(() => {
             for (let i = 0; i < bundles.length; ++i) {
                 bundles[i].getTransformMatricesToArray(rigidbodyMatrixBuffer, i * rbCount * 16);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
         });
+        const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_22__/* .BenchHelper */ .X(() => {
+            runtime.afterAnimations(1 / 60 * 1000);
+            scene.render();
+        });
+        benchHelper.sampleCount = 1000;
+        benchHelper.runBench();
         return scene;
+    }
+}
+
+
+/***/ }),
+
+/***/ 9800:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   X: () => (/* binding */ BenchHelper)
+/* harmony export */ });
+class BenchHelper {
+    sampleCount;
+    _func;
+    constructor(func) {
+        this.sampleCount = 600;
+        this._func = func;
+    }
+    runBench() {
+        const sampledFps = [];
+        const sampleCount = this.sampleCount;
+        for (let i = 0; i < sampleCount; ++i) {
+            const start = performance.now();
+            this._func();
+            const end = performance.now();
+            const fps = 1000 / (end - start);
+            sampledFps.push(fps);
+        }
+        let averageFps = 0;
+        let result = "";
+        for (let i = 0; i < sampleCount; ++i) {
+            result += `(${i}, ${sampledFps[i]})`;
+            if (i !== sampleCount - 1) {
+                result += ", ";
+            }
+            averageFps += sampledFps[i];
+        }
+        const resultString = `Result: ${result}, Average: ${averageFps / sampleCount}`;
+        console.log(resultString);
+        const div = document.createElement("div");
+        div.style.position = "absolute";
+        div.style.top = "0";
+        div.style.left = "0";
+        div.style.color = "black";
+        div.textContent = resultString;
+        document.body.appendChild(div);
     }
 }
 

@@ -1,7 +1,7 @@
 "use strict";
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[995],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[966],{
 
-/***/ 8995:
+/***/ 2966:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -117,7 +117,7 @@ class SceneBuilder {
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
         const rowCount = 4;
-        const columnCount = 2;
+        const columnCount = 8;
         const margin = 60;
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
@@ -129,27 +129,27 @@ class SceneBuilder {
                 const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
                 const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
                 const rbInfoList = new _Runtime_rigidBodyConstructionInfoList__WEBPACK_IMPORTED_MODULE_20__/* .RigidBodyConstructionInfoList */ .x(wasmInstance, rbCount);
-                for (let i = 0; i < rbCount; ++i) {
-                    rbInfoList.setShape(i, boxShape);
-                    const initialTransform = _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.TranslationToRef(xOffset, 1 + i * 2, zOffset, matrix);
-                    rbInfoList.setInitialTransform(i, initialTransform);
-                    rbInfoList.setFriction(i, 1.0);
-                    rbInfoList.setLinearDamping(i, 0.3);
-                    rbInfoList.setAngularDamping(i, 0.3);
+                for (let k = 0; k < rbCount; ++k) {
+                    rbInfoList.setShape(k, boxShape);
+                    const initialTransform = _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
+                    rbInfoList.setInitialTransform(k, initialTransform);
+                    rbInfoList.setFriction(k, 1.0);
+                    rbInfoList.setLinearDamping(k, 0.3);
+                    rbInfoList.setAngularDamping(k, 0.3);
                 }
                 const boxRigidBodyBundle = new _Runtime_rigidBodyBundle__WEBPACK_IMPORTED_MODULE_21__/* .RigidBodyBundle */ .Y(runtime, rbInfoList);
                 world.addRigidBodyBundle(boxRigidBodyBundle, worldId);
-                for (let i = 0; i < rbCount; i += 2) {
-                    const indices = [i, i + 1];
+                for (let k = 0; k < rbCount; k += 2) {
+                    const indices = [k, k + 1];
                     const constraint = new _Runtime_constraint__WEBPACK_IMPORTED_MODULE_22__/* .Generic6DofSpringConstraint */ .vC(runtime, boxRigidBodyBundle, indices, _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.Translation(0, -1.2, 0), _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq.Translation(0, 1.2, 0), true);
                     constraint.setLinearLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(0, 0, 0));
                     constraint.setLinearUpperLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(0, 0, 0));
                     constraint.setAngularLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(Math.PI / 4, 0, 0));
                     constraint.setAngularUpperLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq(0, 0, 0));
-                    for (let i = 0; i < 6; ++i) {
-                        constraint.enableSpring(i, true);
-                        constraint.setStiffness(i, 100);
-                        constraint.setDamping(i, 1);
+                    for (let l = 0; l < 6; ++l) {
+                        constraint.enableSpring(l, true);
+                        constraint.setStiffness(l, 100);
+                        constraint.setDamping(l, 1);
                     }
                     world.addConstraint(constraint, worldId, false);
                 }
@@ -169,17 +169,11 @@ class SceneBuilder {
             baseBox.thinInstanceBufferUpdated("matrix");
             scene.render();
         });
-        benchHelper.sampleCount = 100;
         benchHelper.runBench();
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bundles.length; ++i) {
-                const bundle = bundles[i];
-                const startOffset = i * rbCount * 16;
-                for (let j = 0; j < rbCount; ++j) {
-                    bundle.getTransformMatrixToRef(j, matrix);
-                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
-                }
+                bundles[i].getTransformMatricesToArray(rigidbodyMatrixBuffer, i * rbCount * 16);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
         });
