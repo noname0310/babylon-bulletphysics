@@ -49,14 +49,6 @@ export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBu
     parentDiv.style.display = "flex";
     parentDiv.style.flexDirection = "row-reverse";
 
-    const canvasNewParentDiv = document.createElement("div");
-    canvasNewParentDiv.style.width = "100%";
-    canvasNewParentDiv.style.height = "100%";
-    parentDiv.appendChild(canvasNewParentDiv);
-
-    parentDiv.removeChild(canvas);
-    canvasNewParentDiv.appendChild(canvas);
-
     const listContainerOuter = document.createElement("div");
     listContainerOuter.style.position = "absolute";
     listContainerOuter.style.top = "0";
@@ -65,7 +57,7 @@ export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBu
     listContainerOuter.style.height = "100%";
     listContainerOuter.style.overflow = "hidden";
     listContainerOuter.style.pointerEvents = "none";
-    canvasNewParentDiv.appendChild(listContainerOuter);
+    parentDiv.appendChild(listContainerOuter);
 
 
     const listContainer = document.createElement("div");
@@ -161,6 +153,7 @@ export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBu
         item.onclick = async(): Promise<void> => {
             if (blockLoad) return;
             blockLoad = true;
+            listContainerOuter.remove();
             await loader.loadScene(await sceneList[i][1]());
             blockLoad = false;
         };
