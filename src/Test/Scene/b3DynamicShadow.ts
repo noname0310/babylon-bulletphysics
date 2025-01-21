@@ -183,7 +183,7 @@ export class SceneBuilder implements ISceneBuilder {
             runtime.afterAnimations(1 / 60 * 1000);
             scene.render();
         });
-        benchHelper.sampleCount = 1000;
+        benchHelper.sampleCount = 5000;
         benchHelper.runBench();
 
         return scene;
