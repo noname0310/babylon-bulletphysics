@@ -92,7 +92,6 @@ class SceneBuilder {
             allowDynamicShadow: true,
             preserveBackBuffer: true
         });
-        runtime.register(scene);
         runtime.evaluationType = _Runtime_Impl_physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_15__/* .PhysicsRuntimeEvaluationType */ .q.Immediate;
         const matrix = new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq();
         {
@@ -190,6 +189,7 @@ class SceneBuilder {
         });
         benchHelper.sampleCount = 5000;
         benchHelper.runBench();
+        runtime.register(scene);
         return scene;
     }
 }

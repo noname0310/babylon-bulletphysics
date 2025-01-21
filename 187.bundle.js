@@ -1,46 +1,64 @@
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[839],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[187],{
 
-/***/ 1839:
+/***/ 9800:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-// ESM COMPAT FLAG
-__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   X: () => (/* binding */ BenchHelper)
+/* harmony export */ });
+class BenchHelper {
+    sampleCount;
+    _func;
+    constructor(func) {
+        this.sampleCount = 600;
+        this._func = func;
+    }
+    runBench() {
+        const sampledFps = [];
+        const sampleCount = this.sampleCount;
+        for (let i = 0; i < sampleCount; ++i) {
+            const start = performance.now();
+            this._func();
+            const end = performance.now();
+            const fps = 1000 / (end - start);
+            sampledFps.push(fps);
+        }
+        let averageFps = 0;
+        let result = "";
+        for (let i = 0; i < sampleCount; ++i) {
+            result += `(${i}, ${sampledFps[i]})`;
+            if (i !== sampleCount - 1) {
+                result += ", ";
+            }
+            averageFps += sampledFps[i];
+        }
+        const resultString = `Result: ${result}, Average: ${averageFps / sampleCount}`;
+        console.log(resultString);
+        const div = document.createElement("div");
+        div.style.position = "absolute";
+        div.style.top = "0";
+        div.style.left = "0";
+        div.style.color = "black";
+        div.textContent = resultString;
+        document.body.appendChild(div);
+    }
+}
 
-// EXPORTS
-__webpack_require__.d(__webpack_exports__, {
-  SceneBuilder: () => (/* binding */ SceneBuilder)
-});
 
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/thinInstanceMesh.js
-var thinInstanceMesh = __webpack_require__(203);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent.js + 5 modules
-var shadowGeneratorSceneComponent = __webpack_require__(1503);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/standardMaterial.js + 8 modules
-var standardMaterial = __webpack_require__(8227);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Cameras/arcRotateCamera.js + 13 modules
-var arcRotateCamera = __webpack_require__(7456);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/directionalLight.js + 1 modules
-var Lights_directionalLight = __webpack_require__(5581);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/hemisphericLight.js
-var Lights_hemisphericLight = __webpack_require__(1513);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Lights/Shadows/shadowGenerator.js + 2 modules
-var Shadows_shadowGenerator = __webpack_require__(9711);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.color.js
-var math_color = __webpack_require__(6041);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
-var math_vector = __webpack_require__(9923);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/Builders/boxBuilder.js + 2 modules
-var boxBuilder = __webpack_require__(9899);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Meshes/Builders/planeBuilder.js
-var planeBuilder = __webpack_require__(8144);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/scene.js + 14 modules
-var core_scene = __webpack_require__(554);
-;// ./src/External/ammo.wasm.js
+/***/ }),
+
+/***/ 7774:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
 // This is ammo.js, a port of Bullet Physics to JavaScript. zlib licensed.
 
 
-/* harmony default export */ function ammo_wasm(moduleArg = {}) {
+/* harmony default export */ function __WEBPACK_DEFAULT_EXPORT__(moduleArg = {}) {
   var moduleRtn;
 
 var c=moduleArg,aa,ba,ca=new Promise((a,b)=>{aa=a;ba=b}),da="object"==typeof window,ea="function"==typeof importScripts,fa="object"==typeof process&&"object"==typeof process.versions&&"string"==typeof process.versions.node,ha=Object.assign({},c),ia="",ja,ka;
@@ -1041,255 +1059,6 @@ c.CONTACT_ADDED_CALLBACK_SIGNATURE="iiiiiiii";c.CONTACT_DESTROYED_CALLBACK_SIGNA
 
 
   return moduleRtn;
-}
-
-// EXTERNAL MODULE: ./src/Test/Util/benchHelper.ts
-var Util_benchHelper = __webpack_require__(9800);
-;// ./src/Test/Scene/b1MultiWorld600BodyAmmo.ts
-
-
-
-
-
-
-
-
-
-
-
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-
-
-class SceneBuilder {
-    async build(_canvas, engine) {
-        const scene = new core_scene/* Scene */.Z(engine);
-        scene.clearColor = new math_color/* Color4 */.ov(0.95, 0.95, 0.95, 1.0);
-        const camera = new arcRotateCamera/* ArcRotateCamera */.L("arcRotateCamera", 0, 0, 500, new math_vector/* Vector3 */.Pq(0, 0, 0), scene);
-        camera.minZ = 1;
-        camera.maxZ = 3000;
-        camera.setPosition(new math_vector/* Vector3 */.Pq(60, 40, -50).scaleInPlace(10));
-        camera.attachControl(undefined, false);
-        camera.inertia = 0.8;
-        camera.speed = 10;
-        const hemisphericLight = new Lights_hemisphericLight/* HemisphericLight */.g("hemisphericLight", new math_vector/* Vector3 */.Pq(0, 1, 0), scene);
-        hemisphericLight.intensity = 0.5;
-        hemisphericLight.specular = new math_color/* Color3 */.v9(0, 0, 0);
-        hemisphericLight.groundColor = new math_color/* Color3 */.v9(1, 1, 1);
-        const directionalLight = new Lights_directionalLight/* DirectionalLight */.Z("directionalLight", new math_vector/* Vector3 */.Pq(0.5, -1, 1), scene);
-        directionalLight.intensity = 0.5;
-        const shadowBound = 250;
-        directionalLight.shadowMaxZ = shadowBound;
-        directionalLight.shadowMinZ = -shadowBound;
-        directionalLight.autoCalcShadowZBounds = false;
-        directionalLight.autoUpdateExtends = false;
-        directionalLight.shadowOrthoScale = 0;
-        directionalLight.orthoTop = shadowBound;
-        directionalLight.orthoBottom = -shadowBound;
-        directionalLight.orthoLeft = -shadowBound;
-        directionalLight.orthoRight = shadowBound;
-        const shadowGenerator = new Shadows_shadowGenerator/* ShadowGenerator */.o(2048, directionalLight, true);
-        shadowGenerator.transparencyShadow = true;
-        shadowGenerator.usePercentageCloserFiltering = true;
-        shadowGenerator.forceBackFacesOnly = false;
-        shadowGenerator.bias = 0.004;
-        shadowGenerator.filteringQuality = Shadows_shadowGenerator/* ShadowGenerator */.o.QUALITY_MEDIUM;
-        // Inspector.Show(scene, { enablePopup: false });
-        const ammo = await ammo_wasm();
-        const worlds = [];
-        for (let i = 0; i < 32; ++i) {
-            const collisionConfiguration = new ammo.btDefaultCollisionConfiguration();
-            const dispatcher = new ammo.btCollisionDispatcher(collisionConfiguration);
-            const overlappingPairCache = new ammo.btDbvtBroadphase();
-            const solver = new ammo.btSequentialImpulseConstraintSolver();
-            const world = new ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-            world.setGravity(new ammo.btVector3(0, -9.8, 0));
-            worlds.push(world);
-        }
-        const matrix = new math_vector/* Matrix */.uq();
-        {
-            const ground = (0,planeBuilder/* CreatePlane */.x)("ground", { size: 500 }, scene);
-            ground.rotationQuaternion = math_vector/* Quaternion */.PT.RotationAxis(new math_vector/* Vector3 */.Pq(1, 0, 0), Math.PI / 2);
-            shadowGenerator.addShadowCaster(ground);
-            ground.receiveShadows = true;
-            const planeNormal = new ammo.btVector3(0, 0, -1);
-            const groundShape = new ammo.btStaticPlaneShape(planeNormal, 0);
-            ammo.destroy(planeNormal);
-            const motionState = new ammo.btDefaultMotionState();
-            const groundRbInfo = new ammo.btRigidBodyConstructionInfo(0, motionState, groundShape);
-            math_vector/* Matrix */.uq.FromQuaternionToRef(ground.rotationQuaternion, matrix);
-            const transform = new ammo.btTransform();
-            transform.setFromOpenGLMatrix(matrix.asArray());
-            motionState.setWorldTransform(transform);
-            ammo.destroy(transform);
-            for (let i = 0; i < worlds.length; ++i) {
-                const groundRigidBody = new ammo.btRigidBody(groundRbInfo);
-                groundRigidBody.setDamping(0, 0);
-                groundRigidBody.setFriction(0.5);
-                groundRigidBody.setRestitution(0.0);
-                groundRigidBody.setSleepingThresholds(0.0, 1.0);
-                groundRigidBody.setCollisionFlags(groundRigidBody.getCollisionFlags() | 2);
-                worlds[i].addRigidBody(groundRigidBody);
-            }
-            ammo.destroy(groundRbInfo);
-        }
-        const rbCount = 256 * 2;
-        const baseBox = (0,boxBuilder/* CreateBox */.an)("box", { size: 2 }, scene);
-        shadowGenerator.addShadowCaster(baseBox);
-        baseBox.receiveShadows = true;
-        const rowCount = 4;
-        const columnCount = 8;
-        const margin = 60;
-        const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
-        baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
-        const boxHalfExtents = new ammo.btVector3(1, 1, 1);
-        const boxShape = new ammo.btBoxShape(boxHalfExtents);
-        ammo.destroy(boxHalfExtents);
-        const bodies = [];
-        for (let i = 0; i < rowCount; ++i)
-            for (let j = 0; j < columnCount; ++j) {
-                const worldId = i * columnCount + j;
-                const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
-                const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
-                const rbInfoList = [];
-                for (let k = 0; k < rbCount; ++k) {
-                    const initialTransform = math_vector/* Matrix */.uq.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
-                    const motionState = new ammo.btDefaultMotionState();
-                    const transform = new ammo.btTransform();
-                    transform.setFromOpenGLMatrix(initialTransform.asArray());
-                    motionState.setWorldTransform(transform);
-                    ammo.destroy(transform);
-                    const localInertia = new ammo.btVector3(0, 0, 0);
-                    boxShape.calculateLocalInertia(1, localInertia);
-                    const rbInfo = new ammo.btRigidBodyConstructionInfo(1, motionState, boxShape, localInertia);
-                    ammo.destroy(localInertia);
-                    rbInfo.set_m_friction(1.0);
-                    rbInfo.set_m_linearDamping(0.3);
-                    rbInfo.set_m_angularDamping(0.3);
-                    rbInfo.set_m_linearSleepingThreshold(0.0);
-                    rbInfo.set_m_angularSleepingThreshold(1.0);
-                    rbInfoList.push(rbInfo);
-                }
-                const world = worlds[worldId];
-                for (let k = 0; k < rbCount; ++k) {
-                    const rbInfo = rbInfoList[k];
-                    const rigidBody = new ammo.btRigidBody(rbInfo);
-                    world.addRigidBody(rigidBody);
-                    bodies.push(rigidBody);
-                }
-                for (let k = 0; k < rbInfoList.length; ++k)
-                    ammo.destroy(rbInfoList[k]);
-                for (let k = 0; k < rbCount; k += 2) {
-                    const indices = [worldId * rbCount + k, worldId * rbCount + k + 1];
-                    const transform1 = new ammo.btTransform();
-                    const transform2 = new ammo.btTransform();
-                    transform1.setFromOpenGLMatrix(math_vector/* Matrix */.uq.Translation(0, -1.2, 0).asArray());
-                    transform2.setFromOpenGLMatrix(math_vector/* Matrix */.uq.Translation(0, 1.2, 0).asArray());
-                    const constraint = new ammo.btGeneric6DofSpringConstraint(bodies[indices[0]], bodies[indices[1]], transform1, transform2, true);
-                    ammo.destroy(transform1);
-                    ammo.destroy(transform2);
-                    const limit = new ammo.btVector3(0, 0, 0);
-                    limit.setValue(0, 0, 0);
-                    constraint.setLinearLowerLimit(limit);
-                    limit.setValue(0, 0, 0);
-                    constraint.setLinearUpperLimit(limit);
-                    limit.setValue(Math.PI / 4, 0, 0);
-                    constraint.setAngularLowerLimit(limit);
-                    limit.setValue(0, 0, 0);
-                    constraint.setAngularUpperLimit(limit);
-                    ammo.destroy(limit);
-                    for (let l = 0; l < 6; ++l) {
-                        constraint.enableSpring(l, true);
-                        constraint.setStiffness(l, 100);
-                        constraint.setDamping(l, 1);
-                    }
-                    world.addConstraint(constraint, true);
-                }
-            }
-        console.log("Rigid body count:", rbCount * rowCount * columnCount);
-        const transform = new ammo.btTransform();
-        const scale = new math_vector/* Vector3 */.Pq(1, 1, 1);
-        const vector = new math_vector/* Vector3 */.Pq();
-        const quaternion = new math_vector/* Quaternion */.PT();
-        const benchHelper = new Util_benchHelper/* BenchHelper */.X(() => {
-            for (let i = 0; i < worlds.length; ++i)
-                worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bodies.length; ++i) {
-                const body = bodies[i];
-                body.getMotionState().getWorldTransform(transform);
-                const origin = transform.getOrigin();
-                const rotation = transform.getRotation();
-                math_vector/* Matrix */.uq.ComposeToRef(scale, quaternion.set(rotation.x(), rotation.y(), rotation.z(), rotation.w()), vector.set(origin.x(), origin.y(), origin.z()), matrix);
-                matrix.copyToArray(rigidbodyMatrixBuffer, i * 16);
-            }
-            baseBox.thinInstanceBufferUpdated("matrix");
-            scene.render();
-        });
-        benchHelper.runBench();
-        scene.onBeforeRenderObservable.add(() => {
-            for (let i = 0; i < worlds.length; ++i) {
-                worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
-            }
-            for (let i = 0; i < bodies.length; ++i) {
-                const body = bodies[i];
-                body.getMotionState().getWorldTransform(transform);
-                const origin = transform.getOrigin();
-                const rotation = transform.getRotation();
-                math_vector/* Matrix */.uq.ComposeToRef(scale, quaternion.set(rotation.x(), rotation.y(), rotation.z(), rotation.w()), vector.set(origin.x(), origin.y(), origin.z()), matrix);
-                matrix.copyToArray(rigidbodyMatrixBuffer, i * 16);
-            }
-            baseBox.thinInstanceBufferUpdated("matrix");
-        });
-        return scene;
-    }
-}
-
-
-/***/ }),
-
-/***/ 9800:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   X: () => (/* binding */ BenchHelper)
-/* harmony export */ });
-class BenchHelper {
-    sampleCount;
-    _func;
-    constructor(func) {
-        this.sampleCount = 600;
-        this._func = func;
-    }
-    runBench() {
-        const sampledFps = [];
-        const sampleCount = this.sampleCount;
-        for (let i = 0; i < sampleCount; ++i) {
-            const start = performance.now();
-            this._func();
-            const end = performance.now();
-            const fps = 1000 / (end - start);
-            sampledFps.push(fps);
-        }
-        let averageFps = 0;
-        let result = "";
-        for (let i = 0; i < sampleCount; ++i) {
-            result += `(${i}, ${sampledFps[i]})`;
-            if (i !== sampleCount - 1) {
-                result += ", ";
-            }
-            averageFps += sampledFps[i];
-        }
-        const resultString = `Result: ${result}, Average: ${averageFps / sampleCount}`;
-        console.log(resultString);
-        const div = document.createElement("div");
-        div.style.position = "absolute";
-        div.style.top = "0";
-        div.style.left = "0";
-        div.style.color = "black";
-        div.textContent = resultString;
-        document.body.appendChild(div);
-    }
 }
 
 
