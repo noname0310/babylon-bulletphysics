@@ -6,6 +6,7 @@ const scenes: [string, () => Promise<ISceneBuilder>][] = [
     ["b1 multi world600 body ammo", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b1MultiWorld600BodyAmmo")).SceneBuilder()],
     ["b1 multi world600 body bundle", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b1MultiWorld600BodyBundle")).SceneBuilder()],
     ["b2 thread count", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b2ThreadCount")).SceneBuilder()],
+    ["b3 ammo", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b3Ammo")).SceneBuilder()],
     ["b3 dynamic shadow", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b3DynamicShadow")).SceneBuilder()],
     ["b3 not optimized", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b3NotOptimized")).SceneBuilder()],
     ["t constraint", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tConstraint")).SceneBuilder()],

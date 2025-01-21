@@ -57,20 +57,13 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
 
-        // Inspector.Show(scene, { enablePopup: false });
-
         const ammo = await Ammo();
-
-        const worlds: Ammo.btDiscreteDynamicsWorld[] = [];
-        for (let i = 0; i < 32; ++i) {
-            const collisionConfiguration = new ammo.btDefaultCollisionConfiguration();
-            const dispatcher = new ammo.btCollisionDispatcher(collisionConfiguration);
-            const overlappingPairCache = new ammo.btDbvtBroadphase();
-            const solver = new ammo.btSequentialImpulseConstraintSolver();
-            const world = new ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-            world.setGravity(new ammo.btVector3(0, -10, 0));
-            worlds.push(world);
-        }
+        const collisionConfiguration = new ammo.btDefaultCollisionConfiguration();
+        const dispatcher = new ammo.btCollisionDispatcher(collisionConfiguration);
+        const overlappingPairCache = new ammo.btDbvtBroadphase();
+        const solver = new ammo.btSequentialImpulseConstraintSolver();
+        const world = new ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+        world.setGravity(new ammo.btVector3(0, -10, 0));
 
         const matrix = new Matrix();
 
@@ -91,15 +84,13 @@ export class SceneBuilder implements ISceneBuilder {
             motionState.setWorldTransform(transform);
             ammo.destroy(transform);
 
-            for (let i = 0; i < worlds.length; ++i) {
-                const groundRigidBody = new ammo.btRigidBody(groundRbInfo);
-                groundRigidBody.setDamping(0, 0);
-                groundRigidBody.setFriction(0.5);
-                groundRigidBody.setRestitution(0.0);
-                groundRigidBody.setSleepingThresholds(0.0, 1.0);
-                groundRigidBody.setCollisionFlags(groundRigidBody.getCollisionFlags() | 2);
-                worlds[i].addRigidBody(groundRigidBody);
-            }
+            const groundRigidBody = new ammo.btRigidBody(groundRbInfo);
+            groundRigidBody.setDamping(0, 0);
+            groundRigidBody.setFriction(0.5);
+            groundRigidBody.setRestitution(0.0);
+            groundRigidBody.setSleepingThresholds(0.0, 1.0);
+            groundRigidBody.setCollisionFlags(groundRigidBody.getCollisionFlags() | 2);
+            world.addRigidBody(groundRigidBody);
 
             ammo.destroy(groundRbInfo);
         }
@@ -109,9 +100,9 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
 
-        const rowCount = 4;
-        const columnCount = 8;
-        const margin = 60;
+        const rowCount = 2;
+        const columnCount = 2;
+        const margin = 20;
 
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
@@ -123,7 +114,6 @@ export class SceneBuilder implements ISceneBuilder {
         const bodies: Ammo.btRigidBody[] = [];
 
         for (let i = 0; i < rowCount; ++i) for (let j = 0; j < columnCount; ++j) {
-            const worldId = i * columnCount + j;
             const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
             const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
 
@@ -147,7 +137,6 @@ export class SceneBuilder implements ISceneBuilder {
                 rbInfo.set_m_angularSleepingThreshold(1.0);
                 rbInfoList.push(rbInfo);
             }
-            const world = worlds[worldId];
             for (let k = 0; k < rbCount; ++k) {
                 const rbInfo = rbInfoList[k];
                 const rigidBody = new ammo.btRigidBody(rbInfo);
@@ -157,7 +146,7 @@ export class SceneBuilder implements ISceneBuilder {
             for (let k = 0; k < rbInfoList.length; ++k) ammo.destroy(rbInfoList[k]);
 
             for (let k = 0; k < rbCount; k += 2) {
-                const indices = [worldId * rbCount + k, worldId * rbCount + k + 1] as const;
+                const indices = [k, k + 1] as const;
                 const transform1 = new ammo.btTransform();
                 const transform2 = new ammo.btTransform();
                 transform1.setFromOpenGLMatrix(Matrix.Translation(0, -1.2, 0).asArray());
@@ -193,7 +182,7 @@ export class SceneBuilder implements ISceneBuilder {
         const quaternion = new Quaternion();
 
         const benchHelper = new BenchHelper(() => {
-            for (let i = 0; i < worlds.length; ++i) worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
+            world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
                 const body = bodies[i];
                 body.getMotionState().getWorldTransform(transform);
@@ -210,12 +199,11 @@ export class SceneBuilder implements ISceneBuilder {
             baseBox.thinInstanceBufferUpdated("matrix");
             scene.render();
         });
+        benchHelper.sampleCount = 5000;
         benchHelper.runBench();
 
         scene.onBeforeRenderObservable.add(() => {
-            for (let i = 0; i < worlds.length; ++i) {
-                worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
-            }
+            world.stepSimulation(1 / 60, 10, 1 / 60);
 
             for (let i = 0; i < bodies.length; ++i) {
                 const body = bodies[i];

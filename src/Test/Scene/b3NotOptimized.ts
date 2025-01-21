@@ -68,7 +68,6 @@ export class SceneBuilder implements ISceneBuilder {
 
         const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 4);
         const runtime = new PhysicsRuntime(wasmInstance);
-        runtime.register(scene);
         runtime.evaluationType = PhysicsRuntimeEvaluationType.Immediate;
 
         const matrix = new Matrix();
@@ -155,6 +154,8 @@ export class SceneBuilder implements ISceneBuilder {
         });
         benchHelper.sampleCount = 5000;
         benchHelper.runBench();
+
+        runtime.register(scene);
 
         return scene;
     }
