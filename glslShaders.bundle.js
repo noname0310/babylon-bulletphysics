@@ -1,6 +1,337 @@
 "use strict";
 (self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[71],{
 
+/***/ 5523:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export bakedVertexAnimation */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "bakedVertexAnimation";
+const shader = `#ifdef BAKED_VERTEX_ANIMATION_TEXTURE
+{
+#ifdef INSTANCES
+#define BVASNAME bakedVertexAnimationSettingsInstanced
+#else
+#define BVASNAME bakedVertexAnimationSettings
+#endif
+float VATStartFrame=BVASNAME.x;float VATEndFrame=BVASNAME.y;float VATOffsetFrame=BVASNAME.z;float VATSpeed=BVASNAME.w;float totalFrames=VATEndFrame-VATStartFrame+1.0;float time=bakedVertexAnimationTime*VATSpeed/totalFrames;float frameCorrection=time<1.0 ? 0.0 : 1.0;float numOfFrames=totalFrames-frameCorrection;float VATFrameNum=fract(time)*numOfFrames;VATFrameNum=mod(VATFrameNum+VATOffsetFrame,numOfFrames);VATFrameNum=floor(VATFrameNum);VATFrameNum+=VATStartFrame+frameCorrection;mat4 VATInfluence;VATInfluence=readMatrixFromRawSamplerVAT(bakedVertexAnimationTexture,matricesIndices[0],VATFrameNum)*matricesWeights[0];
+#if NUM_BONE_INFLUENCERS>1
+VATInfluence+=readMatrixFromRawSamplerVAT(bakedVertexAnimationTexture,matricesIndices[1],VATFrameNum)*matricesWeights[1];
+#endif
+#if NUM_BONE_INFLUENCERS>2
+VATInfluence+=readMatrixFromRawSamplerVAT(bakedVertexAnimationTexture,matricesIndices[2],VATFrameNum)*matricesWeights[2];
+#endif
+#if NUM_BONE_INFLUENCERS>3
+VATInfluence+=readMatrixFromRawSamplerVAT(bakedVertexAnimationTexture,matricesIndices[3],VATFrameNum)*matricesWeights[3];
+#endif
+#if NUM_BONE_INFLUENCERS>4
+VATInfluence+=readMatrixFromRawSamplerVAT(bakedVertexAnimationTexture,matricesIndicesExtra[0],VATFrameNum)*matricesWeightsExtra[0];
+#endif
+#if NUM_BONE_INFLUENCERS>5
+VATInfluence+=readMatrixFromRawSamplerVAT(bakedVertexAnimationTexture,matricesIndicesExtra[1],VATFrameNum)*matricesWeightsExtra[1];
+#endif
+#if NUM_BONE_INFLUENCERS>6
+VATInfluence+=readMatrixFromRawSamplerVAT(bakedVertexAnimationTexture,matricesIndicesExtra[2],VATFrameNum)*matricesWeightsExtra[2];
+#endif
+#if NUM_BONE_INFLUENCERS>7
+VATInfluence+=readMatrixFromRawSamplerVAT(bakedVertexAnimationTexture,matricesIndicesExtra[3],VATFrameNum)*matricesWeightsExtra[3];
+#endif
+finalWorld=finalWorld*VATInfluence;}
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const bakedVertexAnimation = { name, shader };
+//# sourceMappingURL=bakedVertexAnimation.js.map
+
+/***/ }),
+
+/***/ 8959:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export bakedVertexAnimationDeclaration */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "bakedVertexAnimationDeclaration";
+const shader = `#ifdef BAKED_VERTEX_ANIMATION_TEXTURE
+uniform float bakedVertexAnimationTime;uniform vec2 bakedVertexAnimationTextureSizeInverted;uniform vec4 bakedVertexAnimationSettings;uniform sampler2D bakedVertexAnimationTexture;
+#ifdef INSTANCES
+attribute vec4 bakedVertexAnimationSettingsInstanced;
+#endif
+#define inline
+mat4 readMatrixFromRawSamplerVAT(sampler2D smp,float index,float frame)
+{float offset=index*4.0;float frameUV=(frame+0.5)*bakedVertexAnimationTextureSizeInverted.y;float dx=bakedVertexAnimationTextureSizeInverted.x;vec4 m0=texture2D(smp,vec2(dx*(offset+0.5),frameUV));vec4 m1=texture2D(smp,vec2(dx*(offset+1.5),frameUV));vec4 m2=texture2D(smp,vec2(dx*(offset+2.5),frameUV));vec4 m3=texture2D(smp,vec2(dx*(offset+3.5),frameUV));return mat4(m0,m1,m2,m3);}
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const bakedVertexAnimationDeclaration = { name, shader };
+//# sourceMappingURL=bakedVertexAnimationDeclaration.js.map
+
+/***/ }),
+
+/***/ 9707:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export bonesDeclaration */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "bonesDeclaration";
+const shader = `#if NUM_BONE_INFLUENCERS>0
+attribute vec4 matricesIndices;attribute vec4 matricesWeights;
+#if NUM_BONE_INFLUENCERS>4
+attribute vec4 matricesIndicesExtra;attribute vec4 matricesWeightsExtra;
+#endif
+#ifndef BAKED_VERTEX_ANIMATION_TEXTURE
+#ifdef BONETEXTURE
+uniform highp sampler2D boneSampler;uniform float boneTextureWidth;
+#else
+uniform mat4 mBones[BonesPerMesh];
+#endif
+#ifdef BONES_VELOCITY_ENABLED
+uniform mat4 mPreviousBones[BonesPerMesh];
+#endif
+#ifdef BONETEXTURE
+#define inline
+mat4 readMatrixFromRawSampler(sampler2D smp,float index)
+{float offset=index *4.0;float dx=1.0/boneTextureWidth;vec4 m0=texture2D(smp,vec2(dx*(offset+0.5),0.));vec4 m1=texture2D(smp,vec2(dx*(offset+1.5),0.));vec4 m2=texture2D(smp,vec2(dx*(offset+2.5),0.));vec4 m3=texture2D(smp,vec2(dx*(offset+3.5),0.));return mat4(m0,m1,m2,m3);}
+#endif
+#endif
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const bonesDeclaration = { name, shader };
+//# sourceMappingURL=bonesDeclaration.js.map
+
+/***/ }),
+
+/***/ 3361:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export bonesVertex */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "bonesVertex";
+const shader = `#ifndef BAKED_VERTEX_ANIMATION_TEXTURE
+#if NUM_BONE_INFLUENCERS>0
+mat4 influence;
+#ifdef BONETEXTURE
+influence=readMatrixFromRawSampler(boneSampler,matricesIndices[0])*matricesWeights[0];
+#if NUM_BONE_INFLUENCERS>1
+influence+=readMatrixFromRawSampler(boneSampler,matricesIndices[1])*matricesWeights[1];
+#endif
+#if NUM_BONE_INFLUENCERS>2
+influence+=readMatrixFromRawSampler(boneSampler,matricesIndices[2])*matricesWeights[2];
+#endif
+#if NUM_BONE_INFLUENCERS>3
+influence+=readMatrixFromRawSampler(boneSampler,matricesIndices[3])*matricesWeights[3];
+#endif
+#if NUM_BONE_INFLUENCERS>4
+influence+=readMatrixFromRawSampler(boneSampler,matricesIndicesExtra[0])*matricesWeightsExtra[0];
+#endif
+#if NUM_BONE_INFLUENCERS>5
+influence+=readMatrixFromRawSampler(boneSampler,matricesIndicesExtra[1])*matricesWeightsExtra[1];
+#endif
+#if NUM_BONE_INFLUENCERS>6
+influence+=readMatrixFromRawSampler(boneSampler,matricesIndicesExtra[2])*matricesWeightsExtra[2];
+#endif
+#if NUM_BONE_INFLUENCERS>7
+influence+=readMatrixFromRawSampler(boneSampler,matricesIndicesExtra[3])*matricesWeightsExtra[3];
+#endif
+#else
+influence=mBones[int(matricesIndices[0])]*matricesWeights[0];
+#if NUM_BONE_INFLUENCERS>1
+influence+=mBones[int(matricesIndices[1])]*matricesWeights[1];
+#endif
+#if NUM_BONE_INFLUENCERS>2
+influence+=mBones[int(matricesIndices[2])]*matricesWeights[2];
+#endif
+#if NUM_BONE_INFLUENCERS>3
+influence+=mBones[int(matricesIndices[3])]*matricesWeights[3];
+#endif
+#if NUM_BONE_INFLUENCERS>4
+influence+=mBones[int(matricesIndicesExtra[0])]*matricesWeightsExtra[0];
+#endif
+#if NUM_BONE_INFLUENCERS>5
+influence+=mBones[int(matricesIndicesExtra[1])]*matricesWeightsExtra[1];
+#endif
+#if NUM_BONE_INFLUENCERS>6
+influence+=mBones[int(matricesIndicesExtra[2])]*matricesWeightsExtra[2];
+#endif
+#if NUM_BONE_INFLUENCERS>7
+influence+=mBones[int(matricesIndicesExtra[3])]*matricesWeightsExtra[3];
+#endif
+#endif
+finalWorld=finalWorld*influence;
+#endif
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const bonesVertex = { name, shader };
+//# sourceMappingURL=bonesVertex.js.map
+
+/***/ }),
+
+/***/ 7412:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export clipPlaneFragment */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "clipPlaneFragment";
+const shader = `#if defined(CLIPPLANE) || defined(CLIPPLANE2) || defined(CLIPPLANE3) || defined(CLIPPLANE4) || defined(CLIPPLANE5) || defined(CLIPPLANE6)
+if (false) {}
+#endif
+#ifdef CLIPPLANE
+else if (fClipDistance>0.0)
+{discard;}
+#endif
+#ifdef CLIPPLANE2
+else if (fClipDistance2>0.0)
+{discard;}
+#endif
+#ifdef CLIPPLANE3
+else if (fClipDistance3>0.0)
+{discard;}
+#endif
+#ifdef CLIPPLANE4
+else if (fClipDistance4>0.0)
+{discard;}
+#endif
+#ifdef CLIPPLANE5
+else if (fClipDistance5>0.0)
+{discard;}
+#endif
+#ifdef CLIPPLANE6
+else if (fClipDistance6>0.0)
+{discard;}
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const clipPlaneFragment = { name, shader };
+//# sourceMappingURL=clipPlaneFragment.js.map
+
+/***/ }),
+
+/***/ 6194:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export clipPlaneFragmentDeclaration */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "clipPlaneFragmentDeclaration";
+const shader = `#ifdef CLIPPLANE
+varying float fClipDistance;
+#endif
+#ifdef CLIPPLANE2
+varying float fClipDistance2;
+#endif
+#ifdef CLIPPLANE3
+varying float fClipDistance3;
+#endif
+#ifdef CLIPPLANE4
+varying float fClipDistance4;
+#endif
+#ifdef CLIPPLANE5
+varying float fClipDistance5;
+#endif
+#ifdef CLIPPLANE6
+varying float fClipDistance6;
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const clipPlaneFragmentDeclaration = { name, shader };
+//# sourceMappingURL=clipPlaneFragmentDeclaration.js.map
+
+/***/ }),
+
+/***/ 7314:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export clipPlaneVertex */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "clipPlaneVertex";
+const shader = `#ifdef CLIPPLANE
+fClipDistance=dot(worldPos,vClipPlane);
+#endif
+#ifdef CLIPPLANE2
+fClipDistance2=dot(worldPos,vClipPlane2);
+#endif
+#ifdef CLIPPLANE3
+fClipDistance3=dot(worldPos,vClipPlane3);
+#endif
+#ifdef CLIPPLANE4
+fClipDistance4=dot(worldPos,vClipPlane4);
+#endif
+#ifdef CLIPPLANE5
+fClipDistance5=dot(worldPos,vClipPlane5);
+#endif
+#ifdef CLIPPLANE6
+fClipDistance6=dot(worldPos,vClipPlane6);
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const clipPlaneVertex = { name, shader };
+//# sourceMappingURL=clipPlaneVertex.js.map
+
+/***/ }),
+
+/***/ 1636:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export clipPlaneVertexDeclaration */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "clipPlaneVertexDeclaration";
+const shader = `#ifdef CLIPPLANE
+uniform vec4 vClipPlane;varying float fClipDistance;
+#endif
+#ifdef CLIPPLANE2
+uniform vec4 vClipPlane2;varying float fClipDistance2;
+#endif
+#ifdef CLIPPLANE3
+uniform vec4 vClipPlane3;varying float fClipDistance3;
+#endif
+#ifdef CLIPPLANE4
+uniform vec4 vClipPlane4;varying float fClipDistance4;
+#endif
+#ifdef CLIPPLANE5
+uniform vec4 vClipPlane5;varying float fClipDistance5;
+#endif
+#ifdef CLIPPLANE6
+uniform vec4 vClipPlane6;varying float fClipDistance6;
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const clipPlaneVertexDeclaration = { name, shader };
+//# sourceMappingURL=clipPlaneVertexDeclaration.js.map
+
+/***/ }),
+
 /***/ 9057:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -145,6 +476,80 @@ const helperFunctions = { name, shader };
 
 /***/ }),
 
+/***/ 1218:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export instancesDeclaration */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "instancesDeclaration";
+const shader = `#ifdef INSTANCES
+attribute vec4 world0;attribute vec4 world1;attribute vec4 world2;attribute vec4 world3;
+#ifdef INSTANCESCOLOR
+attribute vec4 instanceColor;
+#endif
+#if defined(THIN_INSTANCES) && !defined(WORLD_UBO)
+uniform mat4 world;
+#endif
+#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
+attribute vec4 previousWorld0;attribute vec4 previousWorld1;attribute vec4 previousWorld2;attribute vec4 previousWorld3;
+#ifdef THIN_INSTANCES
+uniform mat4 previousWorld;
+#endif
+#endif
+#else
+#if !defined(WORLD_UBO)
+uniform mat4 world;
+#endif
+#if defined(VELOCITY) || defined(PREPASS_VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
+uniform mat4 previousWorld;
+#endif
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const instancesDeclaration = { name, shader };
+//# sourceMappingURL=instancesDeclaration.js.map
+
+/***/ }),
+
+/***/ 3298:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export instancesVertex */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "instancesVertex";
+const shader = `#ifdef INSTANCES
+mat4 finalWorld=mat4(world0,world1,world2,world3);
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
+mat4 finalPreviousWorld=mat4(previousWorld0,previousWorld1,
+previousWorld2,previousWorld3);
+#endif
+#ifdef THIN_INSTANCES
+finalWorld=world*finalWorld;
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
+finalPreviousWorld=previousWorld*finalPreviousWorld;
+#endif
+#endif
+#else
+mat4 finalWorld=world;
+#if defined(PREPASS_VELOCITY) || defined(VELOCITY) || defined(PREPASS_VELOCITY_LINEAR) || defined(VELOCITY_LINEAR)
+mat4 finalPreviousWorld=previousWorld;
+#endif
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const instancesVertex = { name, shader };
+//# sourceMappingURL=instancesVertex.js.map
+
+/***/ }),
+
 /***/ 7382:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -223,6 +628,171 @@ _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.Includ
 /** @internal */
 const meshUboDeclaration = { name, shader };
 //# sourceMappingURL=meshUboDeclaration.js.map
+
+/***/ }),
+
+/***/ 5060:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export morphTargetsVertex */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "morphTargetsVertex";
+const shader = `#ifdef MORPHTARGETS
+#ifdef MORPHTARGETS_TEXTURE
+#if {X}==0
+for (int i=0; i<NUM_MORPH_INFLUENCERS; i++) {if (i>=morphTargetCount) break;vertexID=float(gl_VertexID)*morphTargetTextureInfo.x;positionUpdated+=(readVector3FromRawSampler(i,vertexID)-position)*morphTargetInfluences[i];vertexID+=1.0;
+#ifdef MORPHTARGETS_NORMAL
+normalUpdated+=(readVector3FromRawSampler(i,vertexID) -normal)*morphTargetInfluences[i];vertexID+=1.0;
+#endif
+#ifdef MORPHTARGETS_UV
+uvUpdated+=(readVector3FromRawSampler(i,vertexID).xy-uv)*morphTargetInfluences[i];vertexID+=1.0;
+#endif
+#ifdef MORPHTARGETS_TANGENT
+tangentUpdated.xyz+=(readVector3FromRawSampler(i,vertexID) -tangent.xyz)*morphTargetInfluences[i];
+#endif
+}
+#endif
+#else
+positionUpdated+=(position{X}-position)*morphTargetInfluences[{X}];
+#ifdef MORPHTARGETS_NORMAL
+normalUpdated+=(normal{X}-normal)*morphTargetInfluences[{X}];
+#endif
+#ifdef MORPHTARGETS_TANGENT
+tangentUpdated.xyz+=(tangent{X}-tangent.xyz)*morphTargetInfluences[{X}];
+#endif
+#ifdef MORPHTARGETS_UV
+uvUpdated+=(uv_{X}-uv)*morphTargetInfluences[{X}];
+#endif
+#endif
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const morphTargetsVertex = { name, shader };
+//# sourceMappingURL=morphTargetsVertex.js.map
+
+/***/ }),
+
+/***/ 738:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export morphTargetsVertexDeclaration */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "morphTargetsVertexDeclaration";
+const shader = `#ifdef MORPHTARGETS
+#ifndef MORPHTARGETS_TEXTURE
+attribute vec3 position{X};
+#ifdef MORPHTARGETS_NORMAL
+attribute vec3 normal{X};
+#endif
+#ifdef MORPHTARGETS_TANGENT
+attribute vec3 tangent{X};
+#endif
+#ifdef MORPHTARGETS_UV
+attribute vec2 uv_{X};
+#endif
+#elif {X}==0
+uniform int morphTargetCount;
+#endif
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const morphTargetsVertexDeclaration = { name, shader };
+//# sourceMappingURL=morphTargetsVertexDeclaration.js.map
+
+/***/ }),
+
+/***/ 8451:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export morphTargetsVertexGlobal */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "morphTargetsVertexGlobal";
+const shader = `#ifdef MORPHTARGETS
+#ifdef MORPHTARGETS_TEXTURE
+float vertexID;
+#endif
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const morphTargetsVertexGlobal = { name, shader };
+//# sourceMappingURL=morphTargetsVertexGlobal.js.map
+
+/***/ }),
+
+/***/ 7999:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export morphTargetsVertexGlobalDeclaration */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "morphTargetsVertexGlobalDeclaration";
+const shader = `#ifdef MORPHTARGETS
+uniform float morphTargetInfluences[NUM_MORPH_INFLUENCERS];
+#ifdef MORPHTARGETS_TEXTURE 
+uniform float morphTargetTextureIndices[NUM_MORPH_INFLUENCERS];uniform vec3 morphTargetTextureInfo;uniform highp sampler2DArray morphTargets;vec3 readVector3FromRawSampler(int targetIndex,float vertexIndex)
+{ 
+float y=floor(vertexIndex/morphTargetTextureInfo.y);float x=vertexIndex-y*morphTargetTextureInfo.y;vec3 textureUV=vec3((x+0.5)/morphTargetTextureInfo.y,(y+0.5)/morphTargetTextureInfo.z,morphTargetTextureIndices[targetIndex]);return texture(morphTargets,textureUV).xyz;}
+#endif
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const morphTargetsVertexGlobalDeclaration = { name, shader };
+//# sourceMappingURL=morphTargetsVertexGlobalDeclaration.js.map
+
+/***/ }),
+
+/***/ 8334:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export packingFunctions */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "packingFunctions";
+const shader = `vec4 pack(float depth)
+{const vec4 bit_shift=vec4(255.0*255.0*255.0,255.0*255.0,255.0,1.0);const vec4 bit_mask=vec4(0.0,1.0/255.0,1.0/255.0,1.0/255.0);vec4 res=fract(depth*bit_shift);res-=res.xxyz*bit_mask;return res;}
+float unpack(vec4 color)
+{const vec4 bit_shift=vec4(1.0/(255.0*255.0*255.0),1.0/(255.0*255.0),1.0/255.0,1.0);return dot(color,bit_shift);}`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const packingFunctions = { name, shader };
+//# sourceMappingURL=packingFunctions.js.map
+
+/***/ }),
+
+/***/ 1211:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export pointCloudVertex */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "pointCloudVertex";
+const shader = `#if defined(POINTSIZE) && !defined(WEBGPU)
+gl_PointSize=pointSize;
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
+/** @internal */
+const pointCloudVertex = { name, shader };
+//# sourceMappingURL=pointCloudVertex.js.map
 
 /***/ }),
 
@@ -2773,6 +3343,206 @@ const defaultVertexShader = { name: default_vertex_name, shader: default_vertex_
 
 /***/ }),
 
+/***/ 8852:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   depthPixelShader: () => (/* binding */ depthPixelShader)
+/* harmony export */ });
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+/* harmony import */ var _ShadersInclude_clipPlaneFragmentDeclaration_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6194);
+/* harmony import */ var _ShadersInclude_packingFunctions_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(8334);
+/* harmony import */ var _ShadersInclude_clipPlaneFragment_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7412);
+// Do not edit.
+
+
+
+
+const name = "depthPixelShader";
+const shader = `#ifdef ALPHATEST
+varying vec2 vUV;uniform sampler2D diffuseSampler;
+#endif
+#include<clipPlaneFragmentDeclaration>
+varying float vDepthMetric;
+#ifdef PACKED
+#include<packingFunctions>
+#endif
+#ifdef STORE_CAMERASPACE_Z
+varying vec4 vViewPos;
+#endif
+#define CUSTOM_FRAGMENT_DEFINITIONS
+void main(void)
+{
+#include<clipPlaneFragment>
+#ifdef ALPHATEST
+if (texture2D(diffuseSampler,vUV).a<0.4)
+discard;
+#endif
+#ifdef STORE_CAMERASPACE_Z
+#ifdef PACKED
+gl_FragColor=pack(vViewPos.z);
+#else
+gl_FragColor=vec4(vViewPos.z,0.0,0.0,1.0);
+#endif
+#else
+#ifdef NONLINEARDEPTH
+#ifdef PACKED
+gl_FragColor=pack(gl_FragCoord.z);
+#else
+gl_FragColor=vec4(gl_FragCoord.z,0.0,0.0,0.0);
+#endif
+#else
+#ifdef PACKED
+gl_FragColor=pack(vDepthMetric);
+#else
+gl_FragColor=vec4(vDepthMetric,0.0,0.0,1.0);
+#endif
+#endif
+#endif
+}`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.ShadersStore[name] = shader;
+/** @internal */
+const depthPixelShader = { name, shader };
+//# sourceMappingURL=depth.fragment.js.map
+
+/***/ }),
+
+/***/ 9977:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  depthVertexShader: () => (/* binding */ depthVertexShader)
+});
+
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Engines/shaderStore.js
+var shaderStore = __webpack_require__(9610);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/bonesDeclaration.js
+var bonesDeclaration = __webpack_require__(9707);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/bakedVertexAnimationDeclaration.js
+var bakedVertexAnimationDeclaration = __webpack_require__(8959);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/morphTargetsVertexGlobalDeclaration.js
+var morphTargetsVertexGlobalDeclaration = __webpack_require__(7999);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/morphTargetsVertexDeclaration.js
+var morphTargetsVertexDeclaration = __webpack_require__(738);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/clipPlaneVertexDeclaration.js
+var clipPlaneVertexDeclaration = __webpack_require__(1636);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/instancesDeclaration.js
+var instancesDeclaration = __webpack_require__(1218);
+;// ./node_modules/@babylonjs/core/Shaders/ShadersInclude/pointCloudVertexDeclaration.js
+// Do not edit.
+
+const pointCloudVertexDeclaration_name = "pointCloudVertexDeclaration";
+const shader = `#ifdef POINTSIZE
+uniform float pointSize;
+#endif
+`;
+// Sideeffect
+shaderStore/* ShaderStore */.l.IncludesShadersStore[pointCloudVertexDeclaration_name] = shader;
+/** @internal */
+const pointCloudVertexDeclaration = { name: pointCloudVertexDeclaration_name, shader };
+//# sourceMappingURL=pointCloudVertexDeclaration.js.map
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/morphTargetsVertexGlobal.js
+var morphTargetsVertexGlobal = __webpack_require__(8451);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/morphTargetsVertex.js
+var morphTargetsVertex = __webpack_require__(5060);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/instancesVertex.js
+var instancesVertex = __webpack_require__(3298);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/bonesVertex.js
+var bonesVertex = __webpack_require__(3361);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/bakedVertexAnimation.js
+var bakedVertexAnimation = __webpack_require__(5523);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/clipPlaneVertex.js
+var clipPlaneVertex = __webpack_require__(7314);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Shaders/ShadersInclude/pointCloudVertex.js
+var pointCloudVertex = __webpack_require__(1211);
+;// ./node_modules/@babylonjs/core/Shaders/depth.vertex.js
+// Do not edit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const depth_vertex_name = "depthVertexShader";
+const depth_vertex_shader = `attribute vec3 position;
+#include<bonesDeclaration>
+#include<bakedVertexAnimationDeclaration>
+#include<morphTargetsVertexGlobalDeclaration>
+#include<morphTargetsVertexDeclaration>[0..maxSimultaneousMorphTargets]
+#include<clipPlaneVertexDeclaration>
+#include<instancesDeclaration>
+uniform mat4 viewProjection;uniform vec2 depthValues;
+#if defined(ALPHATEST) || defined(NEED_UV)
+varying vec2 vUV;uniform mat4 diffuseMatrix;
+#ifdef UV1
+attribute vec2 uv;
+#endif
+#ifdef UV2
+attribute vec2 uv2;
+#endif
+#endif
+#ifdef STORE_CAMERASPACE_Z
+uniform mat4 view;varying vec4 vViewPos;
+#endif
+#include<pointCloudVertexDeclaration>
+varying float vDepthMetric;
+#define CUSTOM_VERTEX_DEFINITIONS
+void main(void)
+{vec3 positionUpdated=position;
+#ifdef UV1
+vec2 uvUpdated=uv;
+#endif
+#include<morphTargetsVertexGlobal>
+#include<morphTargetsVertex>[0..maxSimultaneousMorphTargets]
+#include<instancesVertex>
+#include<bonesVertex>
+#include<bakedVertexAnimation>
+vec4 worldPos=finalWorld*vec4(positionUpdated,1.0);
+#include<clipPlaneVertex>
+gl_Position=viewProjection*worldPos;
+#ifdef STORE_CAMERASPACE_Z
+vViewPos=view*worldPos;
+#else
+#ifdef USE_REVERSE_DEPTHBUFFER
+vDepthMetric=((-gl_Position.z+depthValues.x)/(depthValues.y));
+#else
+vDepthMetric=((gl_Position.z+depthValues.x)/(depthValues.y));
+#endif
+#endif
+#if defined(ALPHATEST) || defined(BASIC_RENDER)
+#ifdef UV1
+vUV=vec2(diffuseMatrix*vec4(uvUpdated,1.0,0.0));
+#endif
+#ifdef UV2
+vUV=vec2(diffuseMatrix*vec4(uv2,1.0,0.0));
+#endif
+#endif
+#include<pointCloudVertex>
+}
+`;
+// Sideeffect
+shaderStore/* ShaderStore */.l.ShadersStore[depth_vertex_name] = depth_vertex_shader;
+/** @internal */
+const depthVertexShader = { name: depth_vertex_name, shader: depth_vertex_shader };
+//# sourceMappingURL=depth.vertex.js.map
+
+/***/ }),
+
 /***/ 9386:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -3022,6 +3792,44 @@ const lodCubePixelShader = { name, shader };
 
 /***/ }),
 
+/***/ 4475:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* unused harmony export minmaxReduxPixelShader */
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "minmaxReduxPixelShader";
+const shader = `varying vec2 vUV;uniform sampler2D textureSampler;
+#if defined(INITIAL)
+uniform sampler2D sourceTexture;uniform vec2 texSize;void main(void)
+{ivec2 coord=ivec2(vUV*(texSize-1.0));float f1=texelFetch(sourceTexture,coord,0).r;float f2=texelFetch(sourceTexture,coord+ivec2(1,0),0).r;float f3=texelFetch(sourceTexture,coord+ivec2(1,1),0).r;float f4=texelFetch(sourceTexture,coord+ivec2(0,1),0).r;float minz=min(min(min(f1,f2),f3),f4);
+#ifdef DEPTH_REDUX
+float maxz=max(max(max(sign(1.0-f1)*f1,sign(1.0-f2)*f2),sign(1.0-f3)*f3),sign(1.0-f4)*f4);
+#else
+float maxz=max(max(max(f1,f2),f3),f4);
+#endif
+glFragColor=vec4(minz,maxz,0.,0.);}
+#elif defined(MAIN)
+uniform vec2 texSize;void main(void)
+{ivec2 coord=ivec2(vUV*(texSize-1.0));vec2 f1=texelFetch(textureSampler,coord,0).rg;vec2 f2=texelFetch(textureSampler,coord+ivec2(1,0),0).rg;vec2 f3=texelFetch(textureSampler,coord+ivec2(1,1),0).rg;vec2 f4=texelFetch(textureSampler,coord+ivec2(0,1),0).rg;float minz=min(min(min(f1.x,f2.x),f3.x),f4.x);float maxz=max(max(max(f1.y,f2.y),f3.y),f4.y);glFragColor=vec4(minz,maxz,0.,0.);}
+#elif defined(ONEBEFORELAST)
+uniform ivec2 texSize;void main(void)
+{ivec2 coord=ivec2(vUV*vec2(texSize-1));vec2 f1=texelFetch(textureSampler,coord % texSize,0).rg;vec2 f2=texelFetch(textureSampler,(coord+ivec2(1,0)) % texSize,0).rg;vec2 f3=texelFetch(textureSampler,(coord+ivec2(1,1)) % texSize,0).rg;vec2 f4=texelFetch(textureSampler,(coord+ivec2(0,1)) % texSize,0).rg;float minz=min(f1.x,f2.x);float maxz=max(f1.y,f2.y);glFragColor=vec4(minz,maxz,0.,0.);}
+#elif defined(LAST)
+void main(void)
+{glFragColor=vec4(0.);if (true) { 
+discard;}}
+#endif
+`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.ShadersStore[name] = shader;
+/** @internal */
+const minmaxReduxPixelShader = { name, shader };
+//# sourceMappingURL=minmaxRedux.fragment.js.map
+
+/***/ }),
+
 /***/ 9820:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -3084,6 +3892,32 @@ _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.Shader
 /** @internal */
 const passCubePixelShader = { name, shader };
 //# sourceMappingURL=passCube.fragment.js.map
+
+/***/ }),
+
+/***/ 6612:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   postprocessVertexShader: () => (/* binding */ postprocessVertexShader)
+/* harmony export */ });
+/* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9610);
+// Do not edit.
+
+const name = "postprocessVertexShader";
+const shader = `attribute vec2 position;uniform vec2 scale;varying vec2 vUV;const vec2 madd=vec2(0.5,0.5);
+#define CUSTOM_VERTEX_DEFINITIONS
+void main(void) {
+#define CUSTOM_VERTEX_MAIN_BEGIN
+vUV=(position*madd+madd)*scale;gl_Position=vec4(position,0.0,1.0);
+#define CUSTOM_VERTEX_MAIN_END
+}`;
+// Sideeffect
+_Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.ShadersStore[name] = shader;
+/** @internal */
+const postprocessVertexShader = { name, shader };
+//# sourceMappingURL=postprocess.vertex.js.map
 
 /***/ }),
 
