@@ -1,31 +1,14 @@
-import { Engine } from "@babylonjs/core/Engines/engine";
+import type { ISceneBuilder } from "./baseRuntime";
+import { buildSceneEntry } from "./buildSceneEntry";
 
-import { BaseRuntime } from "./baseRuntime";
-import { SceneBuilder } from "./Scene/multiPhysicsRuntimeShadowTestScene";
-
-await new Promise(resolve => window.onload = resolve);
-
-const canvas = document.createElement("canvas");
-canvas.style.width = "100%";
-canvas.style.height = "100%";
-canvas.style.display = "block";
-document.body.appendChild(canvas);
-
-const engine = new Engine(canvas, false, {
-    preserveDrawingBuffer: false,
-    stencil: true,
-    antialias: true,
-    alpha: false,
-    premultipliedAlpha: false,
-    powerPreference: "high-performance",
-    doNotHandleTouchAction: false,
-    doNotHandleContextLost: true,
-    audioEngine: false,
-    disableWebGL2Support: false
-}, true);
-
-BaseRuntime.Create({
-    canvas,
-    engine,
-    sceneBuilder: new SceneBuilder()
-}).then(runtime => runtime.run());
+const scenes: [string, () => Promise<ISceneBuilder>][] = [
+    ["constraint test scene", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/constraintTestScene")).SceneBuilder()],
+    ["multi physics runtime shadow test scene", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiPhysicsRuntimeShadowTestScene")).SceneBuilder()],
+    ["multi physics runtime test scene", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiPhysicsRuntimeTestScene")).SceneBuilder()],
+    ["multi world600 body ammo bench", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiWorld600BodyAmmoBench")).SceneBuilder()],
+    ["multi world600 body bench", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiWorld600BodyBench")).SceneBuilder()],
+    ["multi world600 body bundle bench", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/multiWorld600BodyBundleBench")).SceneBuilder()],
+    ["physics runtime test scene", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/physicsRuntimeTestScene")).SceneBuilder()],
+    ["thread count bench", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/threadCountBench")).SceneBuilder()]
+];
+buildSceneEntry(scenes);
