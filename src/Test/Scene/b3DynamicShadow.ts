@@ -15,13 +15,15 @@ import { Scene } from "@babylonjs/core/scene";
 
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
-import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
-import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
+import { MultiPhysicsRuntime } from "@/Runtime/Impl/multiPhysicsRuntime";
+import { PhysicsRuntimeEvaluationType } from "@/Runtime/Impl/physicsRuntimeEvaluationType";
+import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
 import { MotionType } from "@/Runtime/motionType";
-import { MultiPhysicsWorld } from "@/Runtime/multiPhysicsWorld";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
 import { RigidBody } from "@/Runtime/rigidBody";
+import { RigidBodyBundle } from "@/Runtime/rigidBodyBundle";
 import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
+import { RigidBodyConstructionInfoList } from "@/Runtime/rigidBodyConstructionInfoList";
 
 import type { ISceneBuilder } from "../baseRuntime";
 import { BenchHelper } from "../Util/benchHelper";
@@ -64,15 +66,12 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
 
-        // Inspector.Show(scene, { enablePopup: false });
-
-        const threadCount = parseInt(prompt("Thread count", "2")!);
-        console.log("Thread count:", threadCount);
-
-        const wasmInstance = threadCount === 1
-            ? await getBulletWasmInstance(new BulletWasmInstanceTypeSR())
-            : await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
-        const world = new MultiPhysicsWorld(wasmInstance);
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 4);
+        const runtime = new MultiPhysicsRuntime(wasmInstance, {
+            allowDynamicShadow: true,
+            preserveBackBuffer: true
+        });
+        runtime.evaluationType = PhysicsRuntimeEvaluationType.Immediate;
 
         const matrix = new Matrix();
 
@@ -82,15 +81,15 @@ export class SceneBuilder implements ISceneBuilder {
             shadowGenerator.addShadowCaster(ground);
             ground.receiveShadows = true;
 
-            const groundShape = new PhysicsStaticPlaneShape(wasmInstance, new Vector3(0, 0, -1), 0);
+            const groundShape = new PhysicsStaticPlaneShape(runtime, new Vector3(0, 0, -1), 0);
             const groundRbInfo = new RigidBodyConstructionInfo(wasmInstance);
             groundRbInfo.shape = groundShape;
             Matrix.FromQuaternionToRef(ground.rotationQuaternion, matrix);
             groundRbInfo.setInitialTransform(matrix);
             groundRbInfo.motionType = MotionType.Static;
 
-            const groundRigidBody = new RigidBody(wasmInstance, groundRbInfo);
-            world.addRigidBodyToGlobal(groundRigidBody);
+            const groundRigidBody = new RigidBody(runtime, groundRbInfo);
+            runtime.addRigidBodyToGlobal(groundRigidBody);
         }
 
         const rbCount = 256 * 2;
@@ -98,43 +97,63 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
 
-        const rowCount = 4;
-        const columnCount = 8;
-        const margin = 60;
+        const rowCount = 2;
+        const columnCount = 2;
+        const margin = 20;
 
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
+        const rigidbodyColorBuffer = new Float32Array(rbCount * 4 * rowCount * columnCount);
+        const colorTable = [
+            "#ff0000",
+            "#00ff00",
+            "#0000ff",
+            "#ffff00",
+            "#ff00ff",
+            "#00ffff"
+        ];
+        for (let i = 0; i < rowCount * columnCount; ++i) {
+            const color = Color4.FromHexString(colorTable[i % colorTable.length]);
+            for (let j = 0; j < rbCount; ++j) {
+                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 0] = color.r;
+                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 1] = color.g;
+                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 2] = color.b;
+                rigidbodyColorBuffer[i * rbCount * 4 + j * 4 + 3] = color.a;
+            }
+        }
+        baseBox.thinInstanceSetBuffer("color", rigidbodyColorBuffer, 4, false);
 
-        const boxShape = new PhysicsBoxShape(wasmInstance, new Vector3(1, 1, 1));
+        const boxShape = new PhysicsBoxShape(runtime, new Vector3(1, 1, 1));
 
-        const bodies: RigidBody[] = [];
+        const bundles: RigidBodyBundle[] = [];
 
         for (let i = 0; i < rowCount; ++i) for (let j = 0; j < columnCount; ++j) {
             const worldId = i * columnCount + j;
             const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
             const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
 
-            const rbInfoList: RigidBodyConstructionInfo[] = [];
+            const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
             for (let k = 0; k < rbCount; ++k) {
-                const rbInfo = new RigidBodyConstructionInfo(wasmInstance);
-                rbInfo.shape = boxShape;
+                rbInfoList.setShape(k, boxShape);
                 const initialTransform = Matrix.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
-                rbInfo.setInitialTransform(initialTransform);
-                rbInfo.friction = 1.0;
-                rbInfo.linearDamping = 0.3;
-                rbInfo.angularDamping = 0.3;
-                rbInfoList.push(rbInfo);
+                rbInfoList.setInitialTransform(k, initialTransform);
+                rbInfoList.setFriction(k, 1.0);
+                rbInfoList.setLinearDamping(k, 0.3);
+                rbInfoList.setAngularDamping(k, 0.3);
             }
-            for (let k = 0; k < rbCount; ++k) {
-                const rbInfo = rbInfoList[k];
-                const rigidBody = new RigidBody(wasmInstance, rbInfo);
-                world.addRigidBody(rigidBody, worldId);
-                bodies.push(rigidBody);
+            const boxRigidBodyBundle = new RigidBodyBundle(runtime, rbInfoList);
+            runtime.addRigidBodyBundle(boxRigidBodyBundle, worldId);
+
+            for (let k = 0; k < rowCount * columnCount; ++k) {
+                if (k === worldId) {
+                    continue;
+                }
+                runtime.addRigidBodyBundleShadow(boxRigidBodyBundle, k);
             }
 
             for (let k = 0; k < rbCount; k += 2) {
-                const indices = [worldId * rbCount + k, worldId * rbCount + k + 1] as const;
-                const constraint = new Generic6DofSpringConstraint(wasmInstance, bodies[indices[0]], bodies[indices[1]], Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
+                const indices = [k, k + 1] as const;
+                const constraint = new Generic6DofSpringConstraint(runtime, boxRigidBodyBundle, indices, Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
                 constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
                 constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
                 constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));
@@ -144,35 +163,29 @@ export class SceneBuilder implements ISceneBuilder {
                     constraint.setStiffness(l, 100);
                     constraint.setDamping(l, 1);
                 }
-                world.addConstraint(constraint, worldId, false);
+                runtime.addConstraint(constraint, worldId, false);
             }
+
+            bundles.push(boxRigidBodyBundle);
         }
 
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
 
-        const benchHelper = new BenchHelper(() => {
-            world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bodies.length; ++i) {
-                const body = bodies[i];
-                const startOffset = i * 16;
-                body.getTransformMatrixToRef(matrix);
-                matrix.copyToArray(rigidbodyMatrixBuffer, startOffset);
+        runtime.onTickObservable.add(() => {
+            for (let i = 0; i < bundles.length; ++i) {
+                bundles[i].getTransformMatricesToArray(rigidbodyMatrixBuffer, i * rbCount * 16);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
+        });
+
+        const benchHelper = new BenchHelper(() => {
+            runtime.afterAnimations(1 / 60 * 1000);
             scene.render();
         });
+        benchHelper.sampleCount = 5000;
         benchHelper.runBench();
 
-        scene.onBeforeRenderObservable.add(() => {
-            world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bodies.length; ++i) {
-                const body = bodies[i];
-                const startOffset = i * 16;
-                body.getTransformMatrixToRef(matrix);
-                matrix.copyToArray(rigidbodyMatrixBuffer, startOffset);
-            }
-            baseBox.thinInstanceBufferUpdated("matrix");
-        });
+        runtime.register(scene);
 
         return scene;
     }

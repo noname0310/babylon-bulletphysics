@@ -6,72 +6,67 @@
 class bwPhysicsWorld final
 {
 private:
-    btDbvtBroadphase* m_broadphase;
-    btDefaultCollisionConfiguration* m_collisionConfig;
-    btCollisionDispatcher* m_dispatcher;
-    btSequentialImpulseConstraintSolver* m_solver;
-    btDiscreteDynamicsWorld* m_world;
+    btDbvtBroadphase m_broadphase;
+    btDefaultCollisionConfiguration m_collisionConfig;
+    btCollisionDispatcher m_dispatcher;
+    btSequentialImpulseConstraintSolver m_solver;
+    btDiscreteDynamicsWorld m_world;
 
 public:
-    bwPhysicsWorld()
+    bwPhysicsWorld() : m_broadphase(), m_collisionConfig(), m_dispatcher(&m_collisionConfig), m_solver(), m_world(&m_dispatcher, &m_broadphase, &m_solver, &m_collisionConfig)
     {
-        m_broadphase = new btDbvtBroadphase();
-        m_collisionConfig = new btDefaultCollisionConfiguration();
-        m_dispatcher = new btCollisionDispatcher(m_collisionConfig);
-        m_solver = new btSequentialImpulseConstraintSolver();
-        m_world = new btDiscreteDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfig);
     }
 
     bwPhysicsWorld(bwPhysicsWorld const&) = delete;
     bwPhysicsWorld& operator=(bwPhysicsWorld const&) = delete;
 
-    ~bwPhysicsWorld()
-    {
-        delete m_world;
-        delete m_solver;
-        delete m_dispatcher;
-        delete m_collisionConfig;
-        delete m_broadphase;
-    }
+    // ~bwPhysicsWorld()
+    // {
+    //     delete m_world;
+    //     delete m_solver;
+    //     delete m_dispatcher;
+    //     delete m_collisionConfig;
+    //     delete m_broadphase;
+    // }
     
     void setGravity(btScalar x, btScalar y, btScalar z)
     {
-        m_world->setGravity(btVector3(x, y, z));
+        m_world.setGravity(btVector3(x, y, z));
     }
 
     void stepSimulation(btScalar timeStep, int maxSubSteps, btScalar fixedTimeStep)
     {
-        m_world->stepSimulation(timeStep, maxSubSteps, fixedTimeStep);
+        m_world.stepSimulation(timeStep, maxSubSteps, fixedTimeStep);
     }
 
     void addRigidBody(bwRigidBody* body)
     {
-        m_world->addRigidBody(body->getBody(), body->getCollisionGroup(), body->getCollisionMask());
+        m_world.addRigidBody(body->getBody(), body->getCollisionGroup(), body->getCollisionMask());
     }
 
     void removeRigidBody(bwRigidBody* body)
     {
-        m_world->removeRigidBody(body->getBody());
+        m_world.removeRigidBody(body->getBody());
     }
 
     void addRigidBodyShadow(bwRigidBodyShadow* shadow)
     {
-        m_world->addRigidBody(shadow->getBody(), shadow->getCollisionGroup(), shadow->getCollisionMask());
+        m_world.addRigidBody(shadow->getBody(), shadow->getCollisionGroup(), shadow->getCollisionMask());
     }
 
     void removeRigidBodyShadow(bwRigidBodyShadow* shadow)
     {
-        m_world->removeRigidBody(shadow->getBody());
+        m_world.removeRigidBody(shadow->getBody());
     }
 
     void addConstraint(btTypedConstraint* constraint, bool disableCollisionsBetweenLinkedBodies)
     {
-        m_world->addConstraint(constraint, disableCollisionsBetweenLinkedBodies);
+        m_world.addConstraint(constraint, disableCollisionsBetweenLinkedBodies);
     }
 
     void removeConstraint(btTypedConstraint* constraint)
     {
-        m_world->removeConstraint(constraint);
+        m_world.removeConstraint(constraint);
     }
 };
 

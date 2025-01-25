@@ -1,8 +1,12 @@
 import type { Matrix } from "@babylonjs/core/Maths/math.vector";
-import type { Nullable } from "@babylonjs/core/types";
+import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import { Constants } from "./constants";
+import type { IRigidBodyImpl } from "./Impl/IRigidBodyImpl";
+import type { IRuntime } from "./Impl/IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
+import { MotionType } from "./motionType";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfo } from "./rigidBodyConstructionInfo";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
@@ -29,6 +33,7 @@ class RigidBodyInner {
     private _ptr: number;
     private _shapeReference: Nullable<PhysicsShape>;
     private _referenceCount: number;
+    private _shadowCount: number;
 
     public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, shapeReference: PhysicsShape) {
         this._wasmInstance = wasmInstance;
@@ -36,6 +41,7 @@ class RigidBodyInner {
         this._shapeReference = shapeReference;
         shapeReference.addReference();
         this._referenceCount = 0;
+        this._shadowCount = 0;
     }
 
     public dispose(): void {
@@ -43,11 +49,17 @@ class RigidBodyInner {
             throw new Error("Cannot dispose rigid body while it still has references");
         }
 
+        if (this._shadowCount > 0) {
+            throw new Error("Cannot dispose rigid body while it still has shadows");
+        }
+
         if (this._ptr === 0) {
             return;
         }
 
+        // this operation is thread-safe because the rigid body is not belong to any physics world
         this._wasmInstance.deref()?.destroyRigidBody(this._ptr);
+
         this._ptr = 0;
         this._shapeReference!.removeReference();
         this._shapeReference = null;
@@ -64,6 +76,22 @@ class RigidBodyInner {
     public removeReference(): void {
         this._referenceCount -= 1;
     }
+
+    public get hasReferences(): boolean {
+        return 0 < this._referenceCount;
+    }
+
+    public addShadow(): void {
+        this._shadowCount += 1;
+    }
+
+    public removeShadow(): void {
+        this._shadowCount -= 1;
+    }
+
+    public get hasShadows(): boolean {
+        return 0 < this._shadowCount;
+    }
 }
 
 function rigidBodyFinalizer(inner: RigidBodyInner): void {
@@ -73,19 +101,23 @@ function rigidBodyFinalizer(inner: RigidBodyInner): void {
 const physicsRigidBodyRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<RigidBodyInner>>();
 
 export class RigidBody {
-    private readonly _wasmInstance: BulletWasmInstance;
+    public readonly runtime: IRuntime;
 
     private readonly _motionStatePtr: IWasmTypedArray<Float32Array>;
+    private _bufferedMotionStatePtr: IWasmTypedArray<Float32Array>;
 
     private readonly _inner: RigidBodyInner;
 
     private _worldReference: Nullable<object>;
 
-    public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfo);
+    public impl: IRigidBodyImpl;
+    public readonly isDynamic: boolean;
 
-    public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfoList, n: number);
+    public constructor(runtime: IRuntime, info: RigidBodyConstructionInfo);
 
-    public constructor(wasmInstance: BulletWasmInstance, info: RigidBodyConstructionInfo | RigidBodyConstructionInfoList, n?: number) {
+    public constructor(runtime: IRuntime, info: RigidBodyConstructionInfoList, n: number);
+
+    public constructor(runtime: IRuntime, info: RigidBodyConstructionInfo | RigidBodyConstructionInfoList, n?: number) {
         const infoPtr = n !== undefined ? (info as RigidBodyConstructionInfoList).getPtr(n) : (info as RigidBodyConstructionInfo).ptr;
 
         if (infoPtr === 0) {
@@ -95,21 +127,24 @@ export class RigidBody {
         let shape: Nullable<PhysicsShape>;
         if (n !== undefined) {
             shape = (info as RigidBodyConstructionInfoList).getShape(n);
-            if (shape === null) {
-                throw new Error("Cannot create rigid body with null shape");
-            }
         } else {
             shape = (info as RigidBodyConstructionInfo).shape;
-            if (shape === null) {
-                throw new Error("Cannot create rigid body with null shape");
-            }
+        }
+        if (shape === null) {
+            throw new Error("Cannot create rigid body with null shape");
+        }
+        if (shape.runtime !== runtime) {
+            throw new Error("Cannot create rigid body with shapes from different runtimes");
         }
 
-        this._wasmInstance = wasmInstance;
+        this.runtime = runtime;
+        const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBody(infoPtr);
         const motionStatePtr = wasmInstance.rigidBodyGetMotionStatePtr(ptr);
-        this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, 80 / Float32Array.BYTES_PER_ELEMENT);
-        this._inner = new RigidBodyInner(new WeakRef(wasmInstance), ptr, shape);
+        this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        const bufferedMotionStatePtr = wasmInstance.rigidBodyGetBufferedMotionStatePtr(ptr);
+        this._bufferedMotionStatePtr = wasmInstance.createTypedArray(Float32Array, bufferedMotionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        this._inner = new RigidBodyInner(new WeakRef(runtime.wasmInstance), ptr, shape);
         this._worldReference = null;
 
         let registry = physicsRigidBodyRegistryMap.get(wasmInstance);
@@ -119,6 +154,11 @@ export class RigidBody {
         }
 
         registry.register(this, this._inner, this);
+
+        this.impl = runtime.createRigidBodyImpl();
+        this.isDynamic = n !== undefined
+            ? (info as RigidBodyConstructionInfoList).getMotionType(n) === MotionType.Dynamic
+            : (info as RigidBodyConstructionInfo).motionType === MotionType.Dynamic;
     }
 
     public dispose(): void {
@@ -128,22 +168,55 @@ export class RigidBody {
 
         this._inner.dispose();
 
-        const registry = physicsRigidBodyRegistryMap.get(this._wasmInstance);
+        const registry = physicsRigidBodyRegistryMap.get(this.runtime.wasmInstance);
         registry?.unregister(this);
     }
 
+    /**
+     * @internal
+     */
     public get ptr(): number {
         return this._inner.ptr;
     }
 
+    /**
+     * @internal
+     */
     public addReference(): void {
         this._inner.addReference();
     }
 
+    /**
+     * @internal
+     */
     public removeReference(): void {
         this._inner.removeReference();
     }
 
+    /**
+     * @internal
+     */
+    public addShadowReference(): void {
+        this._inner.addShadow();
+    }
+
+    /**
+     * @internal
+     */
+    public removeShadowReference(): void {
+        this._inner.removeShadow();
+    }
+
+    /**
+     * @internal
+     */
+    public get hasShadows(): boolean {
+        return this._inner.hasShadows;
+    }
+
+    /**
+     * @internal
+     */
     public setWorldReference(worldReference: Nullable<object>): void {
         if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add rigid body to multiple worlds");
@@ -159,8 +232,25 @@ export class RigidBody {
         }
     }
 
+    /**
+     * @internal
+     */
     public getWorldReference(): Nullable<object> {
         return this._worldReference;
+    }
+
+    /**
+     * @internal
+     */
+    public updateBufferedMotionState(forceUseFrontBuffer: boolean): void {
+        this._nullCheck();
+        if (forceUseFrontBuffer) {
+            const motionStatePtr = this.runtime.wasmInstance.rigidBodyGetMotionStatePtr(this._inner.ptr);
+            this._bufferedMotionStatePtr = this.runtime.wasmInstance.createTypedArray(Float32Array, motionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        } else {
+            const bufferedMotionStatePtr = this.runtime.wasmInstance.rigidBodyGetBufferedMotionStatePtr(this._inner.ptr);
+            this._bufferedMotionStatePtr = this.runtime.wasmInstance.createTypedArray(Float32Array, bufferedMotionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        }
     }
 
     private _nullCheck(): void {
@@ -171,39 +261,73 @@ export class RigidBody {
 
     public makeKinematic(): void {
         this._nullCheck();
-        this._wasmInstance.rigidBodyMakeKinematic(this._inner.ptr);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyMakeKinematic(this._inner.ptr);
     }
 
     public restoreDynamic(): void {
         this._nullCheck();
-        this._wasmInstance.rigidBodyRestoreDynamic(this._inner.ptr);
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyRestoreDynamic(this._inner.ptr);
     }
 
     public getTransformMatrixToRef(result: Matrix): Matrix {
         this._nullCheck();
-        const motionStatePtr = this._motionStatePtr.array;
-        result.setRowFromFloats(0, motionStatePtr[4], motionStatePtr[8], motionStatePtr[12], 0);
-        result.setRowFromFloats(1, motionStatePtr[5], motionStatePtr[9], motionStatePtr[13], 0);
-        result.setRowFromFloats(2, motionStatePtr[6], motionStatePtr[10], motionStatePtr[14], 0);
-        result.setRowFromFloats(3, motionStatePtr[16], motionStatePtr[17], motionStatePtr[18], 1);
-        return result;
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+
+        const m = this._bufferedMotionStatePtr.array;
+        return result.set(
+            m[4], m[8], m[12], 0,
+            m[5], m[9], m[13], 0,
+            m[6], m[10], m[14], 0,
+            m[16], m[17], m[18], 1
+        );
+    }
+
+    public getTransformMatrixToArray(result: Float32Array, offset: number = 0): void {
+        this._nullCheck();
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+
+        const m = this._bufferedMotionStatePtr.array;
+
+        result[offset] = m[4];
+        result[offset + 1] = m[8];
+        result[offset + 2] = m[12];
+        result[offset + 3] = 0;
+
+        result[offset + 4] = m[5];
+        result[offset + 5] = m[9];
+        result[offset + 6] = m[13];
+        result[offset + 7] = 0;
+
+        result[offset + 8] = m[6];
+        result[offset + 9] = m[10];
+        result[offset + 10] = m[14];
+        result[offset + 11] = 0;
+
+        result[offset + 12] = m[16];
+        result[offset + 13] = m[17];
+        result[offset + 14] = m[18];
+        result[offset + 15] = 1;
     }
 
     public setTransformMatrix(matrix: Matrix): void {
-        this._nullCheck();
-        const motionStatePtr = this._motionStatePtr.array;
-        motionStatePtr[4] = matrix.m[0];
-        motionStatePtr[8] = matrix.m[1];
-        motionStatePtr[12] = matrix.m[2];
-        motionStatePtr[5] = matrix.m[4];
-        motionStatePtr[9] = matrix.m[5];
-        motionStatePtr[13] = matrix.m[6];
-        motionStatePtr[6] = matrix.m[8];
-        motionStatePtr[10] = matrix.m[9];
-        motionStatePtr[14] = matrix.m[10];
+        this.setTransformMatrixFromArray(matrix.m, 0);
+    }
 
-        motionStatePtr[16] = matrix.m[12];
-        motionStatePtr[17] = matrix.m[13];
-        motionStatePtr[18] = matrix.m[14];
+    public setTransformMatrixFromArray(array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+        this._nullCheck();
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        this.impl.setTransformMatrixFromArray(this._motionStatePtr, array, offset);
     }
 }

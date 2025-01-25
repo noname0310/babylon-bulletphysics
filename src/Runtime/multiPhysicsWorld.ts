@@ -2,11 +2,12 @@ import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { Constraint } from "./constraint";
+import type { IRuntime } from "./Impl/IRuntime";
 import type { RigidBody } from "./rigidBody";
 import type { RigidBodyBundle } from "./rigidBodyBundle";
 
 class MultiPhysicsWorldInner {
-    private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
+    private readonly _runtime: WeakRef<IRuntime>;
     private _ptr: number;
 
     private readonly _rigidBodyReferences: Map<RigidBody, number>; // [RigidBody, worldId]
@@ -20,8 +21,10 @@ class MultiPhysicsWorldInner {
 
     private readonly _constraintReferences: Set<Constraint>;
 
-    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number) {
-        this._wasmInstance = wasmInstance;
+    private _referenceCount: number;
+
+    public constructor(runtime: WeakRef<IRuntime>, ptr: number) {
+        this._runtime = runtime;
         this._ptr = ptr;
 
         this._rigidBodyReferences = new Map<RigidBody, number>();
@@ -34,14 +37,24 @@ class MultiPhysicsWorldInner {
         this._rigidBodyBundleShadowReferences = new Map<number, Set<RigidBodyBundle>>();
 
         this._constraintReferences = new Set<Constraint>();
+
+        this._referenceCount = 0;
     }
 
     public dispose(): void {
+        if (this._referenceCount > 0) {
+            throw new Error("Cannot dispose physics world while it still has references");
+        }
+
         if (this._ptr === 0) {
             return;
         }
 
-        this._wasmInstance.deref()?.destroyMultiPhysicsWorld(this._ptr);
+        const runtime = this._runtime.deref();
+        if (runtime !== undefined) {
+            runtime.lock.wait();
+            runtime.wasmInstance.destroyMultiPhysicsWorld(this._ptr);
+        }
         this._ptr = 0;
 
         for (const [rigidBody, _] of this._rigidBodyReferences) {
@@ -86,6 +99,14 @@ class MultiPhysicsWorldInner {
 
     public get ptr(): number {
         return this._ptr;
+    }
+
+    public addReference(): void {
+        this._referenceCount += 1;
+    }
+
+    public removeReference(): void {
+        this._referenceCount -= 1;
     }
 
     public addRigidBodyReference(rigidBody: RigidBody, worldId: number): boolean {
@@ -292,21 +313,21 @@ function multiPhysicsWorldFinalizer(inner: MultiPhysicsWorldInner): void {
 const multiPhysicsWorldRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<MultiPhysicsWorldInner>>();
 
 export class MultiPhysicsWorld {
-    private readonly _wasmInstance: BulletWasmInstance;
+    private readonly _runtime: IRuntime;
 
     private readonly _inner: MultiPhysicsWorldInner;
 
-    public constructor(wasmInstance: BulletWasmInstance) {
-        this._wasmInstance = wasmInstance;
+    public constructor(runtime: IRuntime, allowDynamicShadow: boolean) {
+        this._runtime = runtime;
 
-        const ptr = wasmInstance.createMultiPhysicsWorld();
+        const ptr = runtime.wasmInstance.createMultiPhysicsWorld(allowDynamicShadow);
 
-        this._inner = new MultiPhysicsWorldInner(new WeakRef(wasmInstance), ptr);
+        this._inner = new MultiPhysicsWorldInner(new WeakRef(runtime), ptr);
 
-        let registry = multiPhysicsWorldRegistryMap.get(wasmInstance);
+        let registry = multiPhysicsWorldRegistryMap.get(runtime.wasmInstance);
         if (registry === undefined) {
             registry = new FinalizationRegistry(multiPhysicsWorldFinalizer);
-            multiPhysicsWorldRegistryMap.set(wasmInstance, registry);
+            multiPhysicsWorldRegistryMap.set(runtime.wasmInstance, registry);
         }
 
         registry.register(this, this._inner, this);
@@ -319,12 +340,29 @@ export class MultiPhysicsWorld {
 
         this._inner.dispose();
 
-        const registry = multiPhysicsWorldRegistryMap.get(this._wasmInstance);
+        const registry = multiPhysicsWorldRegistryMap.get(this._runtime.wasmInstance);
         registry?.unregister(this);
     }
 
+    /**
+     * @internal
+     */
     public get ptr(): number {
         return this._inner.ptr;
+    }
+
+    /**
+     * @internal
+     */
+    public addReference(): void {
+        this._inner.addReference();
+    }
+
+    /**
+     * @internal
+     */
+    public removeReference(): void {
+        this._inner.removeReference();
     }
 
     private _nullCheck(): void {
@@ -335,54 +373,79 @@ export class MultiPhysicsWorld {
 
     public setGravity(gravity: Vector3): void {
         this._nullCheck();
-        this._wasmInstance.multiPhysicsWorldSetGravity(this._inner.ptr, gravity.x, gravity.y, gravity.z);
+        this._runtime.lock.wait();
+        this._runtime.wasmInstance.multiPhysicsWorldSetGravity(this._inner.ptr, gravity.x, gravity.y, gravity.z);
     }
 
     public stepSimulation(timeStep: number, maxSubSteps: number, fixedTimeStep: number): void {
         this._nullCheck();
-        this._wasmInstance.multiPhysicsWorldStepSimulation(this._inner.ptr, timeStep, maxSubSteps, fixedTimeStep);
+        this._runtime.lock.wait();
+        this._runtime.wasmInstance.multiPhysicsWorldStepSimulation(this._inner.ptr, timeStep, maxSubSteps, fixedTimeStep);
     }
 
     public addRigidBody(rigidBody: RigidBody, worldId: number): boolean {
+        if (rigidBody.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyReference(rigidBody, worldId)) {
-            this._wasmInstance.multiPhysicsWorldAddRigidBody(this._inner.ptr, worldId, rigidBody.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldAddRigidBody(this._inner.ptr, worldId, rigidBody.ptr);
             return true;
         }
         return false;
     }
 
     public removeRigidBody(rigidBody: RigidBody, worldId: number): boolean {
+        if (rigidBody.hasShadows) {
+            throw new Error("Cannot remove rigid body that has shadows");
+        }
         this._nullCheck();
         if (this._inner.removeRigidBodyReference(rigidBody)) {
-            this._wasmInstance.multiPhysicsWorldRemoveRigidBody(this._inner.ptr, worldId, rigidBody.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldRemoveRigidBody(this._inner.ptr, worldId, rigidBody.ptr);
             return true;
         }
         return false;
     }
 
     public addRigidBodyBundle(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
+        if (rigidBodyBundle.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body bundle from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleReference(rigidBodyBundle, worldId)) {
-            this._wasmInstance.multiPhysicsWorldAddRigidBodyBundle(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldAddRigidBodyBundle(this._inner.ptr, worldId, rigidBodyBundle.ptr);
             return true;
         }
         return false;
     }
 
     public removeRigidBodyBundle(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
+        if (rigidBodyBundle.hasShadows) {
+            throw new Error("Cannot remove rigid body bundle that has shadows");
+        }
         this._nullCheck();
         if (this._inner.removeRigidBodyBundleReference(rigidBodyBundle)) {
-            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyBundle(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldRemoveRigidBodyBundle(this._inner.ptr, worldId, rigidBodyBundle.ptr);
             return true;
         }
         return false;
     }
 
     public addRigidBodyToGlobal(rigidBody: RigidBody): boolean {
+        if (rigidBody.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body from a different runtime");
+        }
+        if (rigidBody.isDynamic) {
+            throw new Error("Cannot add dynamic rigid body to global");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyGlobalReference(rigidBody)) {
-            this._wasmInstance.multiPhysicsWorldAddRigidBodyToGlobal(this._inner.ptr, rigidBody.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldAddRigidBodyToGlobal(this._inner.ptr, rigidBody.ptr);
             return true;
         }
         return false;
@@ -391,16 +454,24 @@ export class MultiPhysicsWorld {
     public removeRigidBodyFromGlobal(rigidBody: RigidBody): boolean {
         this._nullCheck();
         if (this._inner.removeRigidBodyGlobalReference(rigidBody)) {
-            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyFromGlobal(this._inner.ptr, rigidBody.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldRemoveRigidBodyFromGlobal(this._inner.ptr, rigidBody.ptr);
             return true;
         }
         return false;
     }
 
     public addRigidBodyBundleToGlobal(rigidBodyBundle: RigidBodyBundle): boolean {
+        if (rigidBodyBundle.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body bundle from a different runtime");
+        }
+        if (rigidBodyBundle.isContainsDynamic) {
+            throw new Error("Cannot add dynamic rigid body bundle to global");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleGlobalReference(rigidBodyBundle)) {
-            this._wasmInstance.multiPhysicsWorldAddRigidBodyBundleToGlobal(this._inner.ptr, rigidBodyBundle.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldAddRigidBodyBundleToGlobal(this._inner.ptr, rigidBodyBundle.ptr);
             return true;
         }
         return false;
@@ -409,16 +480,25 @@ export class MultiPhysicsWorld {
     public removeRigidBodyBundleFromGlobal(rigidBodyBundle: RigidBodyBundle): boolean {
         this._nullCheck();
         if (this._inner.removeRigidBodyBundleGlobalReference(rigidBodyBundle)) {
-            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleFromGlobal(this._inner.ptr, rigidBodyBundle.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleFromGlobal(this._inner.ptr, rigidBodyBundle.ptr);
             return true;
         }
         return false;
     }
 
     public addRigidBodyShadow(rigidBody: RigidBody, worldId: number): boolean {
+        if (rigidBody.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body from a different runtime");
+        }
+        if (rigidBody.isDynamic && rigidBody.getWorldReference() === null) {
+            throw new Error("You must add dynamic rigid body first to the world before adding it as a shadow");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyShadowReference(rigidBody, worldId)) {
-            this._wasmInstance.multiPhysicsWorldAddRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldAddRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            rigidBody.addShadowReference();
             return true;
         }
         return false;
@@ -427,16 +507,26 @@ export class MultiPhysicsWorld {
     public removeRigidBodyShadow(rigidBody: RigidBody, worldId: number): boolean {
         this._nullCheck();
         if (this._inner.removeRigidBodyShadowReference(rigidBody, worldId)) {
-            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldRemoveRigidBodyShadow(this._inner.ptr, worldId, rigidBody.ptr);
+            rigidBody.removeShadowReference();
             return true;
         }
         return false;
     }
 
     public addRigidBodyBundleShadow(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
+        if (rigidBodyBundle.runtime !== this._runtime) {
+            throw new Error("Cannot add rigid body bundle from a different runtime");
+        }
+        if (rigidBodyBundle.isContainsDynamic && rigidBodyBundle.getWorldReference() === null) {
+            throw new Error("You must add dynamic rigid body bundle first to the world before adding it as a shadow");
+        }
         this._nullCheck();
         if (this._inner.addRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
-            this._wasmInstance.multiPhysicsWorldAddRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldAddRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            rigidBodyBundle.addShadowReference();
             return true;
         }
         return false;
@@ -445,16 +535,22 @@ export class MultiPhysicsWorld {
     public removeRigidBodyBundleShadow(rigidBodyBundle: RigidBodyBundle, worldId: number): boolean {
         this._nullCheck();
         if (this._inner.removeRigidBodyBundleShadowReference(rigidBodyBundle, worldId)) {
-            this._wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldRemoveRigidBodyBundleShadow(this._inner.ptr, worldId, rigidBodyBundle.ptr);
+            rigidBodyBundle.removeShadowReference();
             return true;
         }
         return false;
     }
 
     public addConstraint(constraint: Constraint, worldId: number, disableCollisionsBetweenLinkedBodies: boolean): boolean {
+        if (constraint.runtime !== this._runtime) {
+            throw new Error("Cannot add constraint from a different runtime");
+        }
         this._nullCheck();
         if (this._inner.addConstraintReference(constraint)) {
-            this._wasmInstance.multiPhysicsWorldAddConstraint(this._inner.ptr, worldId, constraint.ptr, disableCollisionsBetweenLinkedBodies);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldAddConstraint(this._inner.ptr, worldId, constraint.ptr, disableCollisionsBetweenLinkedBodies);
             return true;
         }
         return false;
@@ -463,7 +559,8 @@ export class MultiPhysicsWorld {
     public removeConstraint(constraint: Constraint, worldId: number): boolean {
         this._nullCheck();
         if (this._inner.removeConstraintReference(constraint)) {
-            this._wasmInstance.multiPhysicsWorldRemoveConstraint(this._inner.ptr, worldId, constraint.ptr);
+            this._runtime.lock.wait();
+            this._runtime.wasmInstance.multiPhysicsWorldRemoveConstraint(this._inner.ptr, worldId, constraint.ptr);
             return true;
         }
         return false;

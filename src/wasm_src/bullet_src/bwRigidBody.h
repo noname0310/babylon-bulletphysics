@@ -49,12 +49,10 @@ private:
     bwRigidBody* m_source;
     btRigidBody m_body;
 
-    btRigidBody::btRigidBodyConstructionInfo createRigidBodyConstructionInfo(bwRigidBody* source);
+    btRigidBody::btRigidBodyConstructionInfo createRigidBodyConstructionInfo(bwRigidBody* source, bwMotionState* motionState);
 
 public:
-    bwRigidBodyShadow(bwRigidBody* source) : m_source(source), m_body(createRigidBodyConstructionInfo(source))
-    {
-    }
+    bwRigidBodyShadow(bwRigidBody* source, bwMotionState* motionState);
 
     btRigidBody* getBody()
     {
@@ -64,6 +62,11 @@ public:
     const btRigidBody* getBody() const
     {
         return &m_body;
+    }
+
+    void setMotionState(bwMotionState* motionState)
+    {
+        m_body.setMotionState(motionState);
     }
 
     uint16_t getCollisionGroup() const;
@@ -204,16 +207,29 @@ public:
         // btAlignedObjectArray<bwRigidBodyShadow>& shadows = getShadowArray();
         // shadows.push_back(bwRigidBodyShadow(this));
         // return &shadows[shadows.size() - 1];
-        return new bwRigidBodyShadow(this);
+        return new bwRigidBodyShadow(this, this->m_motionState);
     }
 };
 
-btRigidBody::btRigidBodyConstructionInfo bwRigidBodyShadow::createRigidBodyConstructionInfo(bwRigidBody* source)
+bwRigidBodyShadow::bwRigidBodyShadow(bwRigidBody* source, bwMotionState* motionState) : m_source(source), m_body(createRigidBodyConstructionInfo(source, motionState))
+{
+    if (source->getCollisionFlags() & btCollisionObject::CF_STATIC_OBJECT)
+    {
+        m_body.setCollisionFlags(m_body.getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
+    }
+    else
+    {
+        m_body.setCollisionFlags(m_body.getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+        m_body.setActivationState(DISABLE_DEACTIVATION);
+    }
+}
+
+btRigidBody::btRigidBodyConstructionInfo bwRigidBodyShadow::createRigidBodyConstructionInfo(bwRigidBody* source, bwMotionState* motionState)
 {
     btRigidBody* sourceBody = source->getBody();
     btRigidBody::btRigidBodyConstructionInfo info(
         sourceBody->getMass(),
-        sourceBody->getMotionState(),
+        motionState,
         sourceBody->getCollisionShape(),
         sourceBody->getLocalInertia()
     );
@@ -268,10 +284,11 @@ extern "C" int bw_rigidbody_get_collision_flags(void* body)
     return b->getCollisionFlags();
 }
 
-extern "C" void* bw_create_rigidbody_shadow(void* body)
+extern "C" void* bw_create_rigidbody_shadow(void* body, void* motionState)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
-    bwRigidBodyShadow* shadow = new bwRigidBodyShadow(b);
+    bwMotionState* ms = static_cast<bwMotionState*>(motionState);
+    bwRigidBodyShadow* shadow = new bwRigidBodyShadow(b, ms);
     return shadow;
 }
 
@@ -279,4 +296,10 @@ extern "C" void bw_destroy_rigidbody_shadow(void* shadow)
 {
     bwRigidBodyShadow* s = static_cast<bwRigidBodyShadow*>(shadow);
     delete s;
+}
+
+extern "C" void bw_rigidbody_shadow_set_motion_state(void* shadow, void* motionState)
+{
+    bwRigidBodyShadow* s = static_cast<bwRigidBodyShadow*>(shadow);
+    s->setMotionState(static_cast<bwMotionState*>(motionState));
 }

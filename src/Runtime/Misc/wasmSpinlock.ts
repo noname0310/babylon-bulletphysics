@@ -1,9 +1,14 @@
+import type { IWasmSpinLock } from "./IWasmSpinLock";
 import type { IWasmTypedArray } from "./IWasmTypedArray";
+
+const enum SpinLockConstants {
+    Timeout = 10000, // 10 seconds
+}
 
 /**
  * Spinlock for WASM runtime synchronization
  */
-export class WasmSpinlock {
+export class WasmSpinlock implements IWasmSpinLock {
     private readonly _lock: IWasmTypedArray<Uint8Array>;
 
     /**
@@ -20,8 +25,11 @@ export class WasmSpinlock {
     public wait(): void {
         const lock = this._lock.array;
         // let locked = false;
-        // const lockStartTime = performance.now();
+        const lockStartTime = performance.now();
         while (Atomics.load(lock, 0) !== 0) {
+            if (performance.now() - lockStartTime > SpinLockConstants.Timeout) {
+                throw new Error("Spinlock timeout");
+            }
             // locked = true;
             // spin
         }

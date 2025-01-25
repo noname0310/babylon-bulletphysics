@@ -204,6 +204,9 @@ export class RigidBodyConstructionInfo {
         registry?.unregister(this);
     }
 
+    /**
+     * @internal
+     */
     public get ptr(): number {
         return this._inner.ptr;
     }

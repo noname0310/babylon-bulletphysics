@@ -2,10 +2,40 @@ import wasmPackPlugin from "@wasm-tool/wasm-pack-plugin";
 import compressionWebpackPlugin from "compression-webpack-plugin";
 import copyWebpackPlugin from "copy-webpack-plugin";
 import eslintPlugin from "eslint-webpack-plugin";
+import fs from "fs";
 import htmlWebpackPlugin from "html-webpack-plugin";
 import path from "path";
 import type webpack from "webpack";
+import type { WebpackPluginInstance } from "webpack";
 import type { Configuration as WebpackDevServerConfiguration } from "webpack-dev-server";
+
+const createSceneEntry = (path: string, sourceAbsolutePath: string, fileName: string, defaultSceneIndex?: number): WebpackPluginInstance => ({
+    apply(compiler: any): void {
+        compiler.hooks.compile.tap("Compile", (): void => {
+            if (fs.existsSync(fileName)) {
+                return;
+            }
+            let code = "import type { ISceneBuilder } from \"./baseRuntime\";\nimport { buildSceneEntry } from \"./buildSceneEntry\";\n\nconst scenes: [string, () => Promise<ISceneBuilder>][] = [\n";
+            const files = fs.readdirSync(path);
+            files.forEach((file): void => {
+                if (file.endsWith(".ts")) {
+                    const name = file.substring(0, file.length - 3);
+                    const spaceName = name.replace(/[A-Z]/g, (s): string => ` ${s.toLowerCase()}`);
+                    code += `    ["${spaceName}", async(): Promise<ISceneBuilder> => new (await import("${sourceAbsolutePath}/${name}")).SceneBuilder()],\n`;
+                }
+            });
+            if (files.length > 0) {
+                code = code.substring(0, code.length - 2);
+            }
+            if (defaultSceneIndex !== undefined) {
+                code += `\n];\nbuildSceneEntry(scenes, ${defaultSceneIndex});\n`;
+            } else {
+                code += "\n];\nbuildSceneEntry(scenes);\n";
+            }
+            fs.writeFileSync(fileName, code);
+        });
+    }
+});
 
 export default (env: any): webpack.Configuration & { devServer?: WebpackDevServerConfiguration } => ({
     entry: "./src/Test/index.ts",
@@ -91,6 +121,7 @@ export default (env: any): webpack.Configuration & { devServer?: WebpackDevServe
         __dirname: false
     },
     plugins: ([
+        createSceneEntry("./src/Test/Scene", "@/Test/Scene", "./src/Test/index.ts"),
         new htmlWebpackPlugin({
             template: "./src/Test/index.html"
         }),

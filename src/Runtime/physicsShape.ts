@@ -1,6 +1,7 @@
 import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import type { IRuntime } from "./Impl/IRuntime";
 
 class PhysicsShapeInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
@@ -22,7 +23,9 @@ class PhysicsShapeInner {
             return;
         }
 
+        // this operation is thread-safe because the physics shape is not belong to any physics world
         this._wasmInstance.deref()?.destroyShape(this._ptr);
+
         this._ptr = 0;
     }
 
@@ -46,17 +49,18 @@ function physicsShapeFinalizer(inner: PhysicsShapeInner): void {
 const physicsShapeRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<PhysicsShapeInner>>();
 
 export abstract class PhysicsShape {
-    protected readonly _wasmInstance: BulletWasmInstance;
+    public readonly runtime: IRuntime;
+
     protected readonly _inner: PhysicsShapeInner;
 
-    protected constructor(wasmInstance: BulletWasmInstance, ptr: number) {
-        this._wasmInstance = wasmInstance;
-        this._inner = new PhysicsShapeInner(new WeakRef(wasmInstance), ptr);
+    protected constructor(runtime: IRuntime, ptr: number) {
+        this.runtime = runtime;
+        this._inner = new PhysicsShapeInner(new WeakRef(runtime.wasmInstance), ptr);
 
-        let registry = physicsShapeRegistryMap.get(wasmInstance);
+        let registry = physicsShapeRegistryMap.get(runtime.wasmInstance);
         if (registry === undefined) {
             registry = new FinalizationRegistry(physicsShapeFinalizer);
-            physicsShapeRegistryMap.set(wasmInstance, registry);
+            physicsShapeRegistryMap.set(runtime.wasmInstance, registry);
         }
 
         registry.register(this, this._inner, this);
@@ -69,47 +73,56 @@ export abstract class PhysicsShape {
 
         this._inner.dispose();
 
-        const registry = physicsShapeRegistryMap.get(this._wasmInstance);
+        const registry = physicsShapeRegistryMap.get(this.runtime.wasmInstance);
         registry?.unregister(this);
     }
 
+    /**
+     * @internal
+     */
     public get ptr(): number {
         return this._inner.ptr;
     }
 
+    /**
+     * @internal
+     */
     public addReference(): void {
         this._inner.addReference();
     }
 
+    /**
+     * @internal
+     */
     public removeReference(): void {
         this._inner.removeReference();
     }
 }
 
 export class PhysicsBoxShape extends PhysicsShape {
-    public constructor(wasmInstance: BulletWasmInstance, size: Vector3) {
-        const ptr = wasmInstance.createBoxShape(size.x, size.y, size.z);
-        super(wasmInstance, ptr);
+    public constructor(runtime: IRuntime, size: Vector3) {
+        const ptr = runtime.wasmInstance.createBoxShape(size.x, size.y, size.z);
+        super(runtime, ptr);
     }
 }
 
 export class PhysicsSphereShape extends PhysicsShape {
-    public constructor(wasmInstance: BulletWasmInstance, radius: number) {
-        const ptr = wasmInstance.createSphereShape(radius);
-        super(wasmInstance, ptr);
+    public constructor(runtime: IRuntime, radius: number) {
+        const ptr = runtime.wasmInstance.createSphereShape(radius);
+        super(runtime, ptr);
     }
 }
 
 export class PhysicsCapsuleShape extends PhysicsShape {
-    public constructor(wasmInstance: BulletWasmInstance, radius: number, height: number) {
-        const ptr = wasmInstance.createCapsuleShape(radius, height);
-        super(wasmInstance, ptr);
+    public constructor(runtime: IRuntime, radius: number, height: number) {
+        const ptr = runtime.wasmInstance.createCapsuleShape(radius, height);
+        super(runtime, ptr);
     }
 }
 
 export class PhysicsStaticPlaneShape extends PhysicsShape {
-    public constructor(wasmInstance: BulletWasmInstance, normal: Vector3, planeConstant: number) {
-        const ptr = wasmInstance.createStaticPlaneShape(normal.x, normal.y, normal.z, planeConstant);
-        super(wasmInstance, ptr);
+    public constructor(runtime: IRuntime, normal: Vector3, planeConstant: number) {
+        const ptr = runtime.wasmInstance.createStaticPlaneShape(normal.x, normal.y, normal.z, planeConstant);
+        super(runtime, ptr);
     }
 }

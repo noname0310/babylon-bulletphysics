@@ -15,9 +15,9 @@ import { Scene } from "@babylonjs/core/scene";
 
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
+import { NullPhysicsRuntime } from "@/Runtime/Impl/nullPhysicsRuntime";
 import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
 import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
-// import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
 import { MotionType } from "@/Runtime/motionType";
 import { MultiPhysicsWorld } from "@/Runtime/multiPhysicsWorld";
 import { PhysicsBoxShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
@@ -75,7 +75,8 @@ export class SceneBuilder implements ISceneBuilder {
         const wasmInstance = threadCount === 1
             ? await getBulletWasmInstance(new BulletWasmInstanceTypeSR())
             : await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
-        const world = new MultiPhysicsWorld(wasmInstance);
+        const runtime = new NullPhysicsRuntime(wasmInstance);
+        const world = new MultiPhysicsWorld(runtime, true);
 
         const matrix = new Matrix();
 
@@ -85,14 +86,14 @@ export class SceneBuilder implements ISceneBuilder {
             shadowGenerator.addShadowCaster(ground);
             ground.receiveShadows = true;
 
-            const groundShape = new PhysicsStaticPlaneShape(wasmInstance, new Vector3(0, 0, -1), 0);
+            const groundShape = new PhysicsStaticPlaneShape(runtime, new Vector3(0, 0, -1), 0);
             const groundRbInfo = new RigidBodyConstructionInfo(wasmInstance);
             groundRbInfo.shape = groundShape;
             Matrix.FromQuaternionToRef(ground.rotationQuaternion, matrix);
             groundRbInfo.setInitialTransform(matrix);
             groundRbInfo.motionType = MotionType.Static;
 
-            const groundRigidBody = new RigidBody(wasmInstance, groundRbInfo);
+            const groundRigidBody = new RigidBody(runtime, groundRbInfo);
             world.addRigidBodyToGlobal(groundRigidBody);
         }
 
@@ -102,13 +103,13 @@ export class SceneBuilder implements ISceneBuilder {
         baseBox.receiveShadows = true;
 
         const rowCount = 4;
-        const columnCount = 2;
+        const columnCount = 8;
         const margin = 60;
 
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);
         baseBox.thinInstanceSetBuffer("matrix", rigidbodyMatrixBuffer, 16, false);
 
-        const boxShape = new PhysicsBoxShape(wasmInstance, new Vector3(1, 1, 1));
+        const boxShape = new PhysicsBoxShape(runtime, new Vector3(1, 1, 1));
 
         const bundles: RigidBodyBundle[] = [];
 
@@ -118,28 +119,28 @@ export class SceneBuilder implements ISceneBuilder {
             const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
 
             const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
-            for (let i = 0; i < rbCount; ++i) {
-                rbInfoList.setShape(i, boxShape);
-                const initialTransform = Matrix.TranslationToRef(xOffset, 1 + i * 2, zOffset, matrix);
-                rbInfoList.setInitialTransform(i, initialTransform);
-                rbInfoList.setFriction(i, 1.0);
-                rbInfoList.setLinearDamping(i, 0.3);
-                rbInfoList.setAngularDamping(i, 0.3);
+            for (let k = 0; k < rbCount; ++k) {
+                rbInfoList.setShape(k, boxShape);
+                const initialTransform = Matrix.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
+                rbInfoList.setInitialTransform(k, initialTransform);
+                rbInfoList.setFriction(k, 1.0);
+                rbInfoList.setLinearDamping(k, 0.3);
+                rbInfoList.setAngularDamping(k, 0.3);
             }
-            const boxRigidBodyBundle = new RigidBodyBundle(wasmInstance, rbInfoList);
+            const boxRigidBodyBundle = new RigidBodyBundle(runtime, rbInfoList);
             world.addRigidBodyBundle(boxRigidBodyBundle, worldId);
 
-            for (let i = 0; i < rbCount; i += 2) {
-                const indices = [i, i + 1] as const;
-                const constraint = new Generic6DofSpringConstraint(wasmInstance, boxRigidBodyBundle, indices, Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
+            for (let k = 0; k < rbCount; k += 2) {
+                const indices = [k, k + 1] as const;
+                const constraint = new Generic6DofSpringConstraint(runtime, boxRigidBodyBundle, indices, Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
                 constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
                 constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
                 constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));
                 constraint.setAngularUpperLimit(new Vector3(0, 0, 0));
-                for (let i = 0; i < 6; ++i) {
-                    constraint.enableSpring(i, true);
-                    constraint.setStiffness(i, 100);
-                    constraint.setDamping(i, 1);
+                for (let l = 0; l < 6; ++l) {
+                    constraint.enableSpring(l, true);
+                    constraint.setStiffness(l, 100);
+                    constraint.setDamping(l, 1);
                 }
                 world.addConstraint(constraint, worldId, false);
             }
@@ -162,19 +163,12 @@ export class SceneBuilder implements ISceneBuilder {
             baseBox.thinInstanceBufferUpdated("matrix");
             scene.render();
         });
-        benchHelper.sampleCount = 100;
         benchHelper.runBench();
 
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
-
             for (let i = 0; i < bundles.length; ++i) {
-                const bundle = bundles[i];
-                const startOffset = i * rbCount * 16;
-                for (let j = 0; j < rbCount; ++j) {
-                    bundle.getTransformMatrixToRef(j, matrix);
-                    matrix.copyToArray(rigidbodyMatrixBuffer, j * 16 + startOffset);
-                }
+                bundles[i].getTransformMatricesToArray(rigidbodyMatrixBuffer, i * rbCount * 16);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
         });

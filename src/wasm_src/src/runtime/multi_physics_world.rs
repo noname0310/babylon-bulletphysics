@@ -20,15 +20,21 @@ struct MultiPhysicsWorldHandleInfo {
 pub(crate) struct MultiPhysicsWorld {
     worlds: FxHashMap<PhysicsWorldId, PhysicsWorld>,
     #[cfg(debug_assertions)]
+    ref_count: u32,
+    #[cfg(debug_assertions)]
     handle_info: MultiPhysicsWorldHandleInfo,
     global_bodies: Vec<RigidBodyHandle>,
     global_body_bundles: Vec<RigidBodyBundleHandle>,
+    allow_dynamic_shadow: bool,
+    use_motion_state_buffer: bool,
 }
 
 impl MultiPhysicsWorld {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(allow_dynamic_shadow: bool) -> Self {
         Self {
             worlds: FxHashMap::default(),
+            #[cfg(debug_assertions)]
+            ref_count: 0,
             #[cfg(debug_assertions)]
             handle_info: MultiPhysicsWorldHandleInfo {
                 bodies: Vec::new(),
@@ -36,17 +42,19 @@ impl MultiPhysicsWorld {
             },
             global_bodies: Vec::new(),
             global_body_bundles: Vec::new(),
+            allow_dynamic_shadow,
+            use_motion_state_buffer: false,
         }
     }
 
     fn get_or_create_world(&mut self, id: PhysicsWorldId) -> &mut PhysicsWorld {
         self.worlds.entry(id).or_insert_with(|| {
-            let mut world = PhysicsWorld::new();
+            let mut world = PhysicsWorld::new(self.use_motion_state_buffer);
             for body in self.global_bodies.iter_mut() {
                 world.add_rigidbody_shadow(body.clone(), true);
             }
             for bundle in self.global_body_bundles.iter_mut() {
-                world.add_rigidbody_bundle_shadow(bundle.clone(), true);
+                world.add_rigidbody_bundle_shadow(bundle.clone(), self.allow_dynamic_shadow, true);
             }
             world
         })
@@ -67,6 +75,15 @@ impl MultiPhysicsWorld {
     pub(crate) fn set_gravity(&mut self, force: Vec3) {
         for (_, world) in self.worlds.iter_mut() {
             world.set_gravity(force);
+        }
+    }
+
+    pub(crate) fn sync_buffered_motion_state(&mut self) {
+        if !self.use_motion_state_buffer {
+            return;
+        }
+        for (_, world) in self.worlds.iter_mut() {
+            world.sync_buffered_motion_state();
         }
     }
 
@@ -163,6 +180,7 @@ impl MultiPhysicsWorld {
                 panic!("RigidBody already added to the global world");
             }
         }
+        // check if the rigidbody is dynamic on js side
 
         for (_, world) in self.worlds.iter_mut() {
             world.add_rigidbody_shadow(rigidbody.clone(), true);
@@ -195,9 +213,10 @@ impl MultiPhysicsWorld {
                 panic!("RigidBodyBundle already added to the global world");
             }
         }
+        // check if the rigidbody is dynamic on js side
 
         for (_, world) in self.worlds.iter_mut() {
-            world.add_rigidbody_bundle_shadow(bundle.clone(), true);
+            world.add_rigidbody_bundle_shadow(bundle.clone(), self.allow_dynamic_shadow, true);
         }
         self.global_body_bundles.push(bundle);
     }
@@ -221,6 +240,13 @@ impl MultiPhysicsWorld {
     }
 
     pub(crate) fn add_rigidbody_shadow(&mut self, world_id: PhysicsWorldId, rigidbody: RigidBodyHandle) {
+        if !rigidbody.get().get_inner().is_static_or_kinematic() && !self.allow_dynamic_shadow {
+            panic!("Dynamic shadow is not allowed");
+        }
+        // if self.allow_dynamic_shadow && !self.use_motion_state_buffer {
+        //     panic!("Dynamic shadow requires motion state buffer");
+        // }
+        // if is dynamic and rigidbody is not in any world, throw error on js side
         self.get_or_create_world(world_id).add_rigidbody_shadow(rigidbody, false);
     }
 
@@ -230,7 +256,12 @@ impl MultiPhysicsWorld {
     }
 
     pub(crate) fn add_rigidbody_bundle_shadow(&mut self, world_id: PhysicsWorldId, bundle: RigidBodyBundleHandle) {
-        self.get_or_create_world(world_id).add_rigidbody_bundle_shadow(bundle, false);
+        let allow_dynamic_shadow = self.allow_dynamic_shadow;
+        // if allow_dynamic_shadow && !self.use_motion_state_buffer {
+        //     panic!("Dynamic shadow requires motion state buffer");
+        // }
+        // if is dynamic and rigidbody is not in any world, throw error on js side
+        self.get_or_create_world(world_id).add_rigidbody_bundle_shadow(bundle, allow_dynamic_shadow, false);
     }
 
     pub(crate) fn remove_rigidbody_bundle_shadow(&mut self, world_id: PhysicsWorldId, bundle: RigidBodyBundleHandle) {
@@ -246,11 +277,97 @@ impl MultiPhysicsWorld {
         self.get_world(world_id).map(|world| world.remove_constraint(constraint));
         self.remove_world_if_empty(world_id);
     }
+
+    pub(crate) fn use_motion_state_buffer(&mut self, use_buffer: bool) {
+        if self.use_motion_state_buffer == use_buffer {
+            return;
+        }
+
+        if use_buffer {
+            for (_, world) in self.worlds.iter_mut() {
+                world.init_buffered_motion_state();
+            }
+        } else {
+            for (_, world) in self.worlds.iter_mut() {
+                world.clear_buffered_motion_state();
+            }
+        }
+
+        for (_, world) in self.worlds.iter_mut() {
+            world.update_shadow_motion_state();
+            world.set_use_motion_state_buffer(use_buffer);
+        }
+
+        self.use_motion_state_buffer = use_buffer;
+    }
+
+    pub(crate) fn create_handle(&mut self) -> MultiPhysicsWorldHandle {
+        MultiPhysicsWorldHandle::new(self)
+    }
 }
 
+unsafe impl Send for MultiPhysicsWorld {}
+
+#[cfg(debug_assertions)]
+impl Drop for MultiPhysicsWorld {
+    fn drop(&mut self) {
+        if 0 < self.ref_count {
+            panic!("MultiPhysicsWorld still has references");
+        }
+    }
+}
+
+pub(crate) struct MultiPhysicsWorldHandle {
+    world: &'static mut MultiPhysicsWorld,
+}
+
+impl MultiPhysicsWorldHandle {
+    pub(crate) fn new(world: &mut MultiPhysicsWorld) -> Self {
+        let world = unsafe {
+            std::mem::transmute::<&mut MultiPhysicsWorld, &'static mut MultiPhysicsWorld>(world)
+        };
+
+        #[cfg(debug_assertions)]
+        {
+            world.ref_count += 1;
+        }
+
+        Self {
+            world,
+        }
+    }
+
+    pub(crate) fn get(&self) -> &MultiPhysicsWorld {
+        self.world
+    }
+
+    pub(crate) fn get_mut(&mut self) -> &mut MultiPhysicsWorld {
+        self.world
+    }
+
+    pub(crate) fn clone(&mut self) -> Self {
+        Self::new(self.world)
+    }
+}
+
+#[cfg(debug_assertions)]
+impl Drop for MultiPhysicsWorldHandle {
+    fn drop(&mut self) {
+        self.world.ref_count -= 1;
+    }
+}
+
+impl PartialEq for MultiPhysicsWorldHandle {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self.world as *const MultiPhysicsWorld, other.world as *const MultiPhysicsWorld)
+    }
+}
+
+impl Eq for MultiPhysicsWorldHandle {}
+
 #[wasm_bindgen(js_name = "createMultiPhysicsWorld")]
-pub fn create_multi_physics_world() -> *mut usize {
-    let world = MultiPhysicsWorld::new();
+pub fn create_multi_physics_world(allow_dynamic_shadow: bool) -> *mut usize {
+    let world = MultiPhysicsWorld::new(allow_dynamic_shadow);
     let world = Box::new(world);
     Box::into_raw(world) as *mut usize
 }
@@ -271,6 +388,7 @@ pub fn multi_physics_world_set_gravity(world: *mut usize, x: f32, y: f32, z: f32
 #[wasm_bindgen(js_name = "multiPhysicsWorldStepSimulation")]
 pub fn multi_physics_world_step_simulation(world: *mut usize, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
+    world.sync_buffered_motion_state();
     world.step_simulation(time_step, max_sub_steps, fixed_time_step);
 }
 
@@ -370,4 +488,10 @@ pub fn multi_physics_world_remove_constraint(world: *mut usize, world_id: Physic
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let constraint = unsafe { &mut *(constraint as *mut Constraint) };
     world.remove_constraint(world_id, constraint.create_handle());
+}
+
+#[wasm_bindgen(js_name = "multiPhysicsWorldUseMotionStateBuffer")]
+pub fn multi_physics_world_use_motion_state_buffer(world: *mut usize, use_buffer: bool) {
+    let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
+    world.use_motion_state_buffer(use_buffer);
 }

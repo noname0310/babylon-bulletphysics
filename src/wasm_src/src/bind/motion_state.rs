@@ -68,6 +68,15 @@ impl MotionState {
         raw.translation = Vec3::new(transform.w_axis.x, transform.w_axis.y, transform.w_axis.z);
     }
 
+    pub(crate) fn copy_from(&self, other: &Self) {
+        let raw = unsafe { &*(other.ptr as *const MotionStateRawRead) };
+        let raw_write = unsafe { &mut *(self.ptr as *mut MotionStateRawWrite) };
+        raw_write.matrix_rowx = raw.matrix_rowx.into();
+        raw_write.matrix_rowy = raw.matrix_rowy.into();
+        raw_write.matrix_rowz = raw.matrix_rowz.into();
+        raw_write.translation = raw.translation.into();
+    }
+
     pub(crate) fn ptr(&self) -> *const std::ffi::c_void {
         self.ptr
     }
@@ -104,12 +113,12 @@ impl MotionStateBundle {
         }
     }
 
-    pub(crate) fn get_nth_motion_state_ptr(&self, index: usize) -> *const std::ffi::c_void {
+    pub(crate) fn get_nth_motion_state_ptr_mut(&mut self, index: usize) -> *mut std::ffi::c_void {
         let motion_states_ptr = unsafe {
-            bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *const MotionStateRawRead
+            bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut MotionStateRawWrite
         };
 
-        unsafe { motion_states_ptr.add(index) as *const std::ffi::c_void }
+        unsafe { motion_states_ptr.add(index) as *mut std::ffi::c_void }
     }
 
     pub(crate) fn get_transform(&self, index: usize) -> Mat4 {
@@ -140,6 +149,28 @@ impl MotionStateBundle {
         raw.matrix_rowy = Vec3::new(transform.x_axis.y, transform.y_axis.y, transform.z_axis.y);
         raw.matrix_rowz = Vec3::new(transform.x_axis.z, transform.y_axis.z, transform.z_axis.z);
         raw.translation = Vec3::new(transform.w_axis.x, transform.w_axis.y, transform.w_axis.z);
+    }
+
+    pub(crate) fn copy_from(&self, other: &Self) {
+        let motion_states_ptr = unsafe {
+            bw_motion_state_bundle_get_motion_states_ptr(self.ptr) as *mut MotionStateRawWrite
+        };
+
+        let other_motion_states_ptr = unsafe {
+            bw_motion_state_bundle_get_motion_states_ptr(other.ptr) as *mut MotionStateRawRead
+        };
+
+        for i in 0..self.size() {
+            let motion_state_ptr = unsafe { motion_states_ptr.add(i) };
+            let other_motion_state_ptr = unsafe { other_motion_states_ptr.add(i) };
+
+            let raw = unsafe { &*other_motion_state_ptr };
+            let raw_write = unsafe { &mut *motion_state_ptr };
+            raw_write.matrix_rowx = raw.matrix_rowx.into();
+            raw_write.matrix_rowy = raw.matrix_rowy.into();
+            raw_write.matrix_rowz = raw.matrix_rowz.into();
+            raw_write.translation = raw.translation.into();
+        }
     }
 
     pub(crate) fn get_motion_states_ptr(&self) -> *mut std::ffi::c_void {

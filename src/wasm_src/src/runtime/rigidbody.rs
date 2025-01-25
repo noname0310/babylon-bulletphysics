@@ -38,6 +38,7 @@ pub(crate) struct RigidBodyConstructionInfo<'a> {
 pub(crate) struct RigidBody {
     inner: bind::rigidbody::RigidBody,
     motion_state: bind::motion_state::MotionState,
+    buffered_motion_state: Option<bind::motion_state::MotionState>,
     #[cfg(debug_assertions)]
     ref_count: u32,
     #[cfg(debug_assertions)]
@@ -62,6 +63,7 @@ impl RigidBody {
         Self {
             inner,
             motion_state,
+            buffered_motion_state: None,
             #[cfg(debug_assertions)]
             ref_count: 0,
             #[cfg(debug_assertions)]
@@ -79,6 +81,42 @@ impl RigidBody {
 
     pub(crate) fn get_motion_state_ptr(&mut self) -> *mut std::ffi::c_void {
         self.motion_state.ptr_mut()
+    }
+
+    pub(crate) fn get_buffered_motion_state_ptr(&mut self) -> *mut std::ffi::c_void {
+        if let Some(motion_state) = self.buffered_motion_state.as_mut() {
+            motion_state.ptr_mut()
+        } else {
+            self.motion_state.ptr_mut()
+        }
+    }
+
+    fn get_motion_state_mut(&mut self) -> &mut bind::motion_state::MotionState {
+        &mut self.motion_state
+    }
+
+    fn get_buffered_motion_state_mut(&mut self) -> &mut bind::motion_state::MotionState {
+        if let Some(motion_state) = self.buffered_motion_state.as_mut() {
+            motion_state
+        } else {
+            &mut self.motion_state
+        }
+    }
+
+    pub(super) fn init_buffered_motion_state(&mut self) {
+        if !self.get_inner().is_static_or_kinematic() && self.buffered_motion_state.is_none() {
+            self.buffered_motion_state = Some(bind::motion_state::MotionState::new(&self.motion_state.get_transform()));
+        }
+    }
+
+    pub(super) fn clear_buffered_motion_state(&mut self) {
+        self.buffered_motion_state = None;
+    }
+
+    pub(super) fn sync_buffered_motion_state(&mut self) {
+        if let Some(buffered_motion_state) = self.buffered_motion_state.as_mut() {
+            buffered_motion_state.copy_from(&self.motion_state);
+        }
     }
 
     pub(crate) fn make_kinematic(&mut self) {
@@ -162,11 +200,12 @@ pub(crate) struct RigidBodyShadow {
 
 impl RigidBodyShadow {
     pub(super) fn new(rigidbody: &mut RigidBody) -> Self {
-        if !rigidbody.get_inner().is_static_or_kinematic() {
-            panic!("Cannot create shadow for dynamic rigidbody");
-        }
-
-        let inner = bind::rigidbody::RigidBodyShadow::new(rigidbody.get_inner_mut());
+        let motion_state_ptr =  if rigidbody.get_inner().is_static_or_kinematic() {
+            rigidbody.get_motion_state_mut().ptr_mut()
+        } else {
+            rigidbody.get_buffered_motion_state_mut().ptr_mut()
+        };
+        let inner = bind::rigidbody::RigidBodyShadow::new(rigidbody.get_inner_mut(), motion_state_ptr);
 
         Self {
             inner,
@@ -182,6 +221,13 @@ impl RigidBodyShadow {
         &mut self.inner
     }
 
+    pub(super) fn update_motion_state(&mut self) {
+        if !self.handle.get_mut().get_inner().is_static_or_kinematic() {
+            let motion_state = self.handle.get_mut().get_buffered_motion_state_mut();
+            self.inner.set_motion_state(motion_state.ptr_mut());
+        }
+    }
+
     pub(super) fn handle(&self) -> &RigidBodyHandle {
         &self.handle
     }
@@ -194,6 +240,7 @@ impl RigidBodyShadow {
 pub(crate) struct RigidBodyBundle {
     bodies: Box<[bind::rigidbody::RigidBody]>,
     motion_state_bundle: bind::motion_state::MotionStateBundle,
+    buffered_motion_state_bundle: Option<bind::motion_state::MotionStateBundle>,
     #[cfg(debug_assertions)]
     ref_count: u32,
     #[cfg(debug_assertions)]
@@ -218,7 +265,7 @@ impl RigidBodyBundle {
 
             let info = bind::rigidbody::RigidBodyConstructionInfo::from_runtime_info_raw(
                 info,
-                motion_state_bundle.get_nth_motion_state_ptr(i)
+                motion_state_bundle.get_nth_motion_state_ptr_mut(i)
             );
             let body = bind::rigidbody::RigidBody::new(&info);
             bodies.push(body);
@@ -226,6 +273,7 @@ impl RigidBodyBundle {
         Self {
             bodies: bodies.into_boxed_slice(),
             motion_state_bundle,
+            buffered_motion_state_bundle: None,
             #[cfg(debug_assertions)]
             ref_count: 0,
             #[cfg(debug_assertions)]
@@ -243,6 +291,44 @@ impl RigidBodyBundle {
 
     pub(crate) fn get_motion_states_ptr(&mut self) -> *mut std::ffi::c_void {
         self.motion_state_bundle.get_motion_states_ptr()
+    }
+
+    pub(crate) fn get_buffered_motion_states_ptr(&mut self) -> *mut std::ffi::c_void {
+        if let Some(motion_state_bundle) = self.buffered_motion_state_bundle.as_mut() {
+            motion_state_bundle.get_motion_states_ptr()
+        } else {
+            self.motion_state_bundle.get_motion_states_ptr()
+        }
+    }
+
+    fn get_motion_states_mut(&mut self) -> &mut bind::motion_state::MotionStateBundle {
+        &mut self.motion_state_bundle
+    }
+
+    fn get_buffered_motion_states_mut(&mut self) -> &mut bind::motion_state::MotionStateBundle {
+        if let Some(motion_state_bundle) = self.buffered_motion_state_bundle.as_mut() {
+            motion_state_bundle
+        } else {
+            &mut self.motion_state_bundle
+        }
+    }
+
+    pub(super) fn init_buffered_motion_state(&mut self) {
+        if self.buffered_motion_state_bundle.is_none() {
+            let buffered_motion_state_bundle = bind::motion_state::MotionStateBundle::new(self.bodies.len());
+            buffered_motion_state_bundle.copy_from(&self.motion_state_bundle);
+            self.buffered_motion_state_bundle = Some(buffered_motion_state_bundle);
+        }
+    }
+
+    pub(super) fn clear_buffered_motion_state(&mut self) {
+        self.buffered_motion_state_bundle = None;
+    }
+
+    pub(super) fn sync_buffered_motion_state(&mut self) {
+        if let Some(buffered_motion_state_bundle) = self.buffered_motion_state_bundle.as_mut() {
+            buffered_motion_state_bundle.copy_from(&self.motion_state_bundle);
+        }
     }
 
     pub(crate) fn make_kinematic(&mut self, index: usize) {
@@ -299,8 +385,8 @@ impl RigidBodyBundleHandle {
         Self::new(self.bundle)
     }
 
-    pub(crate) fn create_shadow(&mut self) -> RigidBodyBundleShadow {
-        RigidBodyBundleShadow::new(self.bundle)
+    pub(crate) fn create_shadow(&mut self, include_dynamic: bool) -> RigidBodyBundleShadow {
+        RigidBodyBundleShadow::new(self.bundle, include_dynamic)
     }
 }
 
@@ -322,20 +408,38 @@ impl Eq for RigidBodyBundleHandle {}
 pub(crate) struct RigidBodyBundleShadow {
     shadows: Box<[bind::rigidbody::RigidBodyShadow]>,
     handle: RigidBodyBundleHandle,
+    include_dynamic: bool,
 }
 
 impl RigidBodyBundleShadow {
-    pub(crate) fn new(bundle: &mut RigidBodyBundle) -> Self {
+    pub(crate) fn new(bundle: &mut RigidBodyBundle, include_dynamic: bool) -> Self {
         let mut shadows = Vec::with_capacity(bundle.bodies.len());
-        for body in bundle.bodies.iter_mut() {
-            if body.is_static_or_kinematic() {
-                shadows.push(bind::rigidbody::RigidBodyShadow::new(body));
+        if include_dynamic {
+            for i in 0..bundle.bodies.len() {
+                let body: &mut bind::rigidbody::RigidBody = &mut bundle.bodies[i];
+                let motion_state_ptr = if body.is_static_or_kinematic() {
+                    bundle.get_motion_states_mut().get_nth_motion_state_ptr_mut(i)
+                } else {
+                    bundle.get_buffered_motion_states_mut().get_nth_motion_state_ptr_mut(i)
+                };
+                let body = &mut bundle.bodies[i];
+                shadows.push(bind::rigidbody::RigidBodyShadow::new(body, motion_state_ptr));
+            }
+        } else {
+            for i in 0..bundle.bodies.len() {
+                let body: &mut bind::rigidbody::RigidBody = &mut bundle.bodies[i];
+                if body.is_static_or_kinematic() {
+                    let motion_state_ptr = bundle.get_buffered_motion_states_mut().get_nth_motion_state_ptr_mut(i);
+                    let body = &mut bundle.bodies[i];
+                    shadows.push(bind::rigidbody::RigidBodyShadow::new(body, motion_state_ptr));
+                }
             }
         }
 
         Self {
             shadows: shadows.into_boxed_slice(),
             handle: bundle.create_handle(),
+            include_dynamic,
         }
     }
 
@@ -345,6 +449,22 @@ impl RigidBodyBundleShadow {
 
     pub(super) fn shadows_mut(&mut self) -> &mut [bind::rigidbody::RigidBodyShadow] {
         &mut self.shadows
+    }
+    
+    pub(super) fn update_motion_state_bundle(&mut self) {
+        if !self.include_dynamic {
+            return;
+        }
+
+        let bundle = self.handle.get_mut();
+        for i in 0..bundle.bodies().len() {
+            let body = &bundle.bodies()[i];
+            if !body.is_static_or_kinematic() {
+                let buffered_motion_states = bundle.get_buffered_motion_states_mut();
+                let motion_state = buffered_motion_states.get_nth_motion_state_ptr_mut(i);
+                self.shadows[i].set_motion_state(motion_state);
+            }
+        }
     }
 
     pub(super) fn handle(&self) -> &RigidBodyBundleHandle {
@@ -375,6 +495,12 @@ pub fn destroy_rigidbody(ptr: *mut usize) {
 pub fn rigidbody_get_motion_state_ptr(ptr: *mut usize) -> *mut usize {
     let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
     rigidbody.get_motion_state_ptr() as *mut usize
+}
+
+#[wasm_bindgen(js_name = "rigidBodyGetBufferedMotionStatePtr")]
+pub fn rigidbody_get_buffered_motion_state_ptr(ptr: *mut usize) -> *mut usize {
+    let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
+    rigidbody.get_buffered_motion_state_ptr() as *mut usize
 }
 
 #[wasm_bindgen(js_name = "rigidBodyMakeKinematic")]
@@ -408,6 +534,12 @@ pub fn destroy_rigidbody_bundle(ptr: *mut usize) {
 pub fn rigid_body_bundle_get_motion_states_ptr(ptr: *mut usize) -> *mut usize {
     let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
     bundle.get_motion_states_ptr() as *mut usize
+}
+
+#[wasm_bindgen(js_name = "rigidBodyBundleGetBufferedMotionStatesPtr")]
+pub fn rigid_body_bundle_get_buffered_motion_states_ptr(ptr: *mut usize) -> *mut usize {
+    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+    bundle.get_buffered_motion_states_ptr() as *mut usize
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleMakeKinematic")]
