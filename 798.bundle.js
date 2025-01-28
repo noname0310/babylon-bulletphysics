@@ -1,6 +1,48 @@
 "use strict";
 (self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[798],{
 
+/***/ 2090:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   D: () => (/* binding */ NullPhysicsRuntime)
+/* harmony export */ });
+/* harmony import */ var _Immediate_immediateRigidBodyBundleImpl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5228);
+/* harmony import */ var _Immediate_immediateRigidBodyImpl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(94444);
+
+
+class NullSpinlock {
+    wait() { }
+}
+class NullPhysicsRuntime {
+    /**
+     * @internal
+     */
+    wasmInstance;
+    /**
+     * Spinlock for the physics runtime to synchronize access to the physics world state
+     * @internal
+     */
+    lock;
+    /**
+     * Creates a new physics runtime
+     * @param wasmInstance The Bullet WASM instance
+     */
+    constructor(wasmInstance) {
+        this.wasmInstance = wasmInstance;
+        this.lock = new NullSpinlock();
+    }
+    createRigidBodyImpl() {
+        return new _Immediate_immediateRigidBodyImpl__WEBPACK_IMPORTED_MODULE_0__/* .ImmediateRigidBodyImpl */ .x();
+    }
+    createRigidBodyBundleImpl(bundle) {
+        return new _Immediate_immediateRigidBodyBundleImpl__WEBPACK_IMPORTED_MODULE_1__/* .ImmediateRigidBodyBundleImpl */ .R(bundle.count);
+    }
+}
+
+
+/***/ }),
+
 /***/ 8798:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 

@@ -1,49 +1,7 @@
 "use strict";
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[499],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[411],{
 
-/***/ 2090:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   D: () => (/* binding */ NullPhysicsRuntime)
-/* harmony export */ });
-/* harmony import */ var _Immediate_immediateRigidBodyBundleImpl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5228);
-/* harmony import */ var _Immediate_immediateRigidBodyImpl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(94444);
-
-
-class NullSpinlock {
-    wait() { }
-}
-class NullPhysicsRuntime {
-    /**
-     * @internal
-     */
-    wasmInstance;
-    /**
-     * Spinlock for the physics runtime to synchronize access to the physics world state
-     * @internal
-     */
-    lock;
-    /**
-     * Creates a new physics runtime
-     * @param wasmInstance The Bullet WASM instance
-     */
-    constructor(wasmInstance) {
-        this.wasmInstance = wasmInstance;
-        this.lock = new NullSpinlock();
-    }
-    createRigidBodyImpl() {
-        return new _Immediate_immediateRigidBodyImpl__WEBPACK_IMPORTED_MODULE_0__/* .ImmediateRigidBodyImpl */ .x();
-    }
-    createRigidBodyBundleImpl(bundle) {
-        return new _Immediate_immediateRigidBodyBundleImpl__WEBPACK_IMPORTED_MODULE_1__/* .ImmediateRigidBodyBundleImpl */ .R(bundle.count);
-    }
-}
-
-
-/***/ }),
-
-/***/ 45499:
+/***/ 44411:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -51,9 +9,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   SceneBuilder: () => (/* binding */ SceneBuilder)
 /* harmony export */ });
 /* harmony import */ var _babylonjs_core_Meshes_thinInstanceMesh__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(90203);
-/* harmony import */ var _babylonjs_core_Meshes_instancedMesh__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(61440);
-/* harmony import */ var _babylonjs_core_Lights_Shadows_shadowGeneratorSceneComponent__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(33832);
-/* harmony import */ var _babylonjs_core_Materials_standardMaterial__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(2093);
+/* harmony import */ var _babylonjs_core_Lights_Shadows_shadowGeneratorSceneComponent__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(33832);
+/* harmony import */ var _babylonjs_core_Materials_standardMaterial__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(2093);
+/* harmony import */ var _babylonjs_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(67861);
 /* harmony import */ var _babylonjs_core_Cameras_arcRotateCamera__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(7839);
 /* harmony import */ var _babylonjs_core_Lights_directionalLight__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(52046);
 /* harmony import */ var _babylonjs_core_Lights_hemisphericLight__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(71513);
@@ -62,24 +20,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(79923);
 /* harmony import */ var _babylonjs_core_Meshes_Builders_boxBuilder__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(96793);
 /* harmony import */ var _babylonjs_core_Meshes_Builders_planeBuilder__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(58144);
-/* harmony import */ var _babylonjs_core_Meshes_Builders_sphereBuilder__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(78121);
-/* harmony import */ var _babylonjs_core_scene__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(87491);
-/* harmony import */ var _Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(46738);
-/* harmony import */ var _Runtime_constraint__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(67168);
-/* harmony import */ var _Runtime_Impl_nullPhysicsRuntime__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(2090);
-/* harmony import */ var _Runtime_InstanceType_multiRelease__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(27744);
-/* harmony import */ var _Runtime_InstanceType_singleRelease__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(91167);
-/* harmony import */ var _Runtime_multiPhysicsWorld__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(15733);
-/* harmony import */ var _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(26405);
-/* harmony import */ var _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(1592);
-/* harmony import */ var _Runtime_rigidBodyBundle__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(67648);
-/* harmony import */ var _Runtime_rigidBodyConstructionInfo__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(35901);
-/* harmony import */ var _Runtime_rigidBodyConstructionInfoList__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(3477);
-/* harmony import */ var _Util_benchHelper__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(89800);
-/* harmony import */ var _Util_mulberry32__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(32399);
-
-
-
+/* harmony import */ var _babylonjs_core_scene__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(87491);
+/* harmony import */ var _Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(46738);
+/* harmony import */ var _Runtime_constraint__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(67168);
+/* harmony import */ var _Runtime_Impl_multiPhysicsRuntime__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(23948);
+/* harmony import */ var _Runtime_Impl_physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(29009);
+/* harmony import */ var _Runtime_InstanceType_multiRelease__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(27744);
+/* harmony import */ var _Runtime_InstanceType_singleRelease__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(91167);
+/* harmony import */ var _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(26405);
+/* harmony import */ var _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(1592);
+/* harmony import */ var _Runtime_rigidBodyConstructionInfo__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(35901);
+/* harmony import */ var _Util_benchHelper__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(89800);
+/* harmony import */ var _Util_mulberry32__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(32399);
 
 
 
@@ -106,7 +58,7 @@ __webpack_require__.r(__webpack_exports__);
 
 class SceneBuilder {
     async build(_canvas, engine) {
-        const scene = new _babylonjs_core_scene__WEBPACK_IMPORTED_MODULE_13__/* .Scene */ .Z(engine);
+        const scene = new _babylonjs_core_scene__WEBPACK_IMPORTED_MODULE_12__/* .Scene */ .Z(engine);
         scene.clearColor = new _babylonjs_core_Maths_math_color__WEBPACK_IMPORTED_MODULE_8__/* .Color4 */ .ov(0.95, 0.95, 0.95, 1.0);
         const camera = new _babylonjs_core_Cameras_arcRotateCamera__WEBPACK_IMPORTED_MODULE_4__/* .ArcRotateCamera */ .L("arcRotateCamera", 0, 0, 500, new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0), scene);
         camera.minZ = 1;
@@ -141,24 +93,30 @@ class SceneBuilder {
         const threadCount = parseInt(prompt("Thread count", "2"));
         console.log("Thread count:", threadCount);
         const wasmInstance = threadCount === 1
-            ? await (0,_Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_14__/* .getBulletWasmInstance */ .e)(new _Runtime_InstanceType_singleRelease__WEBPACK_IMPORTED_MODULE_15__/* .BulletWasmInstanceTypeSR */ .Z())
-            : await (0,_Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_14__/* .getBulletWasmInstance */ .e)(new _Runtime_InstanceType_multiRelease__WEBPACK_IMPORTED_MODULE_16__/* .BulletWasmInstanceTypeMR */ .t(), threadCount);
-        const runtime = new _Runtime_Impl_nullPhysicsRuntime__WEBPACK_IMPORTED_MODULE_17__/* .NullPhysicsRuntime */ .D(wasmInstance);
-        const world = new _Runtime_multiPhysicsWorld__WEBPACK_IMPORTED_MODULE_18__/* .MultiPhysicsWorld */ .F(runtime, true);
+            ? await (0,_Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_13__/* .getBulletWasmInstance */ .e)(new _Runtime_InstanceType_singleRelease__WEBPACK_IMPORTED_MODULE_14__/* .BulletWasmInstanceTypeSR */ .Z())
+            : await (0,_Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_13__/* .getBulletWasmInstance */ .e)(new _Runtime_InstanceType_multiRelease__WEBPACK_IMPORTED_MODULE_15__/* .BulletWasmInstanceTypeMR */ .t(), threadCount);
+        const runtime = new _Runtime_Impl_multiPhysicsRuntime__WEBPACK_IMPORTED_MODULE_16__/* .MultiPhysicsRuntime */ .h(wasmInstance, {
+            allowDynamicShadow: false,
+            preserveBackBuffer: false
+        });
+        const evaluationType = prompt("Evaluation type (i, b) immediate, buffered", "i");
+        runtime.evaluationType = evaluationType === "i"
+            ? _Runtime_Impl_physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_17__/* .PhysicsRuntimeEvaluationType */ .q.Immediate
+            : _Runtime_Impl_physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_17__/* .PhysicsRuntimeEvaluationType */ .q.Buffered;
         const matrix = new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq();
         {
             const ground = (0,_babylonjs_core_Meshes_Builders_planeBuilder__WEBPACK_IMPORTED_MODULE_11__/* .CreatePlane */ .x)("ground", { size: 500 }, scene);
             ground.rotationQuaternion = _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Quaternion */ .PT.RotationAxis(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(1, 0, 0), Math.PI / 2);
             shadowGenerator.addShadowCaster(ground);
             ground.receiveShadows = true;
-            const groundShape = new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_19__/* .PhysicsStaticPlaneShape */ .Ty(runtime, new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, -1), 0);
-            const groundRbInfo = new _Runtime_rigidBodyConstructionInfo__WEBPACK_IMPORTED_MODULE_20__/* .RigidBodyConstructionInfo */ .t(wasmInstance);
+            const groundShape = new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_18__/* .PhysicsStaticPlaneShape */ .Ty(runtime, new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, -1), 0);
+            const groundRbInfo = new _Runtime_rigidBodyConstructionInfo__WEBPACK_IMPORTED_MODULE_19__/* .RigidBodyConstructionInfo */ .t(wasmInstance);
             groundRbInfo.shape = groundShape;
             _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.FromQuaternionToRef(ground.rotationQuaternion, matrix);
             groundRbInfo.setInitialTransform(matrix);
             groundRbInfo.motionType = 1 /* MotionType.Static */;
-            const groundRigidBody = new _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_21__/* .RigidBody */ .U(runtime, groundRbInfo);
-            world.addRigidBodyToGlobal(groundRigidBody);
+            const groundRigidBody = new _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_20__/* .RigidBody */ .U(runtime, groundRbInfo);
+            runtime.addRigidBodyToGlobal(groundRigidBody);
         }
         const rbCount = 256 * 2;
         const rowCount = 4;
@@ -169,7 +127,7 @@ class SceneBuilder {
         const shapeType = prompt("Shape type (u, r) uniform box, random", "u");
         if (shapeType === "u") {
             const boxShapeSize = new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(1, 1, 1);
-            const boxShape = new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_19__/* .PhysicsBoxShape */ .SA(runtime, boxShapeSize);
+            const boxShape = new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_18__/* .PhysicsBoxShape */ .SA(runtime, boxShapeSize);
             const boxShapeInfo = { type: "box", size: boxShapeSize };
             for (let i = 0; i < rbCount; ++i) {
                 shapes.push(boxShape);
@@ -177,7 +135,7 @@ class SceneBuilder {
             }
         }
         else {
-            const rng = new _Util_mulberry32__WEBPACK_IMPORTED_MODULE_22__/* .Mulberry32 */ .q(0);
+            const rng = new _Util_mulberry32__WEBPACK_IMPORTED_MODULE_21__/* .Mulberry32 */ .q(0);
             for (let i = 0; i < rbCount; ++i) {
                 const type = rng.next() * 2 | 0;
                 if (type === 0) {
@@ -185,12 +143,12 @@ class SceneBuilder {
                     const sizeY = rng.next() * 2 + 0.5;
                     const sizeZ = rng.next() * 2 + 0.5;
                     const size = new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(sizeX, sizeY, sizeZ);
-                    shapes.push(new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_19__/* .PhysicsBoxShape */ .SA(runtime, size));
+                    shapes.push(new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_18__/* .PhysicsBoxShape */ .SA(runtime, size));
                     shapeInfoList.push({ type: "box", size });
                 }
                 else if (type === 1) {
                     const radius = rng.next() * 2 + 1;
-                    shapes.push(new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_19__/* .PhysicsSphereShape */ .O4(runtime, radius));
+                    shapes.push(new _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_18__/* .PhysicsSphereShape */ .O4(runtime, radius));
                     shapeInfoList.push({ type: "sphere", radius });
                 }
                 else {
@@ -198,27 +156,33 @@ class SceneBuilder {
                 }
             }
         }
-        const bundles = [];
+        const bodies = [];
         for (let i = 0; i < rowCount; ++i)
             for (let j = 0; j < columnCount; ++j) {
                 const worldId = i * columnCount + j;
                 const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
                 const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
-                const rbInfoList = new _Runtime_rigidBodyConstructionInfoList__WEBPACK_IMPORTED_MODULE_23__/* .RigidBodyConstructionInfoList */ .x(wasmInstance, rbCount);
+                const rbInfoList = [];
                 for (let k = 0; k < rbCount; ++k) {
-                    rbInfoList.setShape(k, shapes[k]);
+                    const rbInfo = new _Runtime_rigidBodyConstructionInfo__WEBPACK_IMPORTED_MODULE_19__/* .RigidBodyConstructionInfo */ .t(wasmInstance);
+                    rbInfo.shape = shapes[k];
                     const initialTransform = _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
-                    rbInfoList.setInitialTransform(k, initialTransform);
-                    rbInfoList.setFriction(k, 1.0);
-                    rbInfoList.setLinearDamping(k, 0.3);
-                    rbInfoList.setAngularDamping(k, 0.3);
+                    rbInfo.setInitialTransform(initialTransform);
+                    rbInfo.friction = 1.0;
+                    rbInfo.linearDamping = 0.3;
+                    rbInfo.angularDamping = 0.3;
+                    rbInfoList.push(rbInfo);
                 }
-                const boxRigidBodyBundle = new _Runtime_rigidBodyBundle__WEBPACK_IMPORTED_MODULE_24__/* .RigidBodyBundle */ .Y(runtime, rbInfoList);
-                world.addRigidBodyBundle(boxRigidBodyBundle, worldId);
+                for (let k = 0; k < rbCount; ++k) {
+                    const rbInfo = rbInfoList[k];
+                    const rigidBody = new _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_20__/* .RigidBody */ .U(runtime, rbInfo);
+                    runtime.addRigidBody(rigidBody, worldId);
+                    bodies.push(rigidBody);
+                }
                 if (shapeType === "u") {
                     for (let k = 0; k < rbCount; k += 2) {
-                        const indices = [k, k + 1];
-                        const constraint = new _Runtime_constraint__WEBPACK_IMPORTED_MODULE_25__/* .Generic6DofSpringConstraint */ .vC(runtime, boxRigidBodyBundle, indices, _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.Translation(0, -1.2, 0), _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.Translation(0, 1.2, 0), true);
+                        const indices = [worldId * rbCount + k, worldId * rbCount + k + 1];
+                        const constraint = new _Runtime_constraint__WEBPACK_IMPORTED_MODULE_22__/* .Generic6DofSpringConstraint */ .vC(runtime, bodies[indices[0]], bodies[indices[1]], _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.Translation(0, -1.2, 0), _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.Translation(0, 1.2, 0), true);
                         constraint.setLinearLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0));
                         constraint.setLinearUpperLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0));
                         constraint.setAngularLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(Math.PI / 4, 0, 0));
@@ -228,17 +192,16 @@ class SceneBuilder {
                             constraint.setStiffness(l, 100);
                             constraint.setDamping(l, 1);
                         }
-                        world.addConstraint(constraint, worldId, false);
+                        runtime.addConstraint(constraint, worldId, false);
                     }
                 }
-                bundles.push(boxRigidBodyBundle);
             }
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
         const meshes = [];
         const baseBox = (0,_babylonjs_core_Meshes_Builders_boxBuilder__WEBPACK_IMPORTED_MODULE_10__/* .CreateBox */ .an)("baseBox", { size: 1 }, scene);
         baseBox.receiveShadows = true;
         shadowGenerator.addShadowCaster(baseBox);
-        const baseSphere = (0,_babylonjs_core_Meshes_Builders_sphereBuilder__WEBPACK_IMPORTED_MODULE_12__/* .CreateSphere */ ._6)("baseSphere", { diameter: 1 }, scene);
+        const baseSphere = (0,_babylonjs_core__WEBPACK_IMPORTED_MODULE_3__/* .CreateSphere */ ._6X)("baseSphere", { diameter: 1 }, scene);
         baseSphere.receiveShadows = true;
         baseBox.setEnabled(false);
         baseSphere.setEnabled(false);
@@ -249,32 +212,20 @@ class SceneBuilder {
             mesh.rotationQuaternion = _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Quaternion */ .PT.Identity();
             meshes.push(mesh);
         }
-        const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_26__/* .BenchHelper */ .X(() => {
-            world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bundles.length; ++i) {
-                const bundle = bundles[i];
-                for (let j = 0; j < rbCount; ++j) {
-                    bundle.getTransformMatrixToRef(j, matrix);
-                    const mesh = meshes[i * rbCount + j];
-                    matrix.getTranslationToRef(mesh.position);
-                    _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Quaternion */ .PT.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion);
-                }
+        runtime.onTickObservable.add(() => {
+            for (let i = 0; i < bodies.length; ++i) {
+                bodies[i].getTransformMatrixToRef(matrix);
+                const mesh = meshes[i];
+                matrix.getTranslationToRef(mesh.position);
+                _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Quaternion */ .PT.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion);
             }
+        });
+        const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_23__/* .BenchHelper */ .X(() => {
+            runtime.afterAnimations(1 / 60 * 1000);
             scene.render();
         });
         benchHelper.runBench();
-        scene.onBeforeRenderObservable.add(() => {
-            world.stepSimulation(1 / 60, 10, 1 / 60);
-            for (let i = 0; i < bundles.length; ++i) {
-                const bundle = bundles[i];
-                for (let j = 0; j < rbCount; ++j) {
-                    bundle.getTransformMatrixToRef(j, matrix);
-                    const mesh = meshes[i * rbCount + j];
-                    matrix.getTranslationToRef(mesh.position);
-                    _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Quaternion */ .PT.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion);
-                }
-            }
-        });
+        runtime.register(scene);
         return scene;
     }
 }
