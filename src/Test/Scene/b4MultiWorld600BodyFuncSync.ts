@@ -193,11 +193,7 @@ export class SceneBuilder implements ISceneBuilder {
         const meshes: InstancedMesh[] = [];
 
         const baseBox = CreateBox("baseBox", { size: 1 }, scene);
-        baseBox.receiveShadows = true;
-        shadowGenerator.addShadowCaster(baseBox);
         const baseSphere = CreateSphere("baseSphere", { diameter: 1 }, scene);
-        baseSphere.receiveShadows = true;
-        shadowGenerator.addShadowCaster(baseSphere);
         baseBox.setEnabled(false);
         baseSphere.setEnabled(false);
 
