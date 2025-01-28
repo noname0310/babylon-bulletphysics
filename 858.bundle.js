@@ -205,9 +205,11 @@ class SceneBuilder {
 /* harmony export */ });
 class BenchHelper {
     sampleCount;
+    showFpsPerFrame;
     _func;
     constructor(func) {
         this.sampleCount = 600;
+        this.showFpsPerFrame = false;
         this._func = func;
     }
     runBench() {
@@ -221,16 +223,25 @@ class BenchHelper {
             sampledFps.push(fps);
         }
         let averageFps = 0;
-        let result = "";
-        for (let i = 0; i < sampleCount; ++i) {
-            result += `(${i}, ${sampledFps[i]})`;
-            if (i !== sampleCount - 1) {
-                result += ", ";
+        let resultString = "";
+        if (this.showFpsPerFrame) {
+            let result = "";
+            for (let i = 0; i < sampleCount; ++i) {
+                result += `(${i}, ${sampledFps[i]})`;
+                if (i !== sampleCount - 1) {
+                    result += ", ";
+                }
+                averageFps += sampledFps[i];
             }
-            averageFps += sampledFps[i];
+            resultString += `Result: ${result}`;
+            console.log(resultString);
         }
-        const resultString = `Result: ${result}, Average: ${averageFps / sampleCount}`;
-        console.log(resultString);
+        else {
+            for (let i = 0; i < sampleCount; ++i) {
+                averageFps += sampledFps[i];
+            }
+        }
+        resultString += `Average: ${averageFps / sampleCount}`;
         const div = document.createElement("div");
         div.style.position = "absolute";
         div.style.top = "0";
