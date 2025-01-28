@@ -235,15 +235,14 @@ class SceneBuilder {
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
         const meshes = [];
         const baseBox = (0,_babylonjs_core_Meshes_Builders_boxBuilder__WEBPACK_IMPORTED_MODULE_10__/* .CreateBox */ .an)("baseBox", { size: 1 }, scene);
-        baseBox.receiveShadows = true;
-        shadowGenerator.addShadowCaster(baseBox);
         const baseSphere = (0,_babylonjs_core__WEBPACK_IMPORTED_MODULE_3__/* .CreateSphere */ ._6X)("baseSphere", { diameter: 1 }, scene);
-        baseSphere.receiveShadows = true;
         baseBox.setEnabled(false);
         baseSphere.setEnabled(false);
         for (let i = 0; i < rbCount * rowCount * columnCount; ++i) {
             const shapeInfo = shapeInfoList[i % shapeInfoList.length];
             const mesh = shapeInfo.type === "box" ? baseBox.createInstance(`boxInstance${i}`) : baseSphere.createInstance(`sphereInstance${i}`);
+            mesh.receiveShadows = true;
+            shadowGenerator.addShadowCaster(mesh);
             mesh.scaling.copyFrom(shapeInfo.type === "box" ? shapeInfo.size.scale(2) : new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(shapeInfo.radius, shapeInfo.radius, shapeInfo.radius).scale(2));
             mesh.rotationQuaternion = _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Quaternion */ .PT.Identity();
             meshes.push(mesh);
