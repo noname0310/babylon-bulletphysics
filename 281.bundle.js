@@ -24,7 +24,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Runtime_constraint__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(67168);
 /* harmony import */ var _Runtime_Impl_physicsRuntime__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(25203);
 /* harmony import */ var _Runtime_Impl_physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(29009);
-/* harmony import */ var _Runtime_InstanceType_multiDebug__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(47002);
+/* harmony import */ var _Runtime_InstanceType_multiRelease__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(27744);
 /* harmony import */ var _Runtime_physicsShape__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(26405);
 /* harmony import */ var _Runtime_rigidBody__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(1592);
 /* harmony import */ var _Runtime_rigidBodyBundle__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(67648);
@@ -87,7 +87,7 @@ class SceneBuilder {
         shadowGenerator.forceBackFacesOnly = false;
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = _babylonjs_core_Lights_Shadows_shadowGenerator__WEBPACK_IMPORTED_MODULE_6__/* .ShadowGenerator */ .o.QUALITY_MEDIUM;
-        const wasmInstance = await (0,_Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_12__/* .getBulletWasmInstance */ .e)(new _Runtime_InstanceType_multiDebug__WEBPACK_IMPORTED_MODULE_13__/* .BulletWasmInstanceTypeMD */ .t(), 4);
+        const wasmInstance = await (0,_Runtime_bulletWasmInstance__WEBPACK_IMPORTED_MODULE_12__/* .getBulletWasmInstance */ .e)(new _Runtime_InstanceType_multiRelease__WEBPACK_IMPORTED_MODULE_13__/* .BulletWasmInstanceTypeMR */ .t(), 4);
         const runtime = new _Runtime_Impl_physicsRuntime__WEBPACK_IMPORTED_MODULE_14__/* .PhysicsRuntime */ .w(wasmInstance);
         runtime.evaluationType = _Runtime_Impl_physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_15__/* .PhysicsRuntimeEvaluationType */ .q.Immediate;
         const matrix = new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Matrix */ .uq();
@@ -162,64 +162,6 @@ class SceneBuilder {
         benchHelper.runBench();
         runtime.register(scene);
         return scene;
-    }
-}
-
-
-/***/ }),
-
-/***/ 89800:
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   X: () => (/* binding */ BenchHelper)
-/* harmony export */ });
-class BenchHelper {
-    sampleCount;
-    showFpsPerFrame;
-    _func;
-    constructor(func) {
-        this.sampleCount = 600;
-        this.showFpsPerFrame = false;
-        this._func = func;
-    }
-    runBench() {
-        const sampledFps = [];
-        const sampleCount = this.sampleCount;
-        for (let i = 0; i < sampleCount; ++i) {
-            const start = performance.now();
-            this._func();
-            const end = performance.now();
-            const fps = 1000 / (end - start);
-            sampledFps.push(fps);
-        }
-        let averageFps = 0;
-        let resultString = "";
-        if (this.showFpsPerFrame) {
-            let result = "";
-            for (let i = 0; i < sampleCount; ++i) {
-                result += `(${i}, ${sampledFps[i]})`;
-                if (i !== sampleCount - 1) {
-                    result += ", ";
-                }
-                averageFps += sampledFps[i];
-            }
-            resultString += `Result: ${result}`;
-            console.log(resultString);
-        }
-        else {
-            for (let i = 0; i < sampleCount; ++i) {
-                averageFps += sampledFps[i];
-            }
-        }
-        resultString += `Average: ${averageFps / sampleCount}`;
-        const div = document.createElement("div");
-        div.style.position = "absolute";
-        div.style.top = "0";
-        div.style.left = "0";
-        div.style.color = "black";
-        div.textContent = resultString;
-        document.body.appendChild(div);
     }
 }
 
