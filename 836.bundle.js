@@ -8,7 +8,7 @@
 /* harmony export */   D: () => (/* binding */ NullPhysicsRuntime)
 /* harmony export */ });
 /* harmony import */ var _Immediate_immediateRigidBodyBundleImpl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5228);
-/* harmony import */ var _Immediate_immediateRigidBodyImpl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4444);
+/* harmony import */ var _Immediate_immediateRigidBodyImpl__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(94444);
 
 
 class NullSpinlock {
@@ -43,7 +43,7 @@ class NullPhysicsRuntime {
 
 /***/ }),
 
-/***/ 7744:
+/***/ 27744:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -1094,7 +1094,7 @@ async function __wbg_init(module_or_path, memory) {
     console.warn('using deprecated parameters for the initialization function; pass a single object instead')
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL(/* asset import */ __webpack_require__(9603), __webpack_require__.b);
+        module_or_path = new URL(/* asset import */ __webpack_require__(79603), __webpack_require__.b);
     }
     const imports = __wbg_get_imports();
 
@@ -1138,7 +1138,7 @@ class BulletWasmInstanceTypeMR {
 
 /***/ }),
 
-/***/ 1167:
+/***/ 91167:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -1980,7 +1980,7 @@ async function __wbg_init(module_or_path) {
     console.warn('using deprecated parameters for the initialization function; pass a single object instead')
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL(/* asset import */ __webpack_require__(8865), __webpack_require__.b);
+        module_or_path = new URL(/* asset import */ __webpack_require__(48865), __webpack_require__.b);
     }
     const imports = __wbg_get_imports();
 
@@ -2016,7 +2016,7 @@ class BulletWasmInstanceTypeSR {
 
 /***/ }),
 
-/***/ 5733:
+/***/ 15733:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -2495,7 +2495,7 @@ class MultiPhysicsWorld {
 
 /***/ }),
 
-/***/ 9800:
+/***/ 89800:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -2553,17 +2553,17 @@ class BenchHelper {
 
 /***/ }),
 
-/***/ 9603:
+/***/ 79603:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "d556aad1c8e43d63e25f.wasm";
+module.exports = __webpack_require__.p + "aaf64dc7052e87f54eac.wasm";
 
 /***/ }),
 
-/***/ 8865:
+/***/ 48865:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "b7f1eaef3d763a1c0088.wasm";
+module.exports = __webpack_require__.p + "01db62e7ad31b5376620.wasm";
 
 /***/ })
 

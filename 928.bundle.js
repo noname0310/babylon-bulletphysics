@@ -1,7 +1,7 @@
 "use strict";
 (self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[928],{
 
-/***/ 9928:
+/***/ 89928:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -12,9 +12,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   DumpFramebuffer: () => (/* binding */ DumpFramebuffer),
 /* harmony export */   DumpTools: () => (/* binding */ DumpTools)
 /* harmony export */ });
-/* harmony import */ var _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4255);
+/* harmony import */ var _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(84255);
 /* harmony import */ var _tools_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(998);
-/* harmony import */ var _Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4867);
+/* harmony import */ var _Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(84867);
 /* harmony import */ var _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(6315);
 
 
@@ -37,7 +37,7 @@ async function _CreateDumpRenderer() {
                 antialias: false,
                 failIfMajorPerformanceCaveat: false,
             };
-            Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 6321))
+            Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 86514))
                 .then(({ ThinEngine: thinEngineClass }) => {
                 try {
                     canvas = new OffscreenCanvas(100, 100); // will be resized later
@@ -61,7 +61,7 @@ async function _CreateDumpRenderer() {
                 });
                 engine.getCaps().parallelShaderCompile = undefined;
                 const renderer = new _Materials_effectRenderer_js__WEBPACK_IMPORTED_MODULE_0__/* .EffectRenderer */ .J(engine);
-                __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 9820)).then(({ passPixelShader }) => {
+                __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 79820)).then(({ passPixelShader }) => {
                     if (!engine) {
                         reject("Engine is not defined");
                         return;
@@ -141,7 +141,7 @@ function DumpData(width, height, data, successCallback, mimeType = "image/png", 
             let n = data.length;
             while (n--) {
                 const v = data[n];
-                data2[n] = Math.round((0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_2__/* .Clamp */ .OQ)(v) * 255);
+                data2[n] = Math.round((0,_Maths_math_scalar_functions_js__WEBPACK_IMPORTED_MODULE_2__.Clamp)(v) * 255);
             }
             data = data2;
         }

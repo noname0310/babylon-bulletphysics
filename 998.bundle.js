@@ -1,13 +1,13 @@
 "use strict";
 (self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[998],{
 
-/***/ 4609:
+/***/ 74609:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   r: () => (/* binding */ DeepCopier)
 /* harmony export */ });
-/* harmony import */ var _logger_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1137);
+/* harmony import */ var _logger_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(51137);
 
 const CloneValue = (source, destinationObject, shallowCopyValues) => {
     if (!source) {
@@ -120,19 +120,19 @@ class DeepCopier {
 /* harmony export */   S0: () => (/* binding */ Tools)
 /* harmony export */ });
 /* unused harmony export className */
-/* harmony import */ var _observable_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9848);
-/* harmony import */ var _domManagement_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(8790);
-/* harmony import */ var _logger_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(1137);
-/* harmony import */ var _deepCopier_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4609);
-/* harmony import */ var _precisionDate_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6237);
-/* harmony import */ var _devTools_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(5503);
-/* harmony import */ var _webRequest_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(2366);
+/* harmony import */ var _observable_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(99848);
+/* harmony import */ var _domManagement_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(18790);
+/* harmony import */ var _logger_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(51137);
+/* harmony import */ var _deepCopier_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(74609);
+/* harmony import */ var _precisionDate_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(76237);
+/* harmony import */ var _devTools_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(45503);
+/* harmony import */ var _webRequest_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(62366);
 /* harmony import */ var _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(6315);
-/* harmony import */ var _fileTools_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(655);
+/* harmony import */ var _fileTools_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(8532);
 /* harmony import */ var _timingTools_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(2940);
-/* harmony import */ var _instantiationTools_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(9337);
-/* harmony import */ var _guid_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(8688);
-/* harmony import */ var _tools_functions_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(1597);
+/* harmony import */ var _instantiationTools_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(79337);
+/* harmony import */ var _guid_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(38688);
+/* harmony import */ var _tools_functions_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(91597);
 
 
 

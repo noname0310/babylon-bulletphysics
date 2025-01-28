@@ -57,7 +57,7 @@ class ImmediateRigidBodyBundleImpl {
 
 /***/ }),
 
-/***/ 4444:
+/***/ 94444:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -88,7 +88,7 @@ class ImmediateRigidBodyImpl {
 
 /***/ }),
 
-/***/ 6738:
+/***/ 46738:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 
@@ -200,7 +200,7 @@ async function getBulletWasmInstance(instanceType, threadCount = navigator.hardw
 
 /***/ }),
 
-/***/ 7168:
+/***/ 67168:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -444,14 +444,15 @@ class Generic6DofSpringConstraint extends Constraint {
 
 /***/ }),
 
-/***/ 6405:
+/***/ 26405:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   O4: () => (/* binding */ PhysicsSphereShape),
 /* harmony export */   SA: () => (/* binding */ PhysicsBoxShape),
 /* harmony export */   Ty: () => (/* binding */ PhysicsStaticPlaneShape)
 /* harmony export */ });
-/* unused harmony exports PhysicsShape, PhysicsSphereShape, PhysicsCapsuleShape */
+/* unused harmony exports PhysicsShape, PhysicsCapsuleShape */
 class PhysicsShapeInner {
     _wasmInstance;
     _ptr;
@@ -825,7 +826,7 @@ class RigidBody {
 
 /***/ }),
 
-/***/ 5901:
+/***/ 35901:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {

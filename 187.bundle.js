@@ -1,6 +1,6 @@
 (self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[187],{
 
-/***/ 9800:
+/***/ 89800:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -59,7 +59,7 @@ class BenchHelper {
 
 /***/ }),
 
-/***/ 7774:
+/***/ 67774:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -73,12 +73,12 @@ class BenchHelper {
   var moduleRtn;
 
 var c=moduleArg,aa,ba,ca=new Promise((a,b)=>{aa=a;ba=b}),da="object"==typeof window,ea="function"==typeof importScripts,fa="object"==typeof process&&"object"==typeof process.versions&&"string"==typeof process.versions.node,ha=Object.assign({},c),ia="",ja,ka;
-if(fa){var fs=__webpack_require__(7333),la=__webpack_require__(3441);ia=__dirname+"/";ka=a=>{a=ma(a)?new URL(a):la.normalize(a);return fs.readFileSync(a)};ja=a=>{a=ma(a)?new URL(a):la.normalize(a);return new Promise((b,e)=>{fs.readFile(a,void 0,(f,g)=>{f?e(f):b(g.buffer)})})};!c.thisProgram&&1<process.argv.length&&process.argv[1].replace(/\\/g,"/");process.argv.slice(2)}else if(da||ea)ea?ia=self.location.href:"undefined"!=typeof document&&document.currentScript&&(ia=document.currentScript.src),
+if(fa){var fs=__webpack_require__(87333),la=__webpack_require__(93441);ia=__dirname+"/";ka=a=>{a=ma(a)?new URL(a):la.normalize(a);return fs.readFileSync(a)};ja=a=>{a=ma(a)?new URL(a):la.normalize(a);return new Promise((b,e)=>{fs.readFile(a,void 0,(f,g)=>{f?e(f):b(g.buffer)})})};!c.thisProgram&&1<process.argv.length&&process.argv[1].replace(/\\/g,"/");process.argv.slice(2)}else if(da||ea)ea?ia=self.location.href:"undefined"!=typeof document&&document.currentScript&&(ia=document.currentScript.src),
 ia=ia.startsWith("blob:")?"":ia.substr(0,ia.replace(/[?#].*/,"").lastIndexOf("/")+1),ea&&(ka=a=>{var b=new XMLHttpRequest;b.open("GET",a,!1);b.responseType="arraybuffer";b.send(null);return new Uint8Array(b.response)}),ja=a=>ma(a)?new Promise((b,e)=>{var f=new XMLHttpRequest;f.open("GET",a,!0);f.responseType="arraybuffer";f.onload=()=>{(200==f.status||0==f.status&&f.response)&&e(f.response);b(f.status)};f.onerror=b;f.send(null)}):fetch(a,{credentials:"same-origin"}).then(b=>b.ok?b.arrayBuffer():Promise.reject(Error(b.status+
 " : "+b.url)));c.print||console.log.bind(console);var na=c.printErr||console.error.bind(console);Object.assign(c,ha);ha=null;var oa;c.wasmBinary&&(oa=c.wasmBinary);var pa,qa=!1,ra,sa,ta,va,wa,xa;function ya(){var a=pa.buffer;c.HEAP8=ra=new Int8Array(a);c.HEAP16=new Int16Array(a);c.HEAPU8=sa=new Uint8Array(a);c.HEAPU16=new Uint16Array(a);c.HEAP32=ta=new Int32Array(a);c.HEAPU32=va=new Uint32Array(a);c.HEAPF32=wa=new Float32Array(a);c.HEAPF64=xa=new Float64Array(a)}var za=[],Aa=[],Ba=[],Ca=!1;
 function Da(){var a=c.preRun.shift();za.unshift(a)}var Ea=0,Fa=null,Ga=null;function Ha(a){c.onAbort?.(a);a="Aborted("+a+")";na(a);qa=!0;a=new WebAssembly.RuntimeError(a+". Build with -sASSERTIONS for more info.");ba(a);throw a;}var Ia=a=>a.startsWith("data:application/octet-stream;base64,"),ma=a=>a.startsWith("file://"),Ja;function Ka(a){if(a==Ja&&oa)return new Uint8Array(oa);if(ka)return ka(a);throw"both async and sync fetching of the wasm failed";}
 function La(a){return oa?Promise.resolve().then(()=>Ka(a)):ja(a).then(b=>new Uint8Array(b),()=>Ka(a))}function Ma(a,b,e){return La(a).then(f=>WebAssembly.instantiate(f,b)).then(e,f=>{na(`failed to asynchronously prepare wasm: ${f}`);Ha(f)})}
-function Na(a,b){var e=Ja;return oa||"function"!=typeof WebAssembly.instantiateStreaming||Ia(e)||ma(e)||fa||"function"!=typeof fetch?Ma(e,a,b):fetch(new URL(/* asset import */ __webpack_require__(8982), __webpack_require__.b),{credentials:"same-origin"}).then(f=>WebAssembly.instantiateStreaming(f,a).then(b,function(g){na(`wasm streaming compile failed: ${g}`);na("falling back to ArrayBuffer instantiation");return Ma(e,a,b)}))}
+function Na(a,b){var e=Ja;return oa||"function"!=typeof WebAssembly.instantiateStreaming||Ia(e)||ma(e)||fa||"function"!=typeof fetch?Ma(e,a,b):fetch(new URL(/* asset import */ __webpack_require__(18982), __webpack_require__.b),{credentials:"same-origin"}).then(f=>WebAssembly.instantiateStreaming(f,a).then(b,function(g){na(`wasm streaming compile failed: ${g}`);na("falling back to ArrayBuffer instantiation");return Ma(e,a,b)}))}
 var Oa={29271:(a,b,e,f)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("drawLine"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::drawLine.";a.drawLine(b,e,f)},29491:(a,b,e,f,g,q)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("drawContactPoint"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::drawContactPoint.";a.drawContactPoint(b,e,f,g,q)},29741:(a,b)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("reportErrorWarning"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::reportErrorWarning.";
 a.reportErrorWarning(b)},29985:(a,b,e)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("draw3dText"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::draw3dText.";a.draw3dText(b,e)},30208:(a,b)=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("setDebugMode"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::setDebugMode.";a.setDebugMode(b)},30434:a=>{a=c.getCache(c.DebugDrawer)[a];if(!a.hasOwnProperty("getDebugMode"))throw"a JSImplementation must implement all functions, you forgot DebugDrawer::getDebugMode.";
 return a.getDebugMode()},30665:(a,b)=>{a=c.getCache(c.MotionState)[a];if(!a.hasOwnProperty("getWorldTransform"))throw"a JSImplementation must implement all functions, you forgot MotionState::getWorldTransform.";a.getWorldTransform(b)},30906:(a,b)=>{a=c.getCache(c.MotionState)[a];if(!a.hasOwnProperty("setWorldTransform"))throw"a JSImplementation must implement all functions, you forgot MotionState::setWorldTransform.";a.setWorldTransform(b)},31147:(a,b,e,f,g,q,C,Q)=>{a=c.getCache(c.ConcreteContactResultCallback)[a];
@@ -1075,7 +1075,7 @@ c.CONTACT_ADDED_CALLBACK_SIGNATURE="iiiiiiii";c.CONTACT_DESTROYED_CALLBACK_SIGNA
 
 /***/ }),
 
-/***/ 8982:
+/***/ 18982:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
@@ -1083,14 +1083,14 @@ module.exports = __webpack_require__.p + "0be8d70afe6498932e51.wasm";
 
 /***/ }),
 
-/***/ 7333:
+/***/ 87333:
 /***/ (() => {
 
 /* (ignored) */
 
 /***/ }),
 
-/***/ 3441:
+/***/ 93441:
 /***/ (() => {
 
 /* (ignored) */

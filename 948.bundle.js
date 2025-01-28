@@ -1,7 +1,7 @@
 "use strict";
 (self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[948],{
 
-/***/ 912:
+/***/ 40912:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -89,7 +89,7 @@ class BufferedRigidBodyBundleImpl {
 
 /***/ }),
 
-/***/ 3880:
+/***/ 23880:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -136,22 +136,22 @@ class BufferedRigidBodyImpl {
 
 /***/ }),
 
-/***/ 3948:
+/***/ 23948:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   h: () => (/* binding */ MultiPhysicsRuntime)
 /* harmony export */ });
-/* harmony import */ var _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9923);
-/* harmony import */ var _babylonjs_core_Misc_observable__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9848);
-/* harmony import */ var _babylonjs_core_scene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(554);
-/* harmony import */ var _Misc_wasmSpinlock__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(37);
-/* harmony import */ var _multiPhysicsWorld__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5733);
-/* harmony import */ var _Buffered_bufferedRigidBodyBundleImpl__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(912);
-/* harmony import */ var _Buffered_bufferedRigidBodyImpl__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(3880);
+/* harmony import */ var _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(79923);
+/* harmony import */ var _babylonjs_core_Misc_observable__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(99848);
+/* harmony import */ var _babylonjs_core_scene__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(87491);
+/* harmony import */ var _Misc_wasmSpinlock__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(30037);
+/* harmony import */ var _multiPhysicsWorld__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(15733);
+/* harmony import */ var _Buffered_bufferedRigidBodyBundleImpl__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(40912);
+/* harmony import */ var _Buffered_bufferedRigidBodyImpl__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(23880);
 /* harmony import */ var _Immediate_immediateRigidBodyBundleImpl__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(5228);
-/* harmony import */ var _Immediate_immediateRigidBodyImpl__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(4444);
-/* harmony import */ var _physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(9009);
+/* harmony import */ var _Immediate_immediateRigidBodyImpl__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(94444);
+/* harmony import */ var _physicsRuntimeEvaluationType__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(29009);
 
 
 
@@ -632,7 +632,7 @@ class MultiPhysicsRuntime {
 
 /***/ }),
 
-/***/ 9009:
+/***/ 29009:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -647,7 +647,7 @@ var PhysicsRuntimeEvaluationType;
 
 /***/ }),
 
-/***/ 37:
+/***/ 30037:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -689,7 +689,7 @@ class WasmSpinlock {
 
 /***/ }),
 
-/***/ 5733:
+/***/ 15733:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {

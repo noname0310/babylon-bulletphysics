@@ -2,14 +2,14 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 9845:
+/***/ 79845:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "b7a1fe5323f841660209.wasm";
+module.exports = __webpack_require__.p + "82487c37c003355b3804.wasm";
 
 /***/ }),
 
-/***/ 7909:
+/***/ 17909:
 /***/ ((__unused_webpack___webpack_module__, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -76,6 +76,26 @@ async function startWorkers(module, memory, builder) {
 
 let wasm;
 
+const heap = new Array(128).fill(undefined);
+
+heap.push(undefined, null, true, false);
+
+function getObject(idx) { return heap[idx]; }
+
+let heap_next = heap.length;
+
+function dropObject(idx) {
+    if (idx < 132) return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
+}
+
 const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
 
 if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
@@ -94,12 +114,6 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8ArrayMemory0().slice(ptr, ptr + len));
 }
 
-const heap = new Array(128).fill(undefined);
-
-heap.push(undefined, null, true, false);
-
-let heap_next = heap.length;
-
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);
     const idx = heap_next;
@@ -109,20 +123,6 @@ function addHeapObject(obj) {
 
     heap[idx] = obj;
     return idx;
-}
-
-function getObject(idx) { return heap[idx]; }
-
-function dropObject(idx) {
-    if (idx < 132) return;
-    heap[idx] = heap_next;
-    heap_next = idx;
-}
-
-function takeObject(idx) {
-    const ret = getObject(idx);
-    dropObject(idx);
-    return ret;
 }
 
 function _assertBoolean(n) {
@@ -249,46 +249,6 @@ function rigidBodyBundleRestoreDynamic(ptr, index) {
 }
 
 /**
-* @param {number} physics_world
-* @returns {number}
-*/
-function createMultiPhysicsRuntime(physics_world) {
-    _assertNum(physics_world);
-    const ret = wasm.createMultiPhysicsRuntime(physics_world);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-*/
-function destroyMultiPhysicsRuntime(physics_runtime) {
-    _assertNum(physics_runtime);
-    wasm.destroyMultiPhysicsRuntime(physics_runtime);
-}
-
-/**
-* @param {number} runtime
-* @returns {number}
-*/
-function multiPhysicsRuntimeGetLockStatePtr(runtime) {
-    _assertNum(runtime);
-    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
-    _assertNum(physics_runtime);
-    _assertNum(max_sub_steps);
-    wasm.multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
 * @returns {number}
 */
 function createPhysicsWorld() {
@@ -400,59 +360,30 @@ function physicsWorldUseMotionStateBuffer(world, use_buffer) {
 }
 
 /**
-*/
-function init() {
-    wasm.init();
-}
-
-/**
-* @param {number} size
-* @returns {number}
-*/
-function allocateBuffer(size) {
-    _assertNum(size);
-    const ret = wasm.allocateBuffer(size);
-    return ret >>> 0;
-}
-
-/**
-* Deallocate a buffer allocated by `allocateBuffer`.
-* # Safety
-* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
-* @param {number} ptr
-* @param {number} size
-*/
-function deallocateBuffer(ptr, size) {
-    _assertNum(ptr);
-    _assertNum(size);
-    wasm.deallocateBuffer(ptr, size);
-}
-
-/**
 * @param {number} physics_world
 * @returns {number}
 */
-function createPhysicsRuntime(physics_world) {
+function createMultiPhysicsRuntime(physics_world) {
     _assertNum(physics_world);
-    const ret = wasm.createPhysicsRuntime(physics_world);
+    const ret = wasm.createMultiPhysicsRuntime(physics_world);
     return ret >>> 0;
 }
 
 /**
 * @param {number} physics_runtime
 */
-function destroyPhysicsRuntime(physics_runtime) {
+function destroyMultiPhysicsRuntime(physics_runtime) {
     _assertNum(physics_runtime);
-    wasm.destroyPhysicsRuntime(physics_runtime);
+    wasm.destroyMultiPhysicsRuntime(physics_runtime);
 }
 
 /**
-* @param {number} physics_runtime
+* @param {number} runtime
 * @returns {number}
 */
-function physicsRuntimeGetLockStatePtr(physics_runtime) {
-    _assertNum(physics_runtime);
-    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
+function multiPhysicsRuntimeGetLockStatePtr(runtime) {
+    _assertNum(runtime);
+    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
     return ret >>> 0;
 }
 
@@ -462,10 +393,10 @@ function physicsRuntimeGetLockStatePtr(physics_runtime) {
 * @param {number} max_sub_steps
 * @param {number} fixed_time_step
 */
-function physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
+function multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
     _assertNum(physics_runtime);
     _assertNum(max_sub_steps);
-    wasm.physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
+    wasm.multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
 }
 
 /**
@@ -893,6 +824,75 @@ function constraintSetDamping(ptr, index, damping) {
     wasm.constraintSetDamping(ptr, index, damping);
 }
 
+/**
+*/
+function init() {
+    wasm.init();
+}
+
+/**
+* @param {number} size
+* @returns {number}
+*/
+function allocateBuffer(size) {
+    _assertNum(size);
+    const ret = wasm.allocateBuffer(size);
+    return ret >>> 0;
+}
+
+/**
+* Deallocate a buffer allocated by `allocateBuffer`.
+* # Safety
+* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
+* @param {number} ptr
+* @param {number} size
+*/
+function deallocateBuffer(ptr, size) {
+    _assertNum(ptr);
+    _assertNum(size);
+    wasm.deallocateBuffer(ptr, size);
+}
+
+/**
+* @param {number} physics_world
+* @returns {number}
+*/
+function createPhysicsRuntime(physics_world) {
+    _assertNum(physics_world);
+    const ret = wasm.createPhysicsRuntime(physics_world);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+*/
+function destroyPhysicsRuntime(physics_runtime) {
+    _assertNum(physics_runtime);
+    wasm.destroyPhysicsRuntime(physics_runtime);
+}
+
+/**
+* @param {number} physics_runtime
+* @returns {number}
+*/
+function physicsRuntimeGetLockStatePtr(physics_runtime) {
+    _assertNum(physics_runtime);
+    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
+    _assertNum(physics_runtime);
+    _assertNum(max_sub_steps);
+    wasm.physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
+}
+
 function logError(f, args) {
     try {
         return f.apply(this, args);
@@ -1088,12 +1088,12 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
+    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+        takeObject(arg0);
+    };
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
         const ret = getStringFromWasm0(arg0, arg1);
         return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-        takeObject(arg0);
     };
     imports.wbg.__wbg_new_abda76e883ba8a5f = function() { return logError(function () {
         const ret = new Error();
@@ -1233,7 +1233,7 @@ async function __wbg_init(module_or_path, memory) {
     console.warn('using deprecated parameters for the initialization function; pass a single object instead')
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL(/* asset import */ __webpack_require__(9845), __webpack_require__.b);
+        module_or_path = new URL(/* asset import */ __webpack_require__(79845), __webpack_require__.b);
     }
     const imports = __wbg_get_imports();
 
@@ -1386,7 +1386,7 @@ onmessage = async ({ data: { receiver, ...initData } }) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__(7909);
+/******/ 	var __webpack_exports__ = __webpack_require__(17909);
 /******/ 	
 /******/ })()
 ;
