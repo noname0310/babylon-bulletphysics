@@ -191,16 +191,15 @@ export class SceneBuilder implements ISceneBuilder {
         const meshes: InstancedMesh[] = [];
 
         const baseBox = CreateBox("baseBox", { size: 1 }, scene);
-        baseBox.receiveShadows = true;
-        shadowGenerator.addShadowCaster(baseBox);
         const baseSphere = CreateSphere("baseSphere", { diameter: 1 }, scene);
-        baseSphere.receiveShadows = true;
         baseBox.setEnabled(false);
         baseSphere.setEnabled(false);
 
         for (let i = 0; i < rbCount * rowCount * columnCount; ++i) {
             const shapeInfo = shapeInfoList[i % shapeInfoList.length];
             const mesh = shapeInfo.type === "box" ? baseBox.createInstance(`boxInstance${i}`) : baseSphere.createInstance(`sphereInstance${i}`);
+            mesh.receiveShadows = true;
+            shadowGenerator.addShadowCaster(mesh);
             mesh.scaling.copyFrom(shapeInfo.type === "box" ? shapeInfo.size.scale(2) : new Vector3(shapeInfo.radius, shapeInfo.radius, shapeInfo.radius).scale(2));
             mesh.rotationQuaternion = Quaternion.Identity();
             meshes.push(mesh);
