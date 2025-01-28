@@ -196,7 +196,7 @@ class _IESTextureLoader {
     loadData(data, texture, callback) {
         const uint8array = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
         const textureData = LoadIESData(uint8array);
-        callback(textureData.width, textureData.height, texture.generateMipMaps, false, () => {
+        callback(textureData.width, textureData.height, false, false, () => {
             const engine = texture.getEngine();
             texture.type = 1;
             texture.format = 6;

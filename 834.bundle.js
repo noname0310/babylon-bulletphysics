@@ -30,8 +30,8 @@ var scene = __webpack_require__(554);
 var postProcess = __webpack_require__(7891);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/logger.js
 var logger = __webpack_require__(1137);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/textureTools.js + 1 modules
-var textureTools = __webpack_require__(1947);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/textureTools.js + 2 modules
+var textureTools = __webpack_require__(8864);
 ;// ./node_modules/@babylonjs/core/Misc/rgbdTextureTools.js
 
 
@@ -75,10 +75,10 @@ class RGBDTextureTools {
             const shaderLanguage = isWebGPU ? 1 /* ShaderLanguage.WGSL */ : 0 /* ShaderLanguage.GLSL */;
             internalTexture.isReady = false;
             if (isWebGPU) {
-                await Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 371)), __webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 5035))]);
+                await __webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 371));
             }
             else {
-                await Promise.all([__webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 9682)), __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 2646))]);
+                await __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 9682));
             }
             // Expand the texture if possible
             // Simply run through the decode PP.
@@ -130,7 +130,13 @@ class RGBDTextureTools {
      * @param outputTextureType type of the texture in which the encoding is performed
      * @returns a promise with the internalTexture having its texture replaced by the result of the processing
      */
-    static EncodeTextureToRGBD(internalTexture, scene, outputTextureType = 0) {
+    static async EncodeTextureToRGBD(internalTexture, scene, outputTextureType = 0) {
+        if (!scene.getEngine().isWebGPU) {
+            await __webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 2646));
+        }
+        else {
+            await __webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 5035));
+        }
         return (0,textureTools/* ApplyPostProcess */.Qs)("rgbdEncode", internalTexture, scene, outputTextureType, 1, 5);
     }
 }

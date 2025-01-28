@@ -5438,7 +5438,7 @@ class InputManager {
         }
     }
     /**
-     * Force the value of meshUnderPointer
+     * Set the value of meshUnderPointer for a given pointerId
      * @param mesh - defines the mesh to use
      * @param pointerId - optional pointer id when using more than one pointer. Defaults to 0
      * @param pickResult - optional pickingInfo data used to find mesh
@@ -5453,7 +5453,7 @@ class InputManager {
         if (underPointerMesh) {
             actionManager = underPointerMesh._getActionManagerForTrigger(10);
             if (actionManager) {
-                actionManager.processTrigger(10, ActionEvent.CreateNew(underPointerMesh, evt, { pointerId }));
+                actionManager.processTrigger(10, new ActionEvent(underPointerMesh, this._pointerX, this._pointerY, mesh, evt, { pointerId }));
             }
         }
         if (mesh) {
@@ -5461,12 +5461,19 @@ class InputManager {
             this._pointerOverMesh = mesh;
             actionManager = mesh._getActionManagerForTrigger(9);
             if (actionManager) {
-                actionManager.processTrigger(9, ActionEvent.CreateNew(mesh, evt, { pointerId, pickResult }));
+                actionManager.processTrigger(9, new ActionEvent(mesh, this._pointerX, this._pointerY, mesh, evt, { pointerId, pickResult }));
             }
         }
         else {
             delete this._meshUnderPointerId[pointerId];
             this._pointerOverMesh = null;
+        }
+        // if we reached this point, meshUnderPointerId has been updated. We need to notify observers that are registered.
+        if (this._scene.onMeshUnderPointerUpdatedObservable.hasObservers()) {
+            this._scene.onMeshUnderPointerUpdatedObservable.notifyObservers({
+                mesh,
+                pointerId,
+            });
         }
     }
     /**
@@ -5944,7 +5951,11 @@ class Scene {
      * @returns the computed eye position
      */
     bindEyePosition(effect, variableName = "vEyePosition", isVector3 = false) {
-        const eyePosition = this._forcedViewPosition ? this._forcedViewPosition : this._mirroredCameraPosition ? this._mirroredCameraPosition : this.activeCamera.globalPosition;
+        const eyePosition = this._forcedViewPosition
+            ? this._forcedViewPosition
+            : this._mirroredCameraPosition
+                ? this._mirroredCameraPosition
+                : (this.activeCamera?.globalPosition ?? math_vector/* Vector3 */.Pq.ZeroReadOnly);
         const invertNormal = this.useRightHandedSystem === (this._mirroredCameraPosition != null);
         math_vector/* TmpVectors */.AA.Vector4[0].set(eyePosition.x, eyePosition.y, eyePosition.z, invertNormal ? -1 : 1);
         if (effect) {
@@ -6613,6 +6624,10 @@ class Scene {
          * An event triggered when the environmentTexture is changed.
          */
         this.onEnvironmentTextureChangedObservable = new observable/* Observable */.cP();
+        /**
+         * An event triggered when the state of mesh under pointer, for a specific pointerId, changes.
+         */
+        this.onMeshUnderPointerUpdatedObservable = new observable/* Observable */.cP();
         // Animations
         /** @internal */
         this._registeredForLateAnimationBindings = new smartArray/* SmartArrayNoDuplicate */.b(256);
@@ -8999,7 +9014,14 @@ class Scene {
         const len = meshes.length;
         for (let i = 0; i < len; i++) {
             const mesh = meshes.data[i];
-            mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate = false;
+            let currentLOD = mesh._internalAbstractMeshDataInfo._currentLOD.get(this.activeCamera);
+            if (currentLOD) {
+                currentLOD[1] = -1;
+            }
+            else {
+                currentLOD = [mesh, -1];
+                mesh._internalAbstractMeshDataInfo._currentLOD.set(this.activeCamera, currentLOD);
+            }
             if (mesh.isBlocked) {
                 continue;
             }
@@ -9014,8 +9036,8 @@ class Scene {
             }
             // Switch to current LOD
             let meshToRender = this.customLODSelector ? this.customLODSelector(mesh, this.activeCamera) : mesh.getLOD(this.activeCamera);
-            mesh._internalAbstractMeshDataInfo._currentLOD = meshToRender;
-            mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate = true;
+            currentLOD[0] = meshToRender;
+            currentLOD[1] = this._frameId;
             if (meshToRender === undefined || meshToRender === null) {
                 continue;
             }
@@ -9773,11 +9795,15 @@ class Scene {
             this._engine.scenes.splice(index, 1);
         }
         if (engineStore/* EngineStore */.q._LastCreatedScene === this) {
-            if (this._engine.scenes.length > 0) {
-                engineStore/* EngineStore */.q._LastCreatedScene = this._engine.scenes[this._engine.scenes.length - 1];
-            }
-            else {
-                engineStore/* EngineStore */.q._LastCreatedScene = null;
+            engineStore/* EngineStore */.q._LastCreatedScene = null;
+            let engineIndex = engineStore/* EngineStore */.q.Instances.length - 1;
+            while (engineIndex >= 0) {
+                const engine = engineStore/* EngineStore */.q.Instances[engineIndex];
+                if (engine.scenes.length > 0) {
+                    engineStore/* EngineStore */.q._LastCreatedScene = engine.scenes[this._engine.scenes.length - 1];
+                    break;
+                }
+                engineIndex--;
             }
         }
         index = this._engine._virtualScenes.indexOf(this);
@@ -9834,6 +9860,7 @@ class Scene {
         this.onScenePerformancePriorityChangedObservable.clear();
         this.onClearColorChangedObservable.clear();
         this.onEnvironmentTextureChangedObservable.clear();
+        this.onMeshUnderPointerUpdatedObservable.clear();
         this._isDisposed = true;
     }
     _disposeList(items, callback) {

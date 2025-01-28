@@ -174,11 +174,536 @@ function takeObject(idx) {
     return ret;
 }
 
+function _assertNum(n) {
+    if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
+}
+/**
+* @param {number} physics_world
+* @returns {number}
+*/
+function createMultiPhysicsRuntime(physics_world) {
+    _assertNum(physics_world);
+    const ret = wasm.createMultiPhysicsRuntime(physics_world);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+*/
+function destroyMultiPhysicsRuntime(physics_runtime) {
+    _assertNum(physics_runtime);
+    wasm.destroyMultiPhysicsRuntime(physics_runtime);
+}
+
+/**
+* @param {number} runtime
+* @returns {number}
+*/
+function multiPhysicsRuntimeGetLockStatePtr(runtime) {
+    _assertNum(runtime);
+    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_world
+* @returns {number}
+*/
+function createPhysicsRuntime(physics_world) {
+    _assertNum(physics_world);
+    const ret = wasm.createPhysicsRuntime(physics_world);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} physics_runtime
+*/
+function destroyPhysicsRuntime(physics_runtime) {
+    _assertNum(physics_runtime);
+    wasm.destroyPhysicsRuntime(physics_runtime);
+}
+
+/**
+* @param {number} physics_runtime
+* @returns {number}
+*/
+function physicsRuntimeGetLockStatePtr(physics_runtime) {
+    _assertNum(physics_runtime);
+    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} info
+* @returns {number}
+*/
+function createRigidBody(info) {
+    _assertNum(info);
+    const ret = wasm.createRigidBody(info);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyRigidBody(ptr) {
+    _assertNum(ptr);
+    wasm.destroyRigidBody(ptr);
+}
+
+/**
+* @param {number} ptr
+* @returns {number}
+*/
+function rigidBodyGetMotionStatePtr(ptr) {
+    _assertNum(ptr);
+    const ret = wasm.rigidBodyGetMotionStatePtr(ptr);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+* @returns {number}
+*/
+function rigidBodyGetBufferedMotionStatePtr(ptr) {
+    _assertNum(ptr);
+    const ret = wasm.rigidBodyGetBufferedMotionStatePtr(ptr);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function rigidBodyMakeKinematic(ptr) {
+    _assertNum(ptr);
+    wasm.rigidBodyMakeKinematic(ptr);
+}
+
+/**
+* @param {number} ptr
+*/
+function rigidBodyRestoreDynamic(ptr) {
+    _assertNum(ptr);
+    wasm.rigidBodyRestoreDynamic(ptr);
+}
+
+/**
+* @param {number} info_list
+* @param {number} len
+* @returns {number}
+*/
+function createRigidBodyBundle(info_list, len) {
+    _assertNum(info_list);
+    _assertNum(len);
+    const ret = wasm.createRigidBodyBundle(info_list, len);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyRigidBodyBundle(ptr) {
+    _assertNum(ptr);
+    wasm.destroyRigidBodyBundle(ptr);
+}
+
+/**
+* @param {number} ptr
+* @returns {number}
+*/
+function rigidBodyBundleGetMotionStatesPtr(ptr) {
+    _assertNum(ptr);
+    const ret = wasm.rigidBodyBundleGetMotionStatesPtr(ptr);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+* @returns {number}
+*/
+function rigidBodyBundleGetBufferedMotionStatesPtr(ptr) {
+    _assertNum(ptr);
+    const ret = wasm.rigidBodyBundleGetBufferedMotionStatesPtr(ptr);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+* @param {number} index
+*/
+function rigidBodyBundleMakeKinematic(ptr, index) {
+    _assertNum(ptr);
+    _assertNum(index);
+    wasm.rigidBodyBundleMakeKinematic(ptr, index);
+}
+
+/**
+* @param {number} ptr
+* @param {number} index
+*/
+function rigidBodyBundleRestoreDynamic(ptr, index) {
+    _assertNum(ptr);
+    _assertNum(index);
+    wasm.rigidBodyBundleRestoreDynamic(ptr, index);
+}
+
+/**
+* @returns {number}
+*/
+function createPhysicsWorld() {
+    const ret = wasm.createPhysicsWorld();
+    return ret >>> 0;
+}
+
+/**
+* @param {number} world
+*/
+function destroyPhysicsWorld(world) {
+    _assertNum(world);
+    wasm.destroyPhysicsWorld(world);
+}
+
+/**
+* @param {number} world
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function physicsWorldSetGravity(world, x, y, z) {
+    _assertNum(world);
+    wasm.physicsWorldSetGravity(world, x, y, z);
+}
+
+/**
+* @param {number} world
+* @param {number} time_step
+* @param {number} max_sub_steps
+* @param {number} fixed_time_step
+*/
+function physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
+    _assertNum(world);
+    _assertNum(max_sub_steps);
+    wasm.physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
+}
+
+/**
+* @param {number} world
+* @param {number} rigidbody
+*/
+function physicsWorldAddRigidBody(world, rigidbody) {
+    _assertNum(world);
+    _assertNum(rigidbody);
+    wasm.physicsWorldAddRigidBody(world, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} rigidbody
+*/
+function physicsWorldRemoveRigidBody(world, rigidbody) {
+    _assertNum(world);
+    _assertNum(rigidbody);
+    wasm.physicsWorldRemoveRigidBody(world, rigidbody);
+}
+
+/**
+* @param {number} world
+* @param {number} bundle
+*/
+function physicsWorldAddRigidBodyBundle(world, bundle) {
+    _assertNum(world);
+    _assertNum(bundle);
+    wasm.physicsWorldAddRigidBodyBundle(world, bundle);
+}
+
+/**
+* @param {number} world
+* @param {number} bundle
+*/
+function physicsWorldRemoveRigidBodyBundle(world, bundle) {
+    _assertNum(world);
+    _assertNum(bundle);
+    wasm.physicsWorldRemoveRigidBodyBundle(world, bundle);
+}
+
 function _assertBoolean(n) {
     if (typeof(n) !== 'boolean') {
         throw new Error(`expected a boolean argument, found ${typeof(n)}`);
     }
 }
+/**
+* @param {number} world
+* @param {number} constraint
+* @param {boolean} disable_collisions_between_linked_bodies
+*/
+function physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies) {
+    _assertNum(world);
+    _assertNum(constraint);
+    _assertBoolean(disable_collisions_between_linked_bodies);
+    wasm.physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies);
+}
+
+/**
+* @param {number} world
+* @param {number} constraint
+*/
+function physicsWorldRemoveConstraint(world, constraint) {
+    _assertNum(world);
+    _assertNum(constraint);
+    wasm.physicsWorldRemoveConstraint(world, constraint);
+}
+
+/**
+* @param {number} world
+* @param {boolean} use_buffer
+*/
+function physicsWorldUseMotionStateBuffer(world, use_buffer) {
+    _assertNum(world);
+    _assertBoolean(use_buffer);
+    wasm.physicsWorldUseMotionStateBuffer(world, use_buffer);
+}
+
+/**
+*/
+function init() {
+    wasm.init();
+}
+
+/**
+* @param {number} size
+* @returns {number}
+*/
+function allocateBuffer(size) {
+    _assertNum(size);
+    const ret = wasm.allocateBuffer(size);
+    return ret >>> 0;
+}
+
+/**
+* Deallocate a buffer allocated by `allocateBuffer`.
+* # Safety
+* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
+* @param {number} ptr
+* @param {number} size
+*/
+function deallocateBuffer(ptr, size) {
+    _assertNum(ptr);
+    _assertNum(size);
+    wasm.deallocateBuffer(ptr, size);
+}
+
+/**
+* @param {number} x
+* @param {number} y
+* @param {number} z
+* @returns {number}
+*/
+function createBoxShape(x, y, z) {
+    const ret = wasm.createBoxShape(x, y, z);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @returns {number}
+*/
+function createSphereShape(radius) {
+    const ret = wasm.createSphereShape(radius);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} radius
+* @param {number} height
+* @returns {number}
+*/
+function createCapsuleShape(radius, height) {
+    const ret = wasm.createCapsuleShape(radius, height);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} normal_x
+* @param {number} normal_y
+* @param {number} normal_z
+* @param {number} plane_constant
+* @returns {number}
+*/
+function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
+    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyShape(ptr) {
+    _assertNum(ptr);
+    wasm.destroyShape(ptr);
+}
+
+/**
+* @param {number} body_a
+* @param {number} body_b
+* @param {number} frame_a
+* @param {number} frame_b
+* @param {boolean} use_linear_reference_frame_a
+* @returns {number}
+*/
+function createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
+    _assertNum(body_a);
+    _assertNum(body_b);
+    _assertNum(frame_a);
+    _assertNum(frame_b);
+    _assertBoolean(use_linear_reference_frame_a);
+    const ret = wasm.createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} body_bundle
+* @param {number} body_a_index
+* @param {number} body_b_index
+* @param {number} frame_a
+* @param {number} frame_b
+* @param {boolean} use_linear_reference_frame_a
+* @returns {number}
+*/
+function createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
+    _assertNum(body_bundle);
+    _assertNum(body_a_index);
+    _assertNum(body_b_index);
+    _assertNum(frame_a);
+    _assertNum(frame_b);
+    _assertBoolean(use_linear_reference_frame_a);
+    const ret = wasm.createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} body_a
+* @param {number} body_b
+* @param {number} frame_a
+* @param {number} frame_b
+* @param {boolean} use_linear_reference_frame_a
+* @returns {number}
+*/
+function createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
+    _assertNum(body_a);
+    _assertNum(body_b);
+    _assertNum(frame_a);
+    _assertNum(frame_b);
+    _assertBoolean(use_linear_reference_frame_a);
+    const ret = wasm.createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} body_bundle
+* @param {number} body_a_index
+* @param {number} body_b_index
+* @param {number} frame_a
+* @param {number} frame_b
+* @param {boolean} use_linear_reference_frame_a
+* @returns {number}
+*/
+function createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
+    _assertNum(body_bundle);
+    _assertNum(body_a_index);
+    _assertNum(body_b_index);
+    _assertNum(frame_a);
+    _assertNum(frame_b);
+    _assertBoolean(use_linear_reference_frame_a);
+    const ret = wasm.createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
+    return ret >>> 0;
+}
+
+/**
+* @param {number} ptr
+*/
+function destroyConstraint(ptr) {
+    _assertNum(ptr);
+    wasm.destroyConstraint(ptr);
+}
+
+/**
+* @param {number} ptr
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function constraintSetLinearLowerLimit(ptr, x, y, z) {
+    _assertNum(ptr);
+    wasm.constraintSetLinearLowerLimit(ptr, x, y, z);
+}
+
+/**
+* @param {number} ptr
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function constraintSetLinearUpperLimit(ptr, x, y, z) {
+    _assertNum(ptr);
+    wasm.constraintSetLinearUpperLimit(ptr, x, y, z);
+}
+
+/**
+* @param {number} ptr
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function constraintSetAngularLowerLimit(ptr, x, y, z) {
+    _assertNum(ptr);
+    wasm.constraintSetAngularLowerLimit(ptr, x, y, z);
+}
+
+/**
+* @param {number} ptr
+* @param {number} x
+* @param {number} y
+* @param {number} z
+*/
+function constraintSetAngularUpperLimit(ptr, x, y, z) {
+    _assertNum(ptr);
+    wasm.constraintSetAngularUpperLimit(ptr, x, y, z);
+}
+
+/**
+* @param {number} ptr
+* @param {number} index
+* @param {boolean} on_off
+*/
+function constraintEnableSpring(ptr, index, on_off) {
+    _assertNum(ptr);
+    _assertNum(index);
+    _assertBoolean(on_off);
+    wasm.constraintEnableSpring(ptr, index, on_off);
+}
+
+/**
+* @param {number} ptr
+* @param {number} index
+* @param {number} stiffness
+*/
+function constraintSetStiffness(ptr, index, stiffness) {
+    _assertNum(ptr);
+    _assertNum(index);
+    wasm.constraintSetStiffness(ptr, index, stiffness);
+}
+
+/**
+* @param {number} ptr
+* @param {number} index
+* @param {number} damping
+*/
+function constraintSetDamping(ptr, index, damping) {
+    _assertNum(ptr);
+    _assertNum(index);
+    wasm.constraintSetDamping(ptr, index, damping);
+}
+
 /**
 * @param {boolean} allow_dynamic_shadow
 * @returns {number}
@@ -189,9 +714,6 @@ function createMultiPhysicsWorld(allow_dynamic_shadow) {
     return ret >>> 0;
 }
 
-function _assertNum(n) {
-    if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
-}
 /**
 * @param {number} world
 */
@@ -393,528 +915,6 @@ function multiPhysicsWorldUseMotionStateBuffer(world, use_buffer) {
     _assertNum(world);
     _assertBoolean(use_buffer);
     wasm.multiPhysicsWorldUseMotionStateBuffer(world, use_buffer);
-}
-
-/**
-* @param {number} body_a
-* @param {number} body_b
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
-    _assertNum(body_a);
-    _assertNum(body_b);
-    _assertNum(frame_a);
-    _assertNum(frame_b);
-    _assertBoolean(use_linear_reference_frame_a);
-    const ret = wasm.createGeneric6DofConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_bundle
-* @param {number} body_a_index
-* @param {number} body_b_index
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
-    _assertNum(body_bundle);
-    _assertNum(body_a_index);
-    _assertNum(body_b_index);
-    _assertNum(frame_a);
-    _assertNum(frame_b);
-    _assertBoolean(use_linear_reference_frame_a);
-    const ret = wasm.createGeneric6DofConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_a
-* @param {number} body_b
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a) {
-    _assertNum(body_a);
-    _assertNum(body_b);
-    _assertNum(frame_a);
-    _assertNum(frame_b);
-    _assertBoolean(use_linear_reference_frame_a);
-    const ret = wasm.createGeneric6DofSpringConstraint(body_a, body_b, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} body_bundle
-* @param {number} body_a_index
-* @param {number} body_b_index
-* @param {number} frame_a
-* @param {number} frame_b
-* @param {boolean} use_linear_reference_frame_a
-* @returns {number}
-*/
-function createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a) {
-    _assertNum(body_bundle);
-    _assertNum(body_a_index);
-    _assertNum(body_b_index);
-    _assertNum(frame_a);
-    _assertNum(frame_b);
-    _assertBoolean(use_linear_reference_frame_a);
-    const ret = wasm.createGeneric6DofSpringConstraintFromBundle(body_bundle, body_a_index, body_b_index, frame_a, frame_b, use_linear_reference_frame_a);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyConstraint(ptr) {
-    _assertNum(ptr);
-    wasm.destroyConstraint(ptr);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function constraintSetLinearLowerLimit(ptr, x, y, z) {
-    _assertNum(ptr);
-    wasm.constraintSetLinearLowerLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function constraintSetLinearUpperLimit(ptr, x, y, z) {
-    _assertNum(ptr);
-    wasm.constraintSetLinearUpperLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function constraintSetAngularLowerLimit(ptr, x, y, z) {
-    _assertNum(ptr);
-    wasm.constraintSetAngularLowerLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function constraintSetAngularUpperLimit(ptr, x, y, z) {
-    _assertNum(ptr);
-    wasm.constraintSetAngularUpperLimit(ptr, x, y, z);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {boolean} on_off
-*/
-function constraintEnableSpring(ptr, index, on_off) {
-    _assertNum(ptr);
-    _assertNum(index);
-    _assertBoolean(on_off);
-    wasm.constraintEnableSpring(ptr, index, on_off);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {number} stiffness
-*/
-function constraintSetStiffness(ptr, index, stiffness) {
-    _assertNum(ptr);
-    _assertNum(index);
-    wasm.constraintSetStiffness(ptr, index, stiffness);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-* @param {number} damping
-*/
-function constraintSetDamping(ptr, index, damping) {
-    _assertNum(ptr);
-    _assertNum(index);
-    wasm.constraintSetDamping(ptr, index, damping);
-}
-
-/**
-* @param {number} physics_world
-* @returns {number}
-*/
-function createMultiPhysicsRuntime(physics_world) {
-    _assertNum(physics_world);
-    const ret = wasm.createMultiPhysicsRuntime(physics_world);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-*/
-function destroyMultiPhysicsRuntime(physics_runtime) {
-    _assertNum(physics_runtime);
-    wasm.destroyMultiPhysicsRuntime(physics_runtime);
-}
-
-/**
-* @param {number} runtime
-* @returns {number}
-*/
-function multiPhysicsRuntimeGetLockStatePtr(runtime) {
-    _assertNum(runtime);
-    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} info
-* @returns {number}
-*/
-function createRigidBody(info) {
-    _assertNum(info);
-    const ret = wasm.createRigidBody(info);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyRigidBody(ptr) {
-    _assertNum(ptr);
-    wasm.destroyRigidBody(ptr);
-}
-
-/**
-* @param {number} ptr
-* @returns {number}
-*/
-function rigidBodyGetMotionStatePtr(ptr) {
-    _assertNum(ptr);
-    const ret = wasm.rigidBodyGetMotionStatePtr(ptr);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-* @returns {number}
-*/
-function rigidBodyGetBufferedMotionStatePtr(ptr) {
-    _assertNum(ptr);
-    const ret = wasm.rigidBodyGetBufferedMotionStatePtr(ptr);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function rigidBodyMakeKinematic(ptr) {
-    _assertNum(ptr);
-    wasm.rigidBodyMakeKinematic(ptr);
-}
-
-/**
-* @param {number} ptr
-*/
-function rigidBodyRestoreDynamic(ptr) {
-    _assertNum(ptr);
-    wasm.rigidBodyRestoreDynamic(ptr);
-}
-
-/**
-* @param {number} info_list
-* @param {number} len
-* @returns {number}
-*/
-function createRigidBodyBundle(info_list, len) {
-    _assertNum(info_list);
-    _assertNum(len);
-    const ret = wasm.createRigidBodyBundle(info_list, len);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyRigidBodyBundle(ptr) {
-    _assertNum(ptr);
-    wasm.destroyRigidBodyBundle(ptr);
-}
-
-/**
-* @param {number} ptr
-* @returns {number}
-*/
-function rigidBodyBundleGetMotionStatesPtr(ptr) {
-    _assertNum(ptr);
-    const ret = wasm.rigidBodyBundleGetMotionStatesPtr(ptr);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-* @returns {number}
-*/
-function rigidBodyBundleGetBufferedMotionStatesPtr(ptr) {
-    _assertNum(ptr);
-    const ret = wasm.rigidBodyBundleGetBufferedMotionStatesPtr(ptr);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-*/
-function rigidBodyBundleMakeKinematic(ptr, index) {
-    _assertNum(ptr);
-    _assertNum(index);
-    wasm.rigidBodyBundleMakeKinematic(ptr, index);
-}
-
-/**
-* @param {number} ptr
-* @param {number} index
-*/
-function rigidBodyBundleRestoreDynamic(ptr, index) {
-    _assertNum(ptr);
-    _assertNum(index);
-    wasm.rigidBodyBundleRestoreDynamic(ptr, index);
-}
-
-/**
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @returns {number}
-*/
-function createBoxShape(x, y, z) {
-    const ret = wasm.createBoxShape(x, y, z);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @returns {number}
-*/
-function createSphereShape(radius) {
-    const ret = wasm.createSphereShape(radius);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} radius
-* @param {number} height
-* @returns {number}
-*/
-function createCapsuleShape(radius, height) {
-    const ret = wasm.createCapsuleShape(radius, height);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} normal_x
-* @param {number} normal_y
-* @param {number} normal_z
-* @param {number} plane_constant
-* @returns {number}
-*/
-function createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant) {
-    const ret = wasm.createStaticPlaneShape(normal_x, normal_y, normal_z, plane_constant);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} ptr
-*/
-function destroyShape(ptr) {
-    _assertNum(ptr);
-    wasm.destroyShape(ptr);
-}
-
-/**
-* @param {number} physics_world
-* @returns {number}
-*/
-function createPhysicsRuntime(physics_world) {
-    _assertNum(physics_world);
-    const ret = wasm.createPhysicsRuntime(physics_world);
-    return ret >>> 0;
-}
-
-/**
-* @param {number} physics_runtime
-*/
-function destroyPhysicsRuntime(physics_runtime) {
-    _assertNum(physics_runtime);
-    wasm.destroyPhysicsRuntime(physics_runtime);
-}
-
-/**
-* @param {number} physics_runtime
-* @returns {number}
-*/
-function physicsRuntimeGetLockStatePtr(physics_runtime) {
-    _assertNum(physics_runtime);
-    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
-    return ret >>> 0;
-}
-
-/**
-*/
-function init() {
-    wasm.init();
-}
-
-/**
-* @param {number} size
-* @returns {number}
-*/
-function allocateBuffer(size) {
-    _assertNum(size);
-    const ret = wasm.allocateBuffer(size);
-    return ret >>> 0;
-}
-
-/**
-* Deallocate a buffer allocated by `allocateBuffer`.
-* # Safety
-* `ptr` must be a pointer to a buffer allocated by `allocateBuffer`.
-* @param {number} ptr
-* @param {number} size
-*/
-function deallocateBuffer(ptr, size) {
-    _assertNum(ptr);
-    _assertNum(size);
-    wasm.deallocateBuffer(ptr, size);
-}
-
-/**
-* @returns {number}
-*/
-function createPhysicsWorld() {
-    const ret = wasm.createPhysicsWorld();
-    return ret >>> 0;
-}
-
-/**
-* @param {number} world
-*/
-function destroyPhysicsWorld(world) {
-    _assertNum(world);
-    wasm.destroyPhysicsWorld(world);
-}
-
-/**
-* @param {number} world
-* @param {number} x
-* @param {number} y
-* @param {number} z
-*/
-function physicsWorldSetGravity(world, x, y, z) {
-    _assertNum(world);
-    wasm.physicsWorldSetGravity(world, x, y, z);
-}
-
-/**
-* @param {number} world
-* @param {number} time_step
-* @param {number} max_sub_steps
-* @param {number} fixed_time_step
-*/
-function physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step) {
-    _assertNum(world);
-    _assertNum(max_sub_steps);
-    wasm.physicsWorldStepSimulation(world, time_step, max_sub_steps, fixed_time_step);
-}
-
-/**
-* @param {number} world
-* @param {number} rigidbody
-*/
-function physicsWorldAddRigidBody(world, rigidbody) {
-    _assertNum(world);
-    _assertNum(rigidbody);
-    wasm.physicsWorldAddRigidBody(world, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} rigidbody
-*/
-function physicsWorldRemoveRigidBody(world, rigidbody) {
-    _assertNum(world);
-    _assertNum(rigidbody);
-    wasm.physicsWorldRemoveRigidBody(world, rigidbody);
-}
-
-/**
-* @param {number} world
-* @param {number} bundle
-*/
-function physicsWorldAddRigidBodyBundle(world, bundle) {
-    _assertNum(world);
-    _assertNum(bundle);
-    wasm.physicsWorldAddRigidBodyBundle(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} bundle
-*/
-function physicsWorldRemoveRigidBodyBundle(world, bundle) {
-    _assertNum(world);
-    _assertNum(bundle);
-    wasm.physicsWorldRemoveRigidBodyBundle(world, bundle);
-}
-
-/**
-* @param {number} world
-* @param {number} constraint
-* @param {boolean} disable_collisions_between_linked_bodies
-*/
-function physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies) {
-    _assertNum(world);
-    _assertNum(constraint);
-    _assertBoolean(disable_collisions_between_linked_bodies);
-    wasm.physicsWorldAddConstraint(world, constraint, disable_collisions_between_linked_bodies);
-}
-
-/**
-* @param {number} world
-* @param {number} constraint
-*/
-function physicsWorldRemoveConstraint(world, constraint) {
-    _assertNum(world);
-    _assertNum(constraint);
-    wasm.physicsWorldRemoveConstraint(world, constraint);
-}
-
-/**
-* @param {number} world
-* @param {boolean} use_buffer
-*/
-function physicsWorldUseMotionStateBuffer(world, use_buffer) {
-    _assertNum(world);
-    _assertBoolean(use_buffer);
-    wasm.physicsWorldUseMotionStateBuffer(world, use_buffer);
 }
 
 function logError(f, args) {
@@ -1308,7 +1308,7 @@ class SceneBuilder {
 /***/ 4871:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "4b95c49cb7a696112ffa.wasm";
+module.exports = __webpack_require__.p + "75d568072bb95d1002c5.wasm";
 
 /***/ })
 

@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[553],{
+(self["webpackChunkbabylon_bulletphysics"] = self["webpackChunkbabylon_bulletphysics"] || []).push([[106],{
 
 /***/ 6755:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
@@ -210,7 +210,7 @@ CubeMapToSphericalPolynomialTools.PRESERVE_CLAMPED_COLORS = false;
 
 /***/ }),
 
-/***/ 1947:
+/***/ 8864:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 
@@ -227,6 +227,8 @@ __webpack_require__.d(__webpack_exports__, {
 var Textures_texture = __webpack_require__(2781);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/renderTargetTexture.js + 1 modules
 var renderTargetTexture = __webpack_require__(6882);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/tslib.es6.js
+var tslib_es6 = __webpack_require__(5524);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/PostProcesses/postProcess.js
 var PostProcesses_postProcess = __webpack_require__(7891);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Engines/abstractEngine.js + 4 modules
@@ -235,37 +237,17 @@ var abstractEngine = __webpack_require__(6326);
 var typeStore = __webpack_require__(6552);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/decorators.serialization.js
 var decorators_serialization = __webpack_require__(6877);
-;// ./node_modules/@babylonjs/core/PostProcesses/passPostProcess.js
-
-
-
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/effectRenderer.js
+var effectRenderer = __webpack_require__(4255);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Engines/engine.js + 21 modules
+var Engines_engine = __webpack_require__(3720);
+;// ./node_modules/@babylonjs/core/PostProcesses/thinPassPostProcess.js
 
 
 /**
  * PassPostProcess which produces an output the same as it's input
  */
-class PassPostProcess extends PostProcesses_postProcess/* PostProcess */.w {
-    /**
-     * Gets a string identifying the name of the class
-     * @returns "PassPostProcess" string
-     */
-    getClassName() {
-        return "PassPostProcess";
-    }
-    /**
-     * Creates the PassPostProcess
-     * @param name The name of the effect.
-     * @param options The required width/height ratio to downsize to before computing the render pass.
-     * @param camera The camera to apply the render pass to.
-     * @param samplingMode The sampling mode to be used when computing the pass. (default: 0)
-     * @param engine The engine which the post process will be applied. (default: current engine)
-     * @param reusable If the post process can be reused on the same frame. (default: false)
-     * @param textureType The type of texture to be used when performing the post processing.
-     * @param blockCompilation If compilation of the shader should not be done in the constructor. The updateEffect method can be used to compile the shader at a later time. (default: false)
-     */
-    constructor(name, options, camera = null, samplingMode, engine, reusable, textureType = 0, blockCompilation = false) {
-        super(name, "pass", null, null, options, camera, samplingMode, engine, reusable, undefined, textureType, undefined, null, blockCompilation);
-    }
+class ThinPassPostProcess extends effectRenderer/* EffectWrapper */.$ {
     _gatherImports(useWebGPU, list) {
         if (useWebGPU) {
             this._webGPUReady = true;
@@ -277,19 +259,58 @@ class PassPostProcess extends PostProcesses_postProcess/* PostProcess */.w {
         super._gatherImports(useWebGPU, list);
     }
     /**
-     * @internal
+     * Constructs a new pass post process
+     * @param name Name of the effect
+     * @param engine Engine to use to render the effect. If not provided, the last created engine will be used
+     * @param options Options to configure the effect
      */
-    static _Parse(parsedPostProcess, targetCamera, scene, rootUrl) {
-        return decorators_serialization/* SerializationHelper */.p.Parse(() => {
-            return new PassPostProcess(parsedPostProcess.name, parsedPostProcess.options, targetCamera, parsedPostProcess.renderTargetSamplingMode, parsedPostProcess._engine, parsedPostProcess.reusable);
-        }, parsedPostProcess, scene, rootUrl);
+    constructor(name, engine = null, options) {
+        super({
+            ...options,
+            name,
+            engine: engine || Engines_engine/* Engine */.N.LastCreatedEngine,
+            useShaderStore: true,
+            useAsPostProcess: true,
+            fragmentShader: ThinPassPostProcess.FragmentUrl,
+        });
     }
 }
-(0,typeStore/* RegisterClass */.Y5)("BABYLON.PassPostProcess", PassPostProcess);
+/**
+ * The fragment shader url
+ */
+ThinPassPostProcess.FragmentUrl = "pass";
 /**
  * PassCubePostProcess which produces an output the same as it's input (which must be a cube texture)
  */
-class PassCubePostProcess extends PostProcesses_postProcess/* PostProcess */.w {
+class ThinPassCubePostProcess extends effectRenderer/* EffectWrapper */.$ {
+    _gatherImports(useWebGPU, list) {
+        if (useWebGPU) {
+            this._webGPUReady = true;
+            list.push(Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 7682))]));
+        }
+        else {
+            list.push(Promise.all([__webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 4511))]));
+        }
+        super._gatherImports(useWebGPU, list);
+    }
+    /**
+     * Creates the PassCubePostProcess
+     * @param name Name of the effect
+     * @param engine Engine to use to render the effect. If not provided, the last created engine will be used
+     * @param options Options to configure the effect
+     */
+    constructor(name, engine = null, options) {
+        super({
+            ...options,
+            name,
+            engine: engine || Engines_engine/* Engine */.N.LastCreatedEngine,
+            useShaderStore: true,
+            useAsPostProcess: true,
+            fragmentShader: ThinPassCubePostProcess.FragmentUrl,
+            defines: "#define POSITIVEX",
+        });
+        this._face = 0;
+    }
     /**
      * Gets or sets the cube face to display.
      *  * 0 is +X
@@ -328,6 +349,90 @@ class PassCubePostProcess extends PostProcesses_postProcess/* PostProcess */.w {
                 break;
         }
     }
+}
+/**
+ * The fragment shader url
+ */
+ThinPassCubePostProcess.FragmentUrl = "passCube";
+//# sourceMappingURL=thinPassPostProcess.js.map
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/decorators.js
+var decorators = __webpack_require__(9259);
+;// ./node_modules/@babylonjs/core/PostProcesses/passPostProcess.js
+
+
+
+
+
+
+
+
+/**
+ * PassPostProcess which produces an output the same as it's input
+ */
+class PassPostProcess extends PostProcesses_postProcess/* PostProcess */.w {
+    /**
+     * Gets a string identifying the name of the class
+     * @returns "PassPostProcess" string
+     */
+    getClassName() {
+        return "PassPostProcess";
+    }
+    /**
+     * Creates the PassPostProcess
+     * @param name The name of the effect.
+     * @param options The required width/height ratio to downsize to before computing the render pass.
+     * @param camera The camera to apply the render pass to.
+     * @param samplingMode The sampling mode to be used when computing the pass. (default: 0)
+     * @param engine The engine which the post process will be applied. (default: current engine)
+     * @param reusable If the post process can be reused on the same frame. (default: false)
+     * @param textureType The type of texture to be used when performing the post processing.
+     * @param blockCompilation If compilation of the shader should not be done in the constructor. The updateEffect method can be used to compile the shader at a later time. (default: false)
+     */
+    constructor(name, options, camera = null, samplingMode, engine, reusable, textureType = 0, blockCompilation = false) {
+        const localOptions = {
+            size: typeof options === "number" ? options : undefined,
+            camera,
+            samplingMode,
+            engine,
+            reusable,
+            textureType,
+            blockCompilation,
+            ...options,
+        };
+        super(name, ThinPassPostProcess.FragmentUrl, {
+            effectWrapper: typeof options === "number" || !options.effectWrapper ? new ThinPassPostProcess(name, engine, localOptions) : undefined,
+            ...localOptions,
+        });
+    }
+    /**
+     * @internal
+     */
+    static _Parse(parsedPostProcess, targetCamera, scene, rootUrl) {
+        return decorators_serialization/* SerializationHelper */.p.Parse(() => {
+            return new PassPostProcess(parsedPostProcess.name, parsedPostProcess.options, targetCamera, parsedPostProcess.renderTargetSamplingMode, parsedPostProcess._engine, parsedPostProcess.reusable);
+        }, parsedPostProcess, scene, rootUrl);
+    }
+}
+(0,typeStore/* RegisterClass */.Y5)("BABYLON.PassPostProcess", PassPostProcess);
+/**
+ * PassCubePostProcess which produces an output the same as it's input (which must be a cube texture)
+ */
+class PassCubePostProcess extends PostProcesses_postProcess/* PostProcess */.w {
+    /**
+     * Gets or sets the cube face to display.
+     *  * 0 is +X
+     *  * 1 is -X
+     *  * 2 is +Y
+     *  * 3 is -Y
+     *  * 4 is +Z
+     *  * 5 is -Z
+     */
+    get face() {
+        return this._effectWrapper.face;
+    }
+    set face(value) {
+        this._effectWrapper.face = value;
+    }
     /**
      * Gets a string identifying the name of the class
      * @returns "PassCubePostProcess" string
@@ -347,18 +452,20 @@ class PassCubePostProcess extends PostProcesses_postProcess/* PostProcess */.w {
      * @param blockCompilation If compilation of the shader should not be done in the constructor. The updateEffect method can be used to compile the shader at a later time. (default: false)
      */
     constructor(name, options, camera = null, samplingMode, engine, reusable, textureType = 0, blockCompilation = false) {
-        super(name, "passCube", null, null, options, camera, samplingMode, engine, reusable, "#define POSITIVEX", textureType, undefined, null, blockCompilation);
-        this._face = 0;
-    }
-    _gatherImports(useWebGPU, list) {
-        if (useWebGPU) {
-            this._webGPUReady = true;
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 126).then(__webpack_require__.bind(__webpack_require__, 7682))]));
-        }
-        else {
-            list.push(Promise.all([__webpack_require__.e(/* import() */ 71).then(__webpack_require__.bind(__webpack_require__, 4511))]));
-        }
-        super._gatherImports(useWebGPU, list);
+        const localOptions = {
+            size: typeof options === "number" ? options : undefined,
+            camera,
+            samplingMode,
+            engine,
+            reusable,
+            textureType,
+            blockCompilation,
+            ...options,
+        };
+        super(name, ThinPassPostProcess.FragmentUrl, {
+            effectWrapper: typeof options === "number" || !options.effectWrapper ? new ThinPassCubePostProcess(name, engine, localOptions) : undefined,
+            ...localOptions,
+        });
     }
     /**
      * @internal
@@ -369,6 +476,9 @@ class PassCubePostProcess extends PostProcesses_postProcess/* PostProcess */.w {
         }, parsedPostProcess, scene, rootUrl);
     }
 }
+(0,tslib_es6/* __decorate */.Cg)([
+    (0,decorators/* serialize */.lK)()
+], PassCubePostProcess.prototype, "face", null);
 abstractEngine/* AbstractEngine */.$._RescalePostProcessFactory = (engine) => {
     return new PassPostProcess("rescale", 1, null, 2, engine, false, 0);
 };

@@ -2021,20 +2021,44 @@ class AbstractEngine {
         this._frameId++;
         this.onEndFrameObservable.notifyObservers(this);
     }
-    /** @internal */
-    _renderLoop() {
-        // Reset the frame handler before rendering a frame to determine if a new frame has been queued.
+    /** Gets or sets max frame per second allowed. Will return undefined if not capped */
+    get maxFPS() {
+        return this._maxFPS;
+    }
+    set maxFPS(value) {
+        this._maxFPS = value;
+        if (value === undefined) {
+            return;
+        }
+        if (value <= 0) {
+            this._minFrameTime = Number.MAX_VALUE;
+            return;
+        }
+        this._minFrameTime = 1000 / (value + 1); // We need to provide a bit of leeway to ensure we don't go under because of vbl sync
+    }
+    _isOverFrameTime(timestamp) {
+        if (!timestamp) {
+            return false;
+        }
+        const elapsedTime = timestamp - this._lastFrameTime;
+        if (this._maxFPS === undefined || elapsedTime >= this._minFrameTime) {
+            this._lastFrameTime = timestamp;
+            return false;
+        }
+        return true;
+    }
+    _processFrame(timestamp) {
         this._frameHandler = 0;
-        if (!this._contextWasLost) {
+        if (!this._contextWasLost && !this._isOverFrameTime(timestamp)) {
             let shouldRender = true;
-            if (this._isDisposed || (!this.renderEvenInBackground && this._windowIsBackground)) {
+            if (this.isDisposed || (!this.renderEvenInBackground && this._windowIsBackground)) {
                 shouldRender = false;
             }
             if (shouldRender) {
                 // Start new frame
                 this.beginFrame();
                 // Child canvases
-                if (!this._renderViews()) {
+                if (!this.skipFrameRender && !this._renderViews()) {
                     // Main frame
                     this._renderFrame();
                 }
@@ -2042,6 +2066,10 @@ class AbstractEngine {
                 this.endFrame();
             }
         }
+    }
+    /** @internal */
+    _renderLoop(timestamp) {
+        this._processFrame(timestamp);
         // The first condition prevents queuing another frame if we no longer have active render loops (e.g., if
         // `stopRenderLoop` is called mid frame). The second condition prevents queuing another frame if one has
         // already been queued (e.g., if `stopRenderLoop` and `runRenderLoop` is called mid frame).
@@ -2401,13 +2429,13 @@ class AbstractEngine {
      */
     // Not mixed with Version for tooling purpose.
     static get NpmPackage() {
-        return "babylonjs@7.38.0";
+        return "babylonjs@7.45.0";
     }
     /**
      * Returns the current version of the framework
      */
     static get Version() {
-        return "7.38.0";
+        return "7.45.0";
     }
     /**
      * Gets the HTML canvas attached with the current webGL context
@@ -2537,6 +2565,10 @@ class AbstractEngine {
          */
         this.onCanvasPointerOutObservable = new observable/* Observable */.cP();
         /**
+         * Observable event triggered each time an effect compilation fails
+         */
+        this.onEffectErrorObservable = new observable/* Observable */.cP();
+        /**
          * Turn this value on if you want to pause FPS computation when in background
          */
         this.disablePerformanceMonitorInBackground = false;
@@ -2624,7 +2656,14 @@ class AbstractEngine {
         /** @internal */
         this._windowIsBackground = false;
         /** @internal */
-        this._boundRenderFunction = () => this._renderLoop();
+        this._boundRenderFunction = (timestamp) => this._renderLoop(timestamp);
+        this._lastFrameTime = 0;
+        /**
+         * Skip frame rendering but keep the frame heartbeat (begin/end frame).
+         * This is useful if you need all the plumbing but not the rendering work.
+         * (for instance when capturing a screenshot where you do not want to mix rendering to the screen and to the screenshot)
+         */
+        this.skipFrameRender = false;
         /**
          * Observable raised when the engine is about to compile a shader
          */
@@ -2692,6 +2731,10 @@ class AbstractEngine {
          * An event triggered when the engine is disposed.
          */
         this.onDisposeObservable = new observable/* Observable */.cP();
+        /**
+         * An event triggered when a global cleanup of all effects is required
+         */
+        this.onReleaseEffectsObservable = new observable/* Observable */.cP();
         engineStore/* EngineStore */.q.Instances.push(this);
         this.startTime = precisionDate/* PrecisionDate */.j.Now;
         this._stencilStateComposer.stencilGlobal = this._stencilState;
@@ -3088,6 +3131,7 @@ class AbstractEngine {
         this.onCanvasFocusObservable.clear();
         this.onCanvasPointerOutObservable.clear();
         this.onNewSceneAddedObservable.clear();
+        this.onEffectErrorObservable.clear();
         if ((0,domManagement/* IsWindowObjectExist */.BA)()) {
             window.removeEventListener("resize", this._checkForMobile);
         }
@@ -4070,10 +4114,10 @@ class RenderTargetWrapper {
             this._depthStencilTexture.dispose();
         }
         this._depthStencilTexture = texture;
-        this._generateDepthBuffer = this._generateStencilBuffer = false;
+        this._generateDepthBuffer = this._generateStencilBuffer = this._depthStencilTextureWithStencil = false;
         if (texture) {
             this._generateDepthBuffer = true;
-            this._generateStencilBuffer = (0,Textures_internalTexture/* HasStencilAspect */.$l)(texture.format);
+            this._generateStencilBuffer = this._depthStencilTextureWithStencil = (0,Textures_internalTexture/* HasStencilAspect */.$l)(texture.format);
         }
     }
     /**
@@ -4945,9 +4989,7 @@ thinEngine.ThinEngine.prototype._createDepthStencilTexture = function (size, opt
     else {
         internalTexture.format = internalOptions.generateStencil ? 13 : 16;
     }
-    const hasStencil = internalTexture.format === 17 ||
-        internalTexture.format === 13 ||
-        internalTexture.format === 18;
+    const hasStencil = (0,Textures_internalTexture/* HasStencilAspect */.$l)(internalTexture.format);
     const type = this._getWebGLTextureTypeFromDepthTextureFormat(internalTexture.format);
     const format = hasStencil ? gl.DEPTH_STENCIL : gl.DEPTH_COMPONENT;
     const internalFormat = this._getInternalFormatFromDepthTextureFormat(internalTexture.format, true, hasStencil);
@@ -5179,7 +5221,7 @@ thinEngine.ThinEngine.prototype.createPrefilteredCubeTexture = function (rootUrl
             return;
         }
         // eslint-disable-next-line @typescript-eslint/naming-convention
-        const { DDSTools } = await Promise.all(/* import() */[__webpack_require__.e(71), __webpack_require__.e(162), __webpack_require__.e(246), __webpack_require__.e(553), __webpack_require__.e(537)]).then(__webpack_require__.bind(__webpack_require__, 3537));
+        const { DDSTools } = await Promise.all(/* import() */[__webpack_require__.e(71), __webpack_require__.e(162), __webpack_require__.e(246), __webpack_require__.e(106), __webpack_require__.e(537)]).then(__webpack_require__.bind(__webpack_require__, 3537));
         const textures = [];
         for (let i = 0; i < mipSlices; i++) {
             //compute LOD from even spacing in smoothness (matching shader calculation)
@@ -6090,7 +6132,10 @@ class AudioEngine {
     }
 }
 //# sourceMappingURL=audioEngine.js.map
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/timingTools.js
+var timingTools = __webpack_require__(2940);
 ;// ./node_modules/@babylonjs/core/Engines/engine.js
+
 
 
 
@@ -6417,26 +6462,8 @@ class Engine extends thinEngine.ThinEngine {
             super._cancelFrame();
         }
     }
-    _renderLoop() {
-        // Reset the frame handler before rendering a frame to determine if a new frame has been queued.
-        this._frameHandler = 0;
-        if (!this._contextWasLost) {
-            let shouldRender = true;
-            if (this.isDisposed || (!this.renderEvenInBackground && this._windowIsBackground)) {
-                shouldRender = false;
-            }
-            if (shouldRender) {
-                // Start new frame
-                this.beginFrame();
-                // Child canvases
-                if (!this._renderViews()) {
-                    // Main frame
-                    this._renderFrame();
-                }
-                // Present
-                this.endFrame();
-            }
-        }
+    _renderLoop(timestamp) {
+        this._processFrame(timestamp);
         // The first condition prevents queuing another frame if we no longer have active render loops (e.g., if
         // `stopRenderLoop` is called mid frame). The second condition prevents queuing another frame if one has
         // already been queued (e.g., if `stopRenderLoop` and `runRenderLoop` is called mid frame).
@@ -6706,19 +6733,16 @@ class Engine extends thinEngine.ThinEngine {
     _clientWaitAsync(sync, flags = 0, intervalms = 10) {
         const gl = this._gl;
         return new Promise((resolve, reject) => {
-            const check = () => {
+            (0,timingTools/* _retryWithInterval */.F)(() => {
                 const res = gl.clientWaitSync(sync, flags, 0);
                 if (res == gl.WAIT_FAILED) {
-                    reject();
-                    return;
+                    throw new Error("clientWaitSync failed");
                 }
                 if (res == gl.TIMEOUT_EXPIRED) {
-                    setTimeout(check, intervalms);
-                    return;
+                    return false;
                 }
-                resolve();
-            };
-            check();
+                return true;
+            }, resolve, reject, intervalms);
         });
     }
     /**
@@ -8254,16 +8278,22 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
                 this._onContextLost = (evt) => {
                     evt.preventDefault();
                     this._contextWasLost = true;
+                    (0,thinEngine_functions/* deleteStateObject */.Cm)(this._gl);
                     logger/* Logger */.V.Warn("WebGL context lost.");
                     this.onContextLostObservable.notifyObservers(this);
                 };
                 this._onContextRestored = () => {
                     this._restoreEngineAfterContextLost(() => this._initGLContext());
                 };
-                canvas.addEventListener("webglcontextlost", this._onContextLost, false);
                 canvas.addEventListener("webglcontextrestored", this._onContextRestored, false);
                 options.powerPreference = options.powerPreference || "high-performance";
             }
+            else {
+                this._onContextLost = () => {
+                    (0,thinEngine_functions/* deleteStateObject */.Cm)(this._gl);
+                };
+            }
+            canvas.addEventListener("webglcontextlost", this._onContextLost, false);
             if (this._badDesktopOS) {
                 options.xrCompatible = false;
             }
@@ -11285,12 +11315,8 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
      * Force the engine to release all cached effects. This means that next effect compilation will have to be done completely even if a similar effect was already compiled
      */
     releaseEffects() {
-        const keys = Object.keys(this._compiledEffects);
-        for (const name of keys) {
-            const effect = this._compiledEffects[name];
-            effect.dispose(true);
-        }
         this._compiledEffects = {};
+        this.onReleaseEffectsObservable.notifyObservers(this);
     }
     /**
      * Dispose and release all associated resources
@@ -11299,8 +11325,8 @@ class ThinEngine extends abstractEngine/* AbstractEngine */.$ {
         // Events
         if ((0,domManagement/* IsWindowObjectExist */.BA)()) {
             if (this._renderingCanvas) {
-                if (!this._doNotHandleContextLost) {
-                    this._renderingCanvas.removeEventListener("webglcontextlost", this._onContextLost);
+                this._renderingCanvas.removeEventListener("webglcontextlost", this._onContextLost);
+                if (this._onContextRestored) {
                     this._renderingCanvas.removeEventListener("webglcontextrestored", this._onContextRestored);
                 }
             }
@@ -11841,13 +11867,13 @@ function _GetCompatibleTextureLoader(extension, mimeType) {
             registerTextureLoader(".ies", () => __webpack_require__.e(/* import() */ 189).then(__webpack_require__.bind(__webpack_require__, 8189)).then((module) => new module._IESTextureLoader()));
         }
         if (extension.endsWith(".dds")) {
-            registerTextureLoader(".dds", () => Promise.all(/* import() */[__webpack_require__.e(71), __webpack_require__.e(162), __webpack_require__.e(246), __webpack_require__.e(553), __webpack_require__.e(994)]).then(__webpack_require__.bind(__webpack_require__, 994)).then((module) => new module._DDSTextureLoader()));
+            registerTextureLoader(".dds", () => Promise.all(/* import() */[__webpack_require__.e(71), __webpack_require__.e(162), __webpack_require__.e(246), __webpack_require__.e(106), __webpack_require__.e(994)]).then(__webpack_require__.bind(__webpack_require__, 994)).then((module) => new module._DDSTextureLoader()));
         }
         if (extension.endsWith(".basis")) {
             registerTextureLoader(".basis", () => Promise.all(/* import() */[__webpack_require__.e(998), __webpack_require__.e(162), __webpack_require__.e(692)]).then(__webpack_require__.bind(__webpack_require__, 6692)).then((module) => new module._BasisTextureLoader()));
         }
         if (extension.endsWith(".env")) {
-            registerTextureLoader(".env", () => Promise.all(/* import() */[__webpack_require__.e(71), __webpack_require__.e(998), __webpack_require__.e(162), __webpack_require__.e(246), __webpack_require__.e(554), __webpack_require__.e(553), __webpack_require__.e(834)]).then(__webpack_require__.bind(__webpack_require__, 5834)).then((module) => new module._ENVTextureLoader()));
+            registerTextureLoader(".env", () => Promise.all(/* import() */[__webpack_require__.e(71), __webpack_require__.e(998), __webpack_require__.e(162), __webpack_require__.e(246), __webpack_require__.e(554), __webpack_require__.e(106), __webpack_require__.e(834)]).then(__webpack_require__.bind(__webpack_require__, 5834)).then((module) => new module._ENVTextureLoader()));
         }
         if (extension.endsWith(".hdr")) {
             registerTextureLoader(".hdr", () => __webpack_require__.e(/* import() */ 608).then(__webpack_require__.bind(__webpack_require__, 5608)).then((module) => new module._HDRTextureLoader()));
@@ -13625,7 +13651,6 @@ InternalTexture._Counter = 0;
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   FK: () => (/* binding */ _retryWithInterval),
 /* harmony export */   b4: () => (/* binding */ getCachedPipeline),
 /* harmony export */   bu: () => (/* binding */ _processShaderCode),
 /* harmony export */   mO: () => (/* binding */ resetCachedPipeline),
@@ -13825,25 +13850,6 @@ const createAndPreparePipelineContext = (options, createPipelineContext, _prepar
         throw e;
     }
 };
-const _retryWithInterval = (condition, onSuccess, onError, step = 16, maxTimeout = 1000) => {
-    const int = setInterval(() => {
-        try {
-            if (condition()) {
-                clearInterval(int);
-                onSuccess();
-            }
-        }
-        catch (e) {
-            clearInterval(int);
-            onError?.(e);
-        }
-        maxTimeout -= step;
-        if (maxTimeout < 0) {
-            clearInterval(int);
-            onError?.();
-        }
-    }, step);
-};
 //# sourceMappingURL=effect.functions.js.map
 
 /***/ }),
@@ -13858,6 +13864,8 @@ const _retryWithInterval = (condition, onSuccess, onError, step = 16, maxTimeout
 /* harmony import */ var _Misc_logger_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1137);
 /* harmony import */ var _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9610);
 /* harmony import */ var _effect_functions_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7647);
+/* harmony import */ var _Misc_timingTools_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(2940);
+
 
 
 
@@ -14016,6 +14024,7 @@ class Effect {
             }
             this._processFinalCode = options.processFinalCode ?? null;
             this._processCodeAfterIncludes = options.processCodeAfterIncludes ?? undefined;
+            extraInitializationsAsync = options.extraInitializationsAsync;
             cachedPipeline = options.existingPipelineContext;
         }
         else {
@@ -14049,6 +14058,12 @@ class Effect {
                 this._pipelineContext.program.__SPECTOR_rebuildProgram = this._rebuildProgram.bind(this);
             }
         }
+        this._engine.onReleaseEffectsObservable.addOnce(() => {
+            if (this.isDisposed) {
+                return;
+            }
+            this.dispose(true);
+        });
     }
     /** @internal */
     async _processShaderCodeAsync(shaderProcessor = null, keepExistingPipelineContext = false, shaderProcessingContext = null, extraInitializationsAsync) {
@@ -14228,13 +14243,13 @@ class Effect {
         }
     }
     _checkIsReady(previousPipelineContext) {
-        (0,_effect_functions_js__WEBPACK_IMPORTED_MODULE_3__/* ._retryWithInterval */ .FK)(() => {
+        (0,_Misc_timingTools_js__WEBPACK_IMPORTED_MODULE_4__/* ._retryWithInterval */ .F)(() => {
             return this._isReadyInternal() || this._isDisposed;
         }, () => {
             // no-op - done in the _isReadyInternal call
         }, (e) => {
             this._processCompilationErrors(e, previousPipelineContext);
-        });
+        }, 16, 30000, true, ` - Effect: ${typeof this.name === "string" ? this.name : this.key}`);
     }
     /**
      * Gets the vertex shader source code of this effect
@@ -14460,6 +14475,7 @@ class Effect {
                 this.onError(this, this._compilationError);
             }
             this.onErrorObservable.notifyObservers(this);
+            this._engine.onEffectErrorObservable.notifyObservers({ effect: this, errors: this._compilationError });
         };
         // In case a previous compilation was successful, we need to restore the previous pipeline context
         if (previousPipelineContext) {
@@ -15002,6 +15018,9 @@ class Effect {
             this._refCount = 0;
         }
         else {
+            if (Effect.PersistentMode) {
+                return;
+            }
             this._refCount--;
         }
         if (this._refCount > 0 || this._isDisposed) {
@@ -15041,6 +15060,11 @@ class Effect {
  * Enable logging of the shader code when a compilation error occurs
  */
 Effect.LogShaderCodeOnCompilationError = true;
+/**
+ * Gets or sets a boolean indicating that effect ref counting is disabled
+ * If true, the effect will persist in memory until engine is disposed
+ */
+Effect.PersistentMode = false;
 /**
  * Use this with caution
  * See ClearCodeCache function comments
@@ -27343,6 +27367,7 @@ const _copySource = function (creationFunction, source, instanciate, options = {
             switch (propertyType) {
                 case 0: // Value
                 case 6: // Mesh reference
+                case 9: // Image processing configuration reference
                 case 11: // Camera reference
                     destination[property] = sourceProperty;
                     break;
@@ -27360,6 +27385,7 @@ const _copySource = function (creationFunction, source, instanciate, options = {
                 case 4: // Vector2
                 case 5: // Vector3
                 case 7: // Color Curves
+                case 8: // Color 4
                 case 10: // Quaternion
                 case 12: // Matrix
                     destination[property] = instanciate ? sourceProperty : sourceProperty.clone();
@@ -27700,6 +27726,7 @@ const DomManagement = {
 /* harmony export */   bu: () => (/* binding */ RuntimeError),
 /* harmony export */   tG: () => (/* binding */ ErrorCodes)
 /* harmony export */ });
+/* unused harmony export AbortError */
 /* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Base error. Due to limitations of typedoc-check and missing documentation
@@ -27757,6 +27784,16 @@ class RuntimeError extends BaseError {
         this.innerError = innerError;
         this.name = "RuntimeError";
         BaseError._setPrototypeOf(this, RuntimeError.prototype);
+    }
+}
+/**
+ * Used for flow control when an operation is aborted, such as with AbortController.
+ */
+class AbortError extends BaseError {
+    constructor(message = "Operation aborted") {
+        super(message);
+        this.name = "AbortError";
+        BaseError._setPrototypeOf(this, AbortError.prototype);
     }
 }
 //# sourceMappingURL=error.js.map
@@ -28360,15 +28397,22 @@ const RequestFile = (url, onSuccess, onProgress, offlineProvider, useArrayBuffer
                         request.removeEventListener("readystatechange", onReadyStateChange);
                     }
                     if ((request.status >= 200 && request.status < 300) || (request.status === 0 && (!(0,domManagement/* IsWindowObjectExist */.BA)() || IsFileURL()))) {
-                        try {
-                            if (onSuccess) {
-                                onSuccess(useArrayBuffer ? request.response : request.responseText, request);
+                        // It's possible for the request to have a success status code but null response if the underlying
+                        // underlying HTTP connection was closed prematurely. See _onHttpResponseClose in xhr2.js. In this
+                        // case we will throw an exception if we call the onSuccess handler because "data" will be null
+                        // and that then bypasses the retry strategy.
+                        const data = useArrayBuffer ? request.response : request.responseText;
+                        if (data !== null) {
+                            try {
+                                if (onSuccess) {
+                                    onSuccess(data, request);
+                                }
                             }
+                            catch (e) {
+                                handleError(e);
+                            }
+                            return;
                         }
-                        catch (e) {
-                            handleError(e);
-                        }
-                        return;
                     }
                     const retryStrategy = FileToolsOptions.DefaultRetryStrategy;
                     if (retryStrategy) {
@@ -28668,7 +28712,8 @@ class Logger {
         Logger.errorsCount = 0;
     }
     /**
-     * Sets the current log level (MessageLogLevel / WarningLogLevel / ErrorLogLevel)
+     * Sets the current log level. This property is a bit field, allowing you to combine different levels (MessageLogLevel / WarningLogLevel / ErrorLogLevel).
+     * Use NoneLogLevel to disable logging and AllLogLevel for a quick way to enable all levels.
      */
     static set LogLevels(level) {
         Logger.Log = Logger._LogDisabled;
@@ -29698,6 +29743,7 @@ class Tags {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   F: () => (/* binding */ _retryWithInterval),
 /* harmony export */   _: () => (/* binding */ TimingTools)
 /* harmony export */ });
 /* harmony import */ var _domManagement_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8790);
@@ -29720,6 +29766,44 @@ class TimingTools {
         }
     }
 }
+function _runWithCondition(condition, onSuccess, onError) {
+    try {
+        if (condition()) {
+            onSuccess();
+            return true;
+        }
+    }
+    catch (e) {
+        onError?.(e);
+        return true;
+    }
+    return false;
+}
+/**
+ * @internal
+ */
+const _retryWithInterval = (condition, onSuccess, onError, step = 16, maxTimeout = 30000, checkConditionOnCall = true, additionalStringOnTimeout) => {
+    // if checkConditionOnCall is true, we check the condition immediately. If it is true, run everything synchronously
+    if (checkConditionOnCall) {
+        // that means that one of the two happened - either the condition is true or an exception was thrown when checking the condition
+        if (_runWithCondition(condition, onSuccess, onError)) {
+            // don't schedule the interval, no reason to check it again.
+            return;
+        }
+    }
+    const int = setInterval(() => {
+        if (_runWithCondition(condition, onSuccess, onError)) {
+            clearInterval(int);
+        }
+        else {
+            maxTimeout -= step;
+            if (maxTimeout < 0) {
+                clearInterval(int);
+                onError?.(new Error("Operation timed out after maximum retries. " + (additionalStringOnTimeout || "")));
+            }
+        }
+    }, step);
+};
 //# sourceMappingURL=timingTools.js.map
 
 /***/ }),
@@ -30008,7 +30092,7 @@ class WebRequest {
             if (this._shouldSkipRequestModifications(url)) {
                 return;
             }
-            update(this._xhr, url);
+            url = update(this._xhr, url) || url;
         }
         // Clean url
         url = url.replace("file:http:", "http:");

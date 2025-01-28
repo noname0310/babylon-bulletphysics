@@ -367,7 +367,7 @@ const defaultUboDeclaration = { name, shader };
 // Do not edit.
 
 const name = "helperFunctions";
-const shader = `const float PI=3.1415926535897932384626433832795;const float RECIPROCAL_PI=0.3183098861837907;const float RECIPROCAL_PI2=0.15915494309189535;const float HALF_MIN=5.96046448e-08; 
+const shader = `const float PI=3.1415926535897932384626433832795;const float TWO_PI=6.283185307179586;const float HALF_PI=1.5707963267948966;const float RECIPROCAL_PI=0.3183098861837907;const float RECIPROCAL_PI2=0.15915494309189535;const float RECIPROCAL_PI4=0.07957747154594767;const float HALF_MIN=5.96046448e-08; 
 const float LinearEncodePowerApprox=2.2;const float GammaEncodePowerApprox=1.0/LinearEncodePowerApprox;const vec3 LuminanceEncodeApprox=vec3(0.2126,0.7152,0.0722);const float Epsilon=0.0000001;
 #define saturate(x) clamp(x,0.0,1.0)
 #define absEps(x) abs(x)+Epsilon
@@ -461,13 +461,15 @@ vec3 square(vec3 value)
 {return value*value;}
 float pow5(float value) {float sq=value*value;return sq*sq*value;}
 float getLuminance(vec3 color)
-{return clamp(dot(color,LuminanceEncodeApprox),0.,1.);}
+{return saturate(dot(color,LuminanceEncodeApprox));}
 float getRand(vec2 seed) {return fract(sin(dot(seed.xy ,vec2(12.9898,78.233)))*43758.5453);}
 float dither(vec2 seed,float varianceAmount) {float rand=getRand(seed);float normVariance=varianceAmount/255.0;float dither=mix(-normVariance,normVariance,rand);return dither;}
-const float rgbdMaxRange=255.0;vec4 toRGBD(vec3 color) {float maxRGB=maxEps(max(color.r,max(color.g,color.b)));float D =max(rgbdMaxRange/maxRGB,1.);D =clamp(floor(D)/255.0,0.,1.);vec3 rgb=color.rgb*D;rgb=toGammaSpace(rgb);return vec4(clamp(rgb,0.,1.),D); }
+const float rgbdMaxRange=255.;vec4 toRGBD(vec3 color) {float maxRGB=maxEps(max(color.r,max(color.g,color.b)));float D =max(rgbdMaxRange/maxRGB,1.);D =saturate(floor(D)/255.);vec3 rgb=color.rgb*D;rgb=toGammaSpace(rgb);return vec4(saturate(rgb),D);}
 vec3 fromRGBD(vec4 rgbd) {rgbd.rgb=toLinearSpace(rgbd.rgb);return rgbd.rgb/rgbd.a;}
-vec3 parallaxCorrectNormal( vec3 vertexPos,vec3 origVec,vec3 cubeSize,vec3 cubePos ) {vec3 invOrigVec=vec3(1.0,1.0,1.0)/origVec;vec3 halfSize=cubeSize*0.5;vec3 intersecAtMaxPlane=(cubePos+halfSize-vertexPos)*invOrigVec;vec3 intersecAtMinPlane=(cubePos-halfSize-vertexPos)*invOrigVec;vec3 largestIntersec=max(intersecAtMaxPlane,intersecAtMinPlane);float distance=min(min(largestIntersec.x,largestIntersec.y),largestIntersec.z);vec3 intersectPositionWS=vertexPos+origVec*distance;return intersectPositionWS-cubePos;}
-`;
+vec3 parallaxCorrectNormal( vec3 vertexPos,vec3 origVec,vec3 cubeSize,vec3 cubePos ) {vec3 invOrigVec=vec3(1.)/origVec;vec3 halfSize=cubeSize*0.5;vec3 intersecAtMaxPlane=(cubePos+halfSize-vertexPos)*invOrigVec;vec3 intersecAtMinPlane=(cubePos-halfSize-vertexPos)*invOrigVec;vec3 largestIntersec=max(intersecAtMaxPlane,intersecAtMinPlane);float distance=min(min(largestIntersec.x,largestIntersec.y),largestIntersec.z);vec3 intersectPositionWS=vertexPos+origVec*distance;return intersectPositionWS-cubePos;}
+vec3 equirectangularToCubemapDirection(vec2 uv) {float longitude=uv.x*TWO_PI-PI;float latitude=HALF_PI-uv.y*PI;vec3 direction;direction.x=cos(latitude)*sin(longitude);direction.y=sin(latitude);direction.z=cos(latitude)*cos(longitude);return direction;}
+float sqrtClamped(float value) {return sqrt(max(value,0.));}
+float avg(vec3 value) {return dot(value,vec3(0.333333333));}`;
 // Sideeffect
 _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStore[name] = shader;
 /** @internal */
@@ -642,20 +644,40 @@ const name = "morphTargetsVertex";
 const shader = `#ifdef MORPHTARGETS
 #ifdef MORPHTARGETS_TEXTURE
 #if {X}==0
-for (int i=0; i<NUM_MORPH_INFLUENCERS; i++) {if (i>=morphTargetCount) break;vertexID=float(gl_VertexID)*morphTargetTextureInfo.x;positionUpdated+=(readVector3FromRawSampler(i,vertexID)-position)*morphTargetInfluences[i];vertexID+=1.0;
+for (int i=0; i<NUM_MORPH_INFLUENCERS; i++) {if (i>=morphTargetCount) break;vertexID=float(gl_VertexID)*morphTargetTextureInfo.x;
+#ifdef MORPHTARGETS_POSITION
+positionUpdated+=(readVector3FromRawSampler(i,vertexID)-position)*morphTargetInfluences[i];
+#endif
+#ifdef MORPHTARGETTEXTURE_HASPOSITIONS
+vertexID+=1.0;
+#endif
 #ifdef MORPHTARGETS_NORMAL
-normalUpdated+=(readVector3FromRawSampler(i,vertexID) -normal)*morphTargetInfluences[i];vertexID+=1.0;
+normalUpdated+=(readVector3FromRawSampler(i,vertexID) -normal)*morphTargetInfluences[i];
+#endif
+#ifdef MORPHTARGETTEXTURE_HASNORMALS
+vertexID+=1.0;
 #endif
 #ifdef MORPHTARGETS_UV
-uvUpdated+=(readVector3FromRawSampler(i,vertexID).xy-uv)*morphTargetInfluences[i];vertexID+=1.0;
+uvUpdated+=(readVector3FromRawSampler(i,vertexID).xy-uv)*morphTargetInfluences[i];
+#endif
+#ifdef MORPHTARGETTEXTURE_HASUVS
+vertexID+=1.0;
 #endif
 #ifdef MORPHTARGETS_TANGENT
 tangentUpdated.xyz+=(readVector3FromRawSampler(i,vertexID) -tangent.xyz)*morphTargetInfluences[i];
 #endif
+#ifdef MORPHTARGETTEXTURE_HASTANGENTS
+vertexID+=1.0;
+#endif
+#ifdef MORPHTARGETS_UV2
+uv2Updated+=(readVector3FromRawSampler(i,vertexID).xy-uv2)*morphTargetInfluences[i];
+#endif
 }
 #endif
 #else
+#ifdef MORPHTARGETS_POSITION
 positionUpdated+=(position{X}-position)*morphTargetInfluences[{X}];
+#endif
 #ifdef MORPHTARGETS_NORMAL
 normalUpdated+=(normal{X}-normal)*morphTargetInfluences[{X}];
 #endif
@@ -664,6 +686,9 @@ tangentUpdated.xyz+=(tangent{X}-tangent.xyz)*morphTargetInfluences[{X}];
 #endif
 #ifdef MORPHTARGETS_UV
 uvUpdated+=(uv_{X}-uv)*morphTargetInfluences[{X}];
+#endif
+#ifdef MORPHTARGETS_UV2
+uv2Updated+=(uv2_{X}-uv2)*morphTargetInfluences[{X}];
 #endif
 #endif
 #endif
@@ -686,7 +711,9 @@ const morphTargetsVertex = { name, shader };
 const name = "morphTargetsVertexDeclaration";
 const shader = `#ifdef MORPHTARGETS
 #ifndef MORPHTARGETS_TEXTURE
+#ifdef MORPHTARGETS_POSITION
 attribute vec3 position{X};
+#endif
 #ifdef MORPHTARGETS_NORMAL
 attribute vec3 normal{X};
 #endif
@@ -695,6 +722,9 @@ attribute vec3 tangent{X};
 #endif
 #ifdef MORPHTARGETS_UV
 attribute vec2 uv_{X};
+#endif
+#ifdef MORPHTARGETS_UV2
+attribute vec2 uv2_{X};
 #endif
 #elif {X}==0
 uniform int morphTargetCount;
@@ -1054,6 +1084,9 @@ uniform vec4 vLightFalloff{X};
 #elif defined(HEMILIGHT{X})
 uniform vec3 vLightGround{X};
 #endif
+#ifdef IESLIGHTTEXTURE{X}
+uniform sampler2D iesLightTexture{X};
+#endif
 #ifdef PROJECTEDLIGHTTEXTURE{X}
 uniform mat4 textureProjectionMatrix{X};uniform sampler2D projectionLightTexture{X};
 #endif
@@ -1079,6 +1112,9 @@ vec4 vLightFalloff;
 vec3 vLightGround;
 #endif
 vec4 shadowsInfo;vec2 depthValues;} light{X};
+#ifdef IESLIGHTTEXTURE{X}
+uniform sampler2D iesLightTexture{X};
+#endif
 #ifdef PROJECTEDLIGHTTEXTURE{X}
 uniform mat4 textureProjectionMatrix{X};uniform sampler2D projectionLightTexture{X};
 #endif
@@ -1157,8 +1193,10 @@ result.diffuse=ndl*diffuseColor*attenuation;
 vec3 angleW=normalize(viewDirectionW+lightVectorW);float specComp=max(0.,dot(vNormal,angleW));specComp=pow(specComp,max(1.,glossiness));result.specular=specComp*specularColor*attenuation;
 #endif
 return result;}
-lightingInfo computeSpotLighting(vec3 viewDirectionW,vec3 vNormal,vec4 lightData,vec4 lightDirection,vec3 diffuseColor,vec3 specularColor,float range,float glossiness) {lightingInfo result;vec3 direction=lightData.xyz-vPositionW;vec3 lightVectorW=normalize(direction);float attenuation=max(0.,1.0-length(direction)/range);float cosAngle=max(0.,dot(lightDirection.xyz,-lightVectorW));if (cosAngle>=lightDirection.w)
-{cosAngle=max(0.,pow(cosAngle,lightData.w));attenuation*=cosAngle;float ndl=max(0.,dot(vNormal,lightVectorW));
+float getAttenuation(float cosAngle,float exponent) {return max(0.,pow(cosAngle,exponent));}
+float getIESAttenuation(float cosAngle,sampler2D iesLightSampler) {float angle=acos(cosAngle)/PI;return texture2D(iesLightSampler,vec2(angle,0.)).r;}
+lightingInfo basicSpotLighting(vec3 viewDirectionW,vec3 lightVectorW,vec3 vNormal,float attenuation,vec3 diffuseColor,vec3 specularColor,float glossiness) {lightingInfo result; 
+float ndl=max(0.,dot(vNormal,lightVectorW));
 #ifdef NDOTL
 result.ndl=ndl;
 #endif
@@ -1167,7 +1205,22 @@ result.diffuse=ndl*diffuseColor*attenuation;
 vec3 angleW=normalize(viewDirectionW+lightVectorW);float specComp=max(0.,dot(vNormal,angleW));specComp=pow(specComp,max(1.,glossiness));result.specular=specComp*specularColor*attenuation;
 #endif
 return result;}
-result.diffuse=vec3(0.);
+lightingInfo computeIESSpotLighting(vec3 viewDirectionW,vec3 vNormal,vec4 lightData,vec4 lightDirection,vec3 diffuseColor,vec3 specularColor,float range,float glossiness,sampler2D iesLightSampler) { 
+vec3 direction=lightData.xyz-vPositionW;vec3 lightVectorW=normalize(direction);float attenuation=max(0.,1.0-length(direction)/range);float dotProduct=dot(lightDirection.xyz,-lightVectorW);float cosAngle=max(0.,dotProduct);if (cosAngle>=lightDirection.w)
+{ 
+attenuation*=getIESAttenuation(dotProduct,iesLightSampler);return basicSpotLighting(viewDirectionW,lightVectorW,vNormal,attenuation,diffuseColor,specularColor,glossiness);}
+lightingInfo result;result.diffuse=vec3(0.);
+#ifdef SPECULARTERM
+result.specular=vec3(0.);
+#endif
+#ifdef NDOTL
+result.ndl=0.;
+#endif
+return result;}
+lightingInfo computeSpotLighting(vec3 viewDirectionW,vec3 vNormal,vec4 lightData,vec4 lightDirection,vec3 diffuseColor,vec3 specularColor,float range,float glossiness) {vec3 direction=lightData.xyz-vPositionW;vec3 lightVectorW=normalize(direction);float attenuation=max(0.,1.0-length(direction)/range);float cosAngle=max(0.,dot(lightDirection.xyz,-lightVectorW));if (cosAngle>=lightDirection.w)
+{ 
+attenuation*=getAttenuation(cosAngle,lightData.w);return basicSpotLighting(viewDirectionW,lightVectorW,vNormal,attenuation,diffuseColor,specularColor,glossiness);}
+lightingInfo result;result.diffuse=vec3(0.);
 #ifdef SPECULARTERM
 result.specular=vec3(0.);
 #endif
@@ -2033,13 +2086,33 @@ preInfo=computeDirectionalPreLightingInfo(light{X}.vLightData,viewDirectionW,nor
 preInfo.NdotV=NdotV;
 #ifdef SPOTLIGHT{X}
 #ifdef LIGHT_FALLOFF_GLTF{X}
-preInfo.attenuation=computeDistanceLightFalloff_GLTF(preInfo.lightDistanceSquared,light{X}.vLightFalloff.y);preInfo.attenuation*=computeDirectionalLightFalloff_GLTF(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightFalloff.z,light{X}.vLightFalloff.w);
-#elif defined(LIGHT_FALLOFF_PHYSICAL{X})
-preInfo.attenuation=computeDistanceLightFalloff_Physical(preInfo.lightDistanceSquared);preInfo.attenuation*=computeDirectionalLightFalloff_Physical(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w);
-#elif defined(LIGHT_FALLOFF_STANDARD{X})
-preInfo.attenuation=computeDistanceLightFalloff_Standard(preInfo.lightOffset,light{X}.vLightFalloff.x);preInfo.attenuation*=computeDirectionalLightFalloff_Standard(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w,light{X}.vLightData.w);
+preInfo.attenuation=computeDistanceLightFalloff_GLTF(preInfo.lightDistanceSquared,light{X}.vLightFalloff.y);
+#ifdef IESLIGHTTEXTURE{X}
+preInfo.attenuation*=computeDirectionalLightFalloff_IES(light{X}.vLightDirection.xyz,preInfo.L,iesLightTexture{X});
 #else
-preInfo.attenuation=computeDistanceLightFalloff(preInfo.lightOffset,preInfo.lightDistanceSquared,light{X}.vLightFalloff.x,light{X}.vLightFalloff.y);preInfo.attenuation*=computeDirectionalLightFalloff(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w,light{X}.vLightData.w,light{X}.vLightFalloff.z,light{X}.vLightFalloff.w);
+preInfo.attenuation*=computeDirectionalLightFalloff_GLTF(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightFalloff.z,light{X}.vLightFalloff.w);
+#endif
+#elif defined(LIGHT_FALLOFF_PHYSICAL{X})
+preInfo.attenuation=computeDistanceLightFalloff_Physical(preInfo.lightDistanceSquared);
+#ifdef IESLIGHTTEXTURE{X}
+preInfo.attenuation*=computeDirectionalLightFalloff_IES(light{X}.vLightDirection.xyz,preInfo.L,iesLightTexture{X});
+#else
+preInfo.attenuation*=computeDirectionalLightFalloff_Physical(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w);
+#endif
+#elif defined(LIGHT_FALLOFF_STANDARD{X})
+preInfo.attenuation=computeDistanceLightFalloff_Standard(preInfo.lightOffset,light{X}.vLightFalloff.x);
+#ifdef IESLIGHTTEXTURE{X}
+preInfo.attenuation*=computeDirectionalLightFalloff_IES(light{X}.vLightDirection.xyz,preInfo.L,iesLightTexture{X});
+#else
+preInfo.attenuation*=computeDirectionalLightFalloff_Standard(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w,light{X}.vLightData.w);
+#endif
+#else
+preInfo.attenuation=computeDistanceLightFalloff(preInfo.lightOffset,preInfo.lightDistanceSquared,light{X}.vLightFalloff.x,light{X}.vLightFalloff.y);
+#ifdef IESLIGHTTEXTURE{X}
+preInfo.attenuation*=computeDirectionalLightFalloff_IES(light{X}.vLightDirection.xyz,preInfo.L,iesLightTexture{X});
+#else
+preInfo.attenuation*=computeDirectionalLightFalloff(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w,light{X}.vLightData.w,light{X}.vLightFalloff.z,light{X}.vLightFalloff.w);
+#endif 
 #endif
 #elif defined(POINTLIGHT{X})
 #ifdef LIGHT_FALLOFF_GLTF{X}
@@ -2111,7 +2184,11 @@ info.sheen*=info.clearCoat.w;
 #endif
 #else
 #ifdef SPOTLIGHT{X}
+#ifdef IESLIGHTTEXTURE{X}
+info=computeIESSpotLighting(viewDirectionW,normalW,light{X}.vLightData,light{X}.vLightDirection,diffuse{X}.rgb,light{X}.vLightSpecular.rgb,diffuse{X}.a,glossiness,iesLightTexture{X});
+#else
 info=computeSpotLighting(viewDirectionW,normalW,light{X}.vLightData,light{X}.vLightDirection,diffuse{X}.rgb,light{X}.vLightSpecular.rgb,diffuse{X}.a,glossiness);
+#endif
 #elif defined(HEMILIGHT{X})
 info=computeHemisphericLighting(viewDirectionW,normalW,light{X}.vLightData,diffuse{X}.rgb,light{X}.vLightSpecular.rgb,light{X}.vLightGround,glossiness);
 #elif defined(POINTLIGHT{X}) || defined(DIRLIGHT{X})
@@ -2382,7 +2459,8 @@ const oitFragment = { name: oitFragment_name, shader: oitFragment_shader };
 
 
 const default_fragment_name = "defaultPixelShader";
-const default_fragment_shader = `#include<__decl__defaultFragment>
+const default_fragment_shader = `#define CUSTOM_FRAGMENT_EXTENSION
+#include<__decl__defaultFragment>
 #if defined(BUMP) || !defined(NORMAL)
 #extension GL_OES_standard_derivatives : enable
 #endif
@@ -3045,7 +3123,7 @@ if (v_INFONAME_==0.)
 {v_VARYINGNAME_UV=vec2(_MATRIXNAME_Matrix*vec4(uvUpdated,1.0,0.0));}
 #ifdef UV2
 else if (v_INFONAME_==1.)
-{v_VARYINGNAME_UV=vec2(_MATRIXNAME_Matrix*vec4(uv2,1.0,0.0));}
+{v_VARYINGNAME_UV=vec2(_MATRIXNAME_Matrix*vec4(uv2Updated,1.0,0.0));}
 #endif
 #ifdef UV3
 else if (v_INFONAME_==2.)
@@ -3203,7 +3281,8 @@ const logDepthVertex = { name: logDepthVertex_name, shader: logDepthVertex_shade
 
 
 const default_vertex_name = "defaultVertexShader";
-const default_vertex_shader = `#include<__decl__defaultVertex>
+const default_vertex_shader = `#define CUSTOM_VERTEX_EXTENSION
+#include<__decl__defaultVertex>
 #define CUSTOM_VERTEX_BEGIN
 attribute vec3 position;
 #ifdef NORMAL
@@ -3269,6 +3348,9 @@ vec4 tangentUpdated=tangent;
 #ifdef UV1
 vec2 uvUpdated=uv;
 #endif
+#ifdef UV2
+vec2 uv2Updated=uv2;
+#endif
 #include<morphTargetsVertexGlobal>
 #include<morphTargetsVertex>[0..maxSimultaneousMorphTargets]
 #ifdef REFLECTIONMAP_SKYBOX
@@ -3310,10 +3392,16 @@ vDirectionW=normalize(vec3(finalWorld*vec4(positionUpdated,0.0)));
 #ifndef UV1
 vec2 uvUpdated=vec2(0.,0.);
 #endif
+#ifndef UV2
+vec2 uv2Updated=vec2(0.,0.);
+#endif
 #ifdef MAINUV1
 vMainUV1=uvUpdated;
 #endif
-#include<uvVariableDeclaration>[2..7]
+#ifdef MAINUV2
+vMainUV2=uv2Updated;
+#endif
+#include<uvVariableDeclaration>[3..7]
 #include<samplerVertexImplementation>(_DEFINENAME_,DIFFUSE,_VARYINGNAME_,Diffuse,_MATRIXNAME_,diffuse,_INFONAME_,DiffuseInfos.x)
 #include<samplerVertexImplementation>(_DEFINENAME_,DETAIL,_VARYINGNAME_,Detail,_MATRIXNAME_,detail,_INFONAME_,DetailInfos.x)
 #include<samplerVertexImplementation>(_DEFINENAME_,AMBIENT,_VARYINGNAME_,Ambient,_MATRIXNAME_,ambient,_INFONAME_,AmbientInfos.x)
@@ -3507,6 +3595,9 @@ void main(void)
 #ifdef UV1
 vec2 uvUpdated=uv;
 #endif
+#ifdef UV2
+vec2 uv2Updated=uv2;
+#endif
 #include<morphTargetsVertexGlobal>
 #include<morphTargetsVertex>[0..maxSimultaneousMorphTargets]
 #include<instancesVertex>
@@ -3529,7 +3620,7 @@ vDepthMetric=((gl_Position.z+depthValues.x)/(depthValues.y));
 vUV=vec2(diffuseMatrix*vec4(uvUpdated,1.0,0.0));
 #endif
 #ifdef UV2
-vUV=vec2(diffuseMatrix*vec4(uv2,1.0,0.0));
+vUV=vec2(diffuseMatrix*vec4(uv2Updated,1.0,0.0));
 #endif
 #endif
 #include<pointCloudVertex>
@@ -4337,6 +4428,9 @@ void main(void)
 #ifdef UV1
 vec2 uvUpdated=uv;
 #endif
+#ifdef UV2
+vec2 uv2Updated=uv2;
+#endif
 #ifdef NORMAL
 vec3 normalUpdated=normal;
 #endif
@@ -4365,7 +4459,7 @@ gl_Position=viewProjection*worldPos;
 vUV=vec2(diffuseMatrix*vec4(uvUpdated,1.0,0.0));
 #endif
 #ifdef UV2
-vUV=vec2(diffuseMatrix*vec4(uv2,1.0,0.0));
+vUV=vec2(diffuseMatrix*vec4(uv2Updated,1.0,0.0));
 #endif
 #endif
 #include<clipPlaneVertex>

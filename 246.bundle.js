@@ -681,6 +681,7 @@ VertexBuffer.MatricesWeightsExtraKind = `matricesWeightsExtra`;
 /* harmony export */   gs: () => (/* binding */ CopyFloatData),
 /* harmony export */   jm: () => (/* binding */ GetFloatData)
 /* harmony export */ });
+/* unused harmony export AreIndices32Bits */
 /* harmony import */ var _Misc_logger_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1137);
 
 
@@ -938,6 +939,21 @@ function CopyFloatData(input, size, type, byteOffset, byteStride, normalized, to
         output.set(floatData);
     }
 }
+/**
+ * Utility function to determine if an IndicesArray is an Uint32Array.
+ * @param indices The IndicesArray to check. If null, count is used instead.
+ * @param count The number of indices
+ * @returns True if the indices use 32 bits
+ */
+function AreIndices32Bits(indices, count) {
+    if (indices) {
+        if (indices instanceof Array) {
+            return indices.some((value) => value >= 65536);
+        }
+        return indices.BYTES_PER_ELEMENT === 4;
+    }
+    return count >= 65536;
+}
 //# sourceMappingURL=bufferUtils.js.map
 
 /***/ }),
@@ -997,6 +1013,26 @@ class ObjectRenderer {
             this._unObserveRenderList = (0,arrayTools/* _ObserveArray */.lL)(value, this._renderListHasChanged);
         }
         this._renderList = value;
+    }
+    /**
+     * Friendly name of the object renderer
+     */
+    get name() {
+        return this._name;
+    }
+    set name(value) {
+        if (this._name === value) {
+            return;
+        }
+        this._name = value;
+        if (!this._scene) {
+            return;
+        }
+        const engine = this._scene.getEngine();
+        for (let i = 0; i < this._renderPassIds.length; ++i) {
+            const renderPassId = this._renderPassIds[i];
+            engine._renderPassNames[renderPassId] = `${this._name}#${i}`;
+        }
     }
     /**
      * Gets the render pass ids used by the object renderer.
@@ -1121,7 +1157,7 @@ class ObjectRenderer {
         this._releaseRenderPassId();
         const engine = this._scene.getEngine();
         for (let i = 0; i < this.options.numPasses; ++i) {
-            this._renderPassIds[i] = engine.createRenderPassId(`ObjectRenderer - ${this.name}#${i}`);
+            this._renderPassIds[i] = engine.createRenderPassId(`${this.name}#${i}`);
         }
     }
     /**
@@ -1309,7 +1345,7 @@ class ObjectRenderer {
             if (!currentRenderList) {
                 currentRenderList = defaultRenderList;
             }
-            if (!this._doNotChangeAspectRatio) {
+            if (!this.options.doNotChangeAspectRatio) {
                 scene.updateTransformMatrix(true);
             }
             for (let i = 0; i < currentRenderList.length && returnValue; ++i) {
@@ -1345,9 +1381,11 @@ class ObjectRenderer {
     }
     _prepareRenderingManager(currentRenderList, currentRenderListLength, checkLayerMask) {
         const scene = this._scene;
-        const camera = scene.activeCamera;
+        const camera = scene.activeCamera; // note that at this point, scene.activeCamera == this.activeCamera if defined, because initRender() has been called before
+        const cameraForLOD = this.cameraForLOD ?? camera;
         this._renderingManager.reset();
         const sceneRenderId = scene.getRenderId();
+        const currentFrameId = scene.getFrameId();
         for (let meshIndex = 0; meshIndex < currentRenderListLength; meshIndex++) {
             const mesh = currentRenderList[meshIndex];
             if (mesh && !mesh.isBlocked) {
@@ -1361,14 +1399,29 @@ class ObjectRenderer {
                     this.resetRefreshCounter();
                     continue;
                 }
-                if (!mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate && camera) {
-                    mesh._internalAbstractMeshDataInfo._currentLOD = scene.customLODSelector ? scene.customLODSelector(mesh, camera) : mesh.getLOD(camera);
-                    mesh._internalAbstractMeshDataInfo._currentLODIsUpToDate = true;
+                let meshToRender = null;
+                if (cameraForLOD) {
+                    const meshToRenderAndFrameId = mesh._internalAbstractMeshDataInfo._currentLOD.get(cameraForLOD);
+                    if (!meshToRenderAndFrameId || meshToRenderAndFrameId[1] !== currentFrameId) {
+                        meshToRender = scene.customLODSelector ? scene.customLODSelector(mesh, cameraForLOD) : mesh.getLOD(cameraForLOD);
+                        if (!meshToRenderAndFrameId) {
+                            mesh._internalAbstractMeshDataInfo._currentLOD.set(cameraForLOD, [meshToRender, currentFrameId]);
+                        }
+                        else {
+                            meshToRenderAndFrameId[0] = meshToRender;
+                            meshToRenderAndFrameId[1] = currentFrameId;
+                        }
+                    }
+                    else {
+                        meshToRender = meshToRenderAndFrameId[0];
+                    }
                 }
-                if (!mesh._internalAbstractMeshDataInfo._currentLOD) {
+                else {
+                    meshToRender = mesh;
+                }
+                if (!meshToRender) {
                     continue;
                 }
-                let meshToRender = mesh._internalAbstractMeshDataInfo._currentLOD;
                 if (meshToRender !== mesh && meshToRender.billboardMode !== 0) {
                     meshToRender.computeWorldMatrix(); // Compute world matrix if LOD is billboard
                 }
@@ -1431,9 +1484,11 @@ class ObjectRenderer {
      *
      * @param renderingGroupId The rendering group id corresponding to its index
      * @param autoClearDepthStencil Automatically clears depth and stencil between groups if true.
+     * @param depth Automatically clears depth between groups if true and autoClear is true.
+     * @param stencil Automatically clears stencil between groups if true and autoClear is true.
      */
-    setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil) {
-        this._renderingManager.setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil);
+    setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil, depth = true, stencil = true) {
+        this._renderingManager.setRenderingAutoClearDepthStencil(renderingGroupId, autoClearDepthStencil, depth, stencil);
         this._renderingManager._useSceneAutoClearSetup = false;
     }
     /**
@@ -1451,6 +1506,14 @@ class ObjectRenderer {
      * Dispose the renderer and release its associated resources.
      */
     dispose() {
+        const renderList = this.renderList ? this.renderList : this._scene.getActiveMeshes().data;
+        const renderListLength = this.renderList ? this.renderList.length : this._scene.getActiveMeshes().length;
+        for (let i = 0; i < renderListLength; i++) {
+            const mesh = renderList[i];
+            if (mesh.getMaterialForRenderPass(this.renderPassId) !== undefined) {
+                mesh.setMaterialForRenderPass(this.renderPassId, undefined);
+            }
+        }
         this.onBeforeRenderObservable.clear();
         this.onAfterRenderObservable.clear();
         this.onBeforeRenderingManagerRenderObservable.clear();
@@ -1591,6 +1654,16 @@ class RenderTargetTexture extends texture/* Texture */.g {
     }
     set activeCamera(value) {
         this._objectRenderer.activeCamera = value;
+    }
+    /**
+     * Define the camera used to calculate the LOD of the objects.
+     * If not defined, activeCamera will be used. If not defined nor activeCamera, scene's active camera will be used.
+     */
+    get cameraForLOD() {
+        return this._objectRenderer.cameraForLOD;
+    }
+    set cameraForLOD(value) {
+        this._objectRenderer.cameraForLOD = value;
     }
     /**
      * Override the mesh isReady function with your own one.
@@ -1760,6 +1833,7 @@ class RenderTargetTexture extends texture/* Texture */.g {
     constructor(name, size, scene, generateMipMaps = false, doNotChangeAspectRatio = true, type = 0, isCube = false, samplingMode = texture/* Texture */.g.TRILINEAR_SAMPLINGMODE, generateDepthBuffer = true, generateStencilBuffer = false, isMulti = false, format = 5, delayAllocation = false, samples, creationFlags, noColorAttachment = false, useSRGBBuffer = false) {
         let colorAttachment = undefined;
         let gammaSpace = true;
+        let existingObjectRenderer = undefined;
         if (typeof generateMipMaps === "object") {
             const options = generateMipMaps;
             generateMipMaps = !!options.generateMipMaps;
@@ -1778,6 +1852,7 @@ class RenderTargetTexture extends texture/* Texture */.g {
             useSRGBBuffer = !!options.useSRGBBuffer;
             colorAttachment = options.colorAttachment;
             gammaSpace = options.gammaSpace ?? gammaSpace;
+            existingObjectRenderer = options.existingObjectRenderer;
         }
         super(null, scene, !generateMipMaps, undefined, samplingMode, undefined, undefined, undefined, undefined, format);
         /**
@@ -1809,11 +1884,14 @@ class RenderTargetTexture extends texture/* Texture */.g {
         this._samples = 1;
         this._canRescale = true;
         this._renderTarget = null;
+        this._dontDisposeObjectRenderer = false;
         /**
          * Gets or sets the center of the bounding box associated with the texture (when in cube mode)
          * It must define where the camera used to render the texture is set
          */
         this.boundingBoxPosition = math_vector/* Vector3 */.Pq.Zero();
+        /** @internal */
+        this._disableEngineStages = false; // TODO: remove this when the shadow generator task (frame graph) is reworked (see https://github.com/BabylonJS/Babylon.js/pull/15962#discussion_r1874417607)
         this._dumpToolsLoading = false;
         scene = this.getScene();
         if (!scene) {
@@ -1825,15 +1903,20 @@ class RenderTargetTexture extends texture/* Texture */.g {
         this.name = name;
         this.isRenderTarget = true;
         this._initialSizeParameter = size;
+        this._dontDisposeObjectRenderer = !!existingObjectRenderer;
         this._processSizeParameter(size);
-        this._objectRenderer = new ObjectRenderer(name, scene, {
-            numPasses: isCube ? 6 : this.getRenderLayers() || 1,
-            doNotChangeAspectRatio,
-        });
-        this._objectRenderer.onBeforeRenderingManagerRenderObservable.add(() => {
+        this._objectRenderer =
+            existingObjectRenderer ??
+                new ObjectRenderer(name, scene, {
+                    numPasses: isCube ? 6 : this.getRenderLayers() || 1,
+                    doNotChangeAspectRatio,
+                });
+        this._onBeforeRenderingManagerRenderObserver = this._objectRenderer.onBeforeRenderingManagerRenderObservable.add(() => {
             // Before clear
-            for (const step of this._scene._beforeRenderTargetClearStage) {
-                step.action(this, this._currentFaceIndex, this._currentLayer);
+            if (!this._disableEngineStages) {
+                for (const step of this._scene._beforeRenderTargetClearStage) {
+                    step.action(this, this._currentFaceIndex, this._currentLayer);
+                }
             }
             // Clear
             if (this.onClearObservable.hasObservers()) {
@@ -1846,14 +1929,18 @@ class RenderTargetTexture extends texture/* Texture */.g {
                 this._scene.updateTransformMatrix(true);
             }
             // Before Camera Draw
-            for (const step of this._scene._beforeRenderTargetDrawStage) {
-                step.action(this, this._currentFaceIndex, this._currentLayer);
+            if (!this._disableEngineStages) {
+                for (const step of this._scene._beforeRenderTargetDrawStage) {
+                    step.action(this, this._currentFaceIndex, this._currentLayer);
+                }
             }
         });
-        this._objectRenderer.onAfterRenderingManagerRenderObservable.add(() => {
+        this._onAfterRenderingManagerRenderObserver = this._objectRenderer.onAfterRenderingManagerRenderObservable.add(() => {
             // After Camera Draw
-            for (const step of this._scene._afterRenderTargetDrawStage) {
-                step.action(this, this._currentFaceIndex, this._currentLayer);
+            if (!this._disableEngineStages) {
+                for (const step of this._scene._afterRenderTargetDrawStage) {
+                    step.action(this, this._currentFaceIndex, this._currentLayer);
+                }
             }
             const saveGenerateMipMaps = this._texture?.generateMipMaps ?? false;
             if (this._texture) {
@@ -1867,8 +1954,10 @@ class RenderTargetTexture extends texture/* Texture */.g {
             else if (this._currentUseCameraPostProcess) {
                 this._scene.postProcessManager._finalizeFrame(false, this._renderTarget ?? undefined, this._currentFaceIndex);
             }
-            for (const step of this._scene._afterRenderTargetPostProcessStage) {
-                step.action(this, this._currentFaceIndex, this._currentLayer);
+            if (!this._disableEngineStages) {
+                for (const step of this._scene._afterRenderTargetPostProcessStage) {
+                    step.action(this, this._currentFaceIndex, this._currentLayer);
+                }
             }
             if (this._texture) {
                 this._texture.generateMipMaps = saveGenerateMipMaps;
@@ -1886,7 +1975,7 @@ class RenderTargetTexture extends texture/* Texture */.g {
                 }
             }
         });
-        this._objectRenderer.onFastPathRenderObservable.add(() => {
+        this._onFastPathRenderObserver = this._objectRenderer.onFastPathRenderObservable.add(() => {
             if (this.onClearObservable.hasObservers()) {
                 this.onClearObservable.notifyObservers(engine);
             }
@@ -2348,7 +2437,12 @@ class RenderTargetTexture extends texture/* Texture */.g {
         if (this._prePassRenderTarget) {
             this._prePassRenderTarget.dispose();
         }
-        this._objectRenderer.dispose();
+        this._objectRenderer.onBeforeRenderingManagerRenderObservable.remove(this._onBeforeRenderingManagerRenderObserver);
+        this._objectRenderer.onAfterRenderingManagerRenderObservable.remove(this._onAfterRenderingManagerRenderObserver);
+        this._objectRenderer.onFastPathRenderObservable.remove(this._onFastPathRenderObserver);
+        if (!this._dontDisposeObjectRenderer) {
+            this._objectRenderer.dispose();
+        }
         this.clearPostProcesses(true);
         if (this._resizeObserver) {
             this.getScene().getEngine().onResizeObservable.remove(this._resizeObserver);
@@ -3664,14 +3758,14 @@ class PostProcess {
     /**
      * Activates the post process by intializing the textures to be used when executed. Notifies onActivateObservable.
      * When this post process is used in a pipeline, this is call will bind the input texture of this post process to the output of the previous.
-     * @param camera The camera that will be used in the post process. This camera will be used when calling onActivateObservable.
+     * @param cameraOrScene The camera that will be used in the post process. This camera will be used when calling onActivateObservable. You can also pass the scene if no camera is available.
      * @param sourceTexture The source texture to be inspected to get the width and height if not specified in the post process constructor. (default: null)
      * @param forceDepthStencil If true, a depth and stencil buffer will be generated. (default: false)
      * @returns The render target wrapper that was bound to be written to.
      */
-    activate(camera, sourceTexture = null, forceDepthStencil) {
-        camera = camera || this._camera;
-        const scene = camera.getScene();
+    activate(cameraOrScene, sourceTexture = null, forceDepthStencil) {
+        const camera = cameraOrScene === null || cameraOrScene.cameraRigMode !== undefined ? cameraOrScene || this._camera : null;
+        const scene = camera?.getScene() ?? cameraOrScene;
         const engine = scene.getEngine();
         const maxSize = engine.getCaps().maxTextureSize;
         const requiredWidth = ((sourceTexture ? sourceTexture.width : this._engine.getRenderWidth(true)) * this._options) | 0;
@@ -4081,7 +4175,7 @@ class PostProcessManager {
         const engine = this._scene.getEngine();
         for (let index = 0; index < postProcesses.length; index++) {
             if (index < postProcesses.length - 1) {
-                postProcesses[index + 1].activate(this._scene.activeCamera, targetTexture?.texture);
+                postProcesses[index + 1].activate(this._scene.activeCamera || this._scene, targetTexture?.texture);
             }
             else {
                 if (targetTexture) {
@@ -4687,6 +4781,7 @@ class RenderingManager {
         const info = this._renderingGroupInfo;
         info.scene = this._scene;
         info.camera = this._scene.activeCamera;
+        info.renderingManager = this;
         // Dispatch sprites
         if (this._scene.spriteManagers && renderSprites) {
             for (let index = 0; index < this._scene.spriteManagers.length; index++) {

@@ -16,8 +16,8 @@ var math_scalar_functions = __webpack_require__(4867);
 var logger = __webpack_require__(1137);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/HighDynamicRange/cubemapToSphericalPolynomial.js
 var cubemapToSphericalPolynomial = __webpack_require__(6755);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/textureTools.js + 1 modules
-var textureTools = __webpack_require__(1947);
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/textureTools.js + 2 modules
+var textureTools = __webpack_require__(8864);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Materials/Textures/internalTexture.js + 1 modules
 var internalTexture = __webpack_require__(854);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/fileTools.js + 2 modules

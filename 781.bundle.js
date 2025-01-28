@@ -726,7 +726,7 @@ class Animation {
         if (!scene) {
             return null;
         }
-        return scene.beginDirectAnimation(target, [animation], 0, totalFrame, animation.loopMode === 1, 1.0, onAnimationEnd);
+        return scene.beginDirectAnimation(target, [animation], 0, totalFrame, animation.loopMode !== Animation.ANIMATIONLOOPMODE_CONSTANT, 1.0, onAnimationEnd);
     }
     /**
      * Create and start an animation on a node and its descendants
@@ -2664,10 +2664,12 @@ class TargetCamera extends camera/* Camera */.i {
      */
     getFrontPosition(distance) {
         this.getWorldMatrix();
-        const direction = this.getTarget().subtract(this.position);
-        direction.normalize();
-        direction.scaleInPlace(distance);
-        return this.globalPosition.add(direction);
+        const worldForward = math_vector/* TmpVectors */.AA.Vector3[0];
+        const localForward = math_vector/* TmpVectors */.AA.Vector3[1];
+        localForward.set(0, 0, this._scene.useRightHandedSystem ? -1.0 : 1.0);
+        this.getDirectionToRef(localForward, worldForward);
+        worldForward.scaleInPlace(distance);
+        return this.globalPosition.add(worldForward);
     }
     /** @internal */
     _getLockedTargetPosition() {
@@ -3085,6 +3087,12 @@ class TargetCamera extends camera/* Camera */.i {
 TargetCamera._RigCamTransformMatrix = new math_vector/* Matrix */.uq();
 TargetCamera._TargetTransformMatrix = new math_vector/* Matrix */.uq();
 TargetCamera._TargetFocalPoint = new math_vector/* Vector3 */.Pq();
+(0,tslib_es6/* __decorate */.Cg)([
+    (0,decorators/* serialize */.lK)()
+], TargetCamera.prototype, "ignoreParentScaling", void 0);
+(0,tslib_es6/* __decorate */.Cg)([
+    (0,decorators/* serialize */.lK)()
+], TargetCamera.prototype, "updateUpVectorFromRotation", void 0);
 (0,tslib_es6/* __decorate */.Cg)([
     (0,decorators/* serializeAsVector3 */.P_)()
 ], TargetCamera.prototype, "rotation", void 0);
@@ -8398,7 +8406,7 @@ class ShadowGenerator {
         }
         return this;
     }
-    /** Gets or sets the ability to have transparent shadow  */
+    /** Gets or sets the ability to have transparent shadow */
     get transparencyShadow() {
         return this._transparencyShadow;
     }
@@ -8664,11 +8672,32 @@ class ShadowGenerator {
         }
         // Custom render function.
         this._shadowMap.customRenderFunction = (opaqueSubMeshes, alphaTestSubMeshes, transparentSubMeshes, depthOnlySubMeshes) => this._renderForShadowMap(opaqueSubMeshes, alphaTestSubMeshes, transparentSubMeshes, depthOnlySubMeshes);
-        // Force the mesh is ready function to true as we are double checking it
+        // When preWarm is false, forces the mesh is ready function to true as we are double checking it
         // in the custom render function. Also it prevents side effects and useless
         // shader variations in DEPTHPREPASS mode.
-        this._shadowMap.customIsReadyFunction = () => {
-            return true;
+        this._shadowMap.customIsReadyFunction = (mesh, _refreshRate, preWarm) => {
+            if (!preWarm || !mesh.subMeshes) {
+                return true;
+            }
+            let isReady = true;
+            for (const subMesh of mesh.subMeshes) {
+                const renderingMesh = subMesh.getRenderingMesh();
+                const scene = this._scene;
+                const engine = scene.getEngine();
+                const material = subMesh.getMaterial();
+                if (!material || subMesh.verticesCount === 0 || (this.customAllowRendering && !this.customAllowRendering(subMesh))) {
+                    continue;
+                }
+                const batch = renderingMesh._getInstancesRenderList(subMesh._id, !!subMesh.getReplacementMesh());
+                if (batch.mustReturn) {
+                    continue;
+                }
+                const hardwareInstancedRendering = engine.getCaps().instancedArrays &&
+                    ((batch.visibleInstances[subMesh._id] !== null && batch.visibleInstances[subMesh._id] !== undefined) || renderingMesh.hasThinInstances);
+                const isTransparent = material.needAlphaBlendingForMesh(renderingMesh);
+                isReady = this.isReady(subMesh, hardwareInstancedRendering, isTransparent) && isReady;
+            }
+            return isReady;
         };
         const engine = this._scene.getEngine();
         this._shadowMap.onBeforeBindObservable.add(() => {
@@ -8876,9 +8905,7 @@ class ShadowGenerator {
                 effect.setVector3("lightDataSM", this._cachedPosition);
             }
             const camera = this._getCamera();
-            if (camera) {
-                effect.setFloat2("depthValuesSM", this.getLight().getDepthMinZ(camera), this.getLight().getDepthMinZ(camera) + this.getLight().getDepthMaxZ(camera));
-            }
+            effect.setFloat2("depthValuesSM", this.getLight().getDepthMinZ(camera), this.getLight().getDepthMinZ(camera) + this.getLight().getDepthMaxZ(camera));
             if (isTransparent && this.enableSoftTransparentShadow) {
                 effect.setFloat2("softTransparentShadowSM", effectiveMesh.visibility * material.alpha, this._opacityTexture?.getAlphaFromRGB ? 1 : 0);
             }
@@ -9090,10 +9117,14 @@ class ShadowGenerator {
             let cachedDefines = subMeshEffect.defines;
             const attribs = [buffer/* VertexBuffer */.R.PositionKind];
             const mesh = subMesh.getMesh();
+            let useNormal = false;
+            let uv1 = false;
+            let uv2 = false;
             // Normal bias.
             if (this.normalBias && mesh.isVerticesDataPresent(buffer/* VertexBuffer */.R.NormalKind)) {
                 attribs.push(buffer/* VertexBuffer */.R.NormalKind);
                 defines.push("#define NORMAL");
+                useNormal = true;
                 if (mesh.nonUniformScaling) {
                     defines.push("#define NONUNIFORMSCALING");
                 }
@@ -9119,11 +9150,13 @@ class ShadowGenerator {
                     if (mesh.isVerticesDataPresent(buffer/* VertexBuffer */.R.UVKind)) {
                         attribs.push(buffer/* VertexBuffer */.R.UVKind);
                         defines.push("#define UV1");
+                        uv1 = true;
                     }
                     if (mesh.isVerticesDataPresent(buffer/* VertexBuffer */.R.UV2Kind)) {
                         if (this._opacityTexture.coordinatesIndex === 1) {
                             attribs.push(buffer/* VertexBuffer */.R.UV2Kind);
                             defines.push("#define UV2");
+                            uv2 = true;
                         }
                     }
                 }
@@ -9153,19 +9186,14 @@ class ShadowGenerator {
                 defines.push("#define NUM_BONE_INFLUENCERS 0");
             }
             // Morph targets
-            const manager = mesh.morphTargetManager;
-            let morphInfluencers = 0;
-            if (manager) {
-                morphInfluencers = manager.numMaxInfluencers || manager.numInfluencers;
-                if (morphInfluencers > 0) {
-                    defines.push("#define MORPHTARGETS");
-                    defines.push("#define NUM_MORPH_INFLUENCERS " + morphInfluencers);
-                    if (manager.isUsingTextureForTargets) {
-                        defines.push("#define MORPHTARGETS_TEXTURE");
-                    }
-                    (0,materialHelper_functions/* PrepareAttributesForMorphTargetsInfluencers */.MF)(attribs, mesh, morphInfluencers);
-                }
-            }
+            const numMorphInfluencers = mesh.morphTargetManager
+                ? (0,materialHelper_functions/* PrepareDefinesAndAttributesForMorphTargets */.Dk)(mesh.morphTargetManager, defines, attribs, mesh, true, // usePositionMorph
+                useNormal, // useNormalMorph
+                false, // useTangentMorph
+                uv1, // useUVMorph
+                uv2 // useUV2Morph
+                )
+                : 0;
             // ClipPlanes
             (0,clipPlaneMaterialHelper/* prepareStringDefinesForClipPlanes */.tv)(material, this._scene, defines);
             // Instances
@@ -9255,7 +9283,7 @@ class ShadowGenerator {
                     fallbacks: fallbacks,
                     onCompiled: null,
                     onError: null,
-                    indexParameters: { maxSimultaneousMorphTargets: morphInfluencers },
+                    indexParameters: { maxSimultaneousMorphTargets: numMorphInfluencers },
                     shaderLanguage: this._shaderLanguage,
                 }, engine);
                 subMeshEffect.setEffect(effect, cachedDefines);
@@ -9338,9 +9366,6 @@ class ShadowGenerator {
             return;
         }
         const camera = this._getCamera();
-        if (!camera) {
-            return;
-        }
         const shadowMap = this.getShadowMap();
         if (!shadowMap) {
             return;
@@ -10054,16 +10079,20 @@ class DepthRenderer {
         }
         const defines = [];
         const attribs = [buffer/* VertexBuffer */.R.PositionKind];
+        let uv1 = false;
+        let uv2 = false;
         // Alpha test
         if (material.needAlphaTesting() && material.getAlphaTestTexture()) {
             defines.push("#define ALPHATEST");
             if (mesh.isVerticesDataPresent(buffer/* VertexBuffer */.R.UVKind)) {
                 attribs.push(buffer/* VertexBuffer */.R.UVKind);
                 defines.push("#define UV1");
+                uv1 = true;
             }
             if (mesh.isVerticesDataPresent(buffer/* VertexBuffer */.R.UV2Kind)) {
                 attribs.push(buffer/* VertexBuffer */.R.UV2Kind);
                 defines.push("#define UV2");
+                uv2 = true;
             }
         }
         // Bones
@@ -10091,19 +10120,14 @@ class DepthRenderer {
             defines.push("#define NUM_BONE_INFLUENCERS 0");
         }
         // Morph targets
-        const morphTargetManager = mesh.morphTargetManager;
-        let numMorphInfluencers = 0;
-        if (morphTargetManager) {
-            numMorphInfluencers = morphTargetManager.numMaxInfluencers || morphTargetManager.numInfluencers;
-            if (numMorphInfluencers > 0) {
-                defines.push("#define MORPHTARGETS");
-                defines.push("#define NUM_MORPH_INFLUENCERS " + numMorphInfluencers);
-                if (morphTargetManager.isUsingTextureForTargets) {
-                    defines.push("#define MORPHTARGETS_TEXTURE");
-                }
-                (0,materialHelper_functions/* PrepareAttributesForMorphTargetsInfluencers */.MF)(attribs, mesh, numMorphInfluencers);
-            }
-        }
+        const numMorphInfluencers = mesh.morphTargetManager
+            ? (0,materialHelper_functions/* PrepareDefinesAndAttributesForMorphTargets */.Dk)(mesh.morphTargetManager, defines, attribs, mesh, true, // usePositionMorph
+            false, // useNormalMorph
+            false, // useTangentMorph
+            uv1, // useUVMorph
+            uv2 // useUV2Morph
+            )
+            : 0;
         // Points cloud rendering
         if (material.pointsCloud) {
             defines.push("#define POINTSIZE");
@@ -10174,7 +10198,7 @@ class DepthRenderer {
                 onError: null,
                 indexParameters: { maxSimultaneousMorphTargets: numMorphInfluencers },
                 shaderLanguage: this._shaderLanguage,
-            }, engine));
+            }, engine), join);
         }
         return drawWrapper.effect.isReady();
     }
@@ -11555,6 +11579,7 @@ var math_axis = __webpack_require__(8733);
 
 
 
+
 /**
  * Base implementation IShadowLight
  * It groups all the common behaviour in order to reduce duplication and better follow the DRY pattern.
@@ -11751,7 +11776,7 @@ class ShadowLight extends light/* Light */.v {
      * @returns the depth min z
      */
     getDepthMinZ(activeCamera) {
-        return this.shadowMinZ !== undefined ? this.shadowMinZ : activeCamera.minZ;
+        return this.shadowMinZ !== undefined ? this.shadowMinZ : activeCamera?.minZ || 0;
     }
     /**
      * Gets the maxZ used for shadow according to both the scene and the light.
@@ -11759,7 +11784,7 @@ class ShadowLight extends light/* Light */.v {
      * @returns the depth max z
      */
     getDepthMaxZ(activeCamera) {
-        return this.shadowMaxZ !== undefined ? this.shadowMaxZ : activeCamera.maxZ;
+        return this.shadowMaxZ !== undefined ? this.shadowMaxZ : activeCamera?.maxZ || 10000;
     }
     /**
      * Sets the shadow projection matrix in parameter to the generated projection matrix.
@@ -11833,6 +11858,7 @@ class ShadowLight extends light/* Light */.v {
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Misc/typeStore.js
 var typeStore = __webpack_require__(6552);
 ;// ./node_modules/@babylonjs/core/Lights/directionalLight.js
+
 
 
 
@@ -11997,9 +12023,6 @@ class DirectionalLight extends ShadowLight {
      */
     _setDefaultAutoExtendShadowProjectionMatrix(matrix, viewMatrix, renderList) {
         const activeCamera = this.getScene().activeCamera;
-        if (!activeCamera) {
-            return;
-        }
         // Check extends
         if (this.autoUpdateExtends || this._orthoLeft === Number.MAX_VALUE) {
             const tempVector3 = math_vector/* Vector3 */.Pq.Zero();
@@ -12047,8 +12070,8 @@ class DirectionalLight extends ShadowLight {
         }
         const xOffset = this._orthoRight - this._orthoLeft;
         const yOffset = this._orthoTop - this._orthoBottom;
-        const minZ = this.shadowMinZ !== undefined ? this.shadowMinZ : activeCamera.minZ;
-        const maxZ = this.shadowMaxZ !== undefined ? this.shadowMaxZ : activeCamera.maxZ;
+        const minZ = this.shadowMinZ !== undefined ? this.shadowMinZ : activeCamera?.minZ || 0;
+        const maxZ = this.shadowMaxZ !== undefined ? this.shadowMaxZ : activeCamera?.maxZ || 10000;
         const useReverseDepthBuffer = this.getScene().getEngine().useReverseDepthBuffer;
         math_vector/* Matrix */.uq.OrthoOffCenterLHToRef(this._orthoLeft - xOffset * this.shadowOrthoScale, this._orthoRight + xOffset * this.shadowOrthoScale, this._orthoBottom - yOffset * this.shadowOrthoScale, this._orthoTop + yOffset * this.shadowOrthoScale, useReverseDepthBuffer ? maxZ : minZ, useReverseDepthBuffer ? minZ : maxZ, matrix, this.getScene().getEngine().isNDCHalfZRange);
     }
@@ -12088,11 +12111,11 @@ class DirectionalLight extends ShadowLight {
      * Values are fixed on directional lights as it relies on an ortho projection hence the need to convert being
      * -1 and 1 to 0 and 1 doing (depth + min) / (min + max) -> (depth + 1) / (1 + 1) -> (depth * 0.5) + 0.5.
      * (when not using reverse depth buffer / NDC half Z range)
-     * @param activeCamera The camera we are returning the min for
+     * @param _activeCamera The camera we are returning the min for (not used)
      * @returns the depth min z
      */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getDepthMinZ(activeCamera) {
+    getDepthMinZ(_activeCamera) {
         const engine = this._scene.getEngine();
         return !engine.useReverseDepthBuffer && engine.isNDCHalfZRange ? 0 : 1;
     }
@@ -12102,11 +12125,11 @@ class DirectionalLight extends ShadowLight {
      * Values are fixed on directional lights as it relies on an ortho projection hence the need to convert being
      * -1 and 1 to 0 and 1 doing (depth + min) / (min + max) -> (depth + 1) / (1 + 1) -> (depth * 0.5) + 0.5.
      * (when not using reverse depth buffer / NDC half Z range)
-     * @param activeCamera The camera we are returning the max for
+     * @param _activeCamera The camera we are returning the max for
      * @returns the depth max z
      */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getDepthMaxZ(activeCamera) {
+    getDepthMaxZ(_activeCamera) {
         const engine = this._scene.getEngine();
         return engine.useReverseDepthBuffer && engine.isNDCHalfZRange ? 0 : 1;
     }
@@ -13527,6 +13550,14 @@ var materialHelper_functions = __webpack_require__(467);
  * Base class for the main features of a material in Babylon.js
  */
 class Material {
+    /** @internal */
+    get _supportGlowLayer() {
+        return false;
+    }
+    /** @internal */
+    set _glowModeEnabled(value) {
+        // Do nothing here
+    }
     /**
      * Gets the shader language used in this material.
      */
@@ -14763,19 +14794,13 @@ class Material {
             if (this.meshMap) {
                 for (const meshId in this.meshMap) {
                     const mesh = this.meshMap[meshId];
-                    if (mesh) {
-                        this.releaseVertexArrayObject(mesh, true);
-                        mesh.material = null; // will set the entry in the map to undefined
-                    }
+                    this._disposeMeshResources(mesh);
                 }
             }
             else {
                 const meshes = scene.meshes;
                 for (const mesh of meshes) {
-                    if (mesh.material === this && !mesh.sourceMesh) {
-                        this.releaseVertexArrayObject(mesh, true);
-                        mesh.material = null;
-                    }
+                    this._disposeMeshResources(mesh);
                 }
             }
         }
@@ -14804,26 +14829,35 @@ class Material {
             this._eventInfo = {};
         }
     }
-    /**
-     * @internal
-     */
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    releaseVertexArrayObject(mesh, forceDisposeEffect) {
+    _disposeMeshResources(mesh) {
+        if (!mesh) {
+            return;
+        }
         const geometry = mesh.geometry;
-        if (geometry) {
-            if (this._storeEffectOnSubMeshes) {
-                if (mesh.subMeshes) {
-                    for (const subMesh of mesh.subMeshes) {
-                        geometry._releaseVertexArrayObject(subMesh.effect);
-                        if (forceDisposeEffect && subMesh.effect) {
-                            subMesh.effect.dispose();
+        const materialForRenderPass = mesh._internalAbstractMeshDataInfo._materialForRenderPass;
+        if (this._storeEffectOnSubMeshes) {
+            if (mesh.subMeshes && materialForRenderPass) {
+                for (const subMesh of mesh.subMeshes) {
+                    const drawWrappers = subMesh._drawWrappers;
+                    for (let renderPassIndex = 0; renderPassIndex < drawWrappers.length; renderPassIndex++) {
+                        const effect = drawWrappers[renderPassIndex]?.effect;
+                        if (!effect) {
+                            continue;
+                        }
+                        const material = materialForRenderPass[renderPassIndex];
+                        if (material === this) {
+                            geometry?._releaseVertexArrayObject(effect);
+                            subMesh._removeDrawWrapper(renderPassIndex, true, true);
                         }
                     }
                 }
             }
-            else {
-                geometry._releaseVertexArrayObject(this._drawWrapper.effect);
-            }
+        }
+        else {
+            geometry?._releaseVertexArrayObject(this._drawWrapper.effect);
+        }
+        if (mesh.material === this && !mesh.sourceMesh) {
+            mesh.material = null;
         }
     }
     /**
@@ -14841,7 +14875,9 @@ class Material {
         serializationObject.plugins = {};
         if (this.pluginManager) {
             for (const plugin of this.pluginManager._plugins) {
-                serializationObject.plugins[plugin.getClassName()] = plugin.serialize();
+                if (!plugin.doNotSerialize) {
+                    serializationObject.plugins[plugin.getClassName()] = plugin.serialize();
+                }
             }
         }
     }
@@ -15098,10 +15134,10 @@ Material._RunDirtyCallBacks = (defines) => {
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Bb: () => (/* binding */ PrepareUniformsAndSamplersList),
 /* harmony export */   DL: () => (/* binding */ BindLogDepth),
+/* harmony export */   Dk: () => (/* binding */ PrepareDefinesAndAttributesForMorphTargets),
 /* harmony export */   ER: () => (/* binding */ PrepareAttributesForInstances),
 /* harmony export */   IF: () => (/* binding */ PrepareAttributesForMorphTargets),
 /* harmony export */   J2: () => (/* binding */ PrepareAttributesForBakedVertexAnimation),
-/* harmony export */   MF: () => (/* binding */ PrepareAttributesForMorphTargetsInfluencers),
 /* harmony export */   N4: () => (/* binding */ PrepareDefinesForPrePass),
 /* harmony export */   Nc: () => (/* binding */ PrepareDefinesForOIT),
 /* harmony export */   OR: () => (/* binding */ PrepareDefinesForFrameBoundValues),
@@ -15120,7 +15156,7 @@ Material._RunDirtyCallBacks = (defines) => {
 /* harmony export */   qB: () => (/* binding */ PrepareDefinesForAttributes),
 /* harmony export */   te: () => (/* binding */ PushAttributesForInstances)
 /* harmony export */ });
-/* unused harmony exports BindLightProperties, BindLight, GetFogState, PrepareDefinesForLight, PrepareDefinesForBones, PrepareDefinesForMorphTargets, PrepareDefinesForBakedVertexAnimation, PrepareDefinesForCamera, PrepareUniformsAndSamplersForLight */
+/* unused harmony exports PrepareAttributesForMorphTargetsInfluencers, BindLightProperties, BindLight, GetFogState, PrepareDefinesForLight, PrepareDefinesForBones, PrepareDefinesForMorphTargets, PrepareDefinesForBakedVertexAnimation, PrepareDefinesForCamera, PrepareUniformsAndSamplersForLight */
 /* harmony import */ var _Misc_logger_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1137);
 /* harmony import */ var _Maths_math_color_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6041);
 /* harmony import */ var _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6315);
@@ -15134,7 +15170,13 @@ Material._RunDirtyCallBacks = (defines) => {
 
 // Temps
 const _TempFogColor = _Maths_math_color_js__WEBPACK_IMPORTED_MODULE_1__/* .Color3 */ .v9.Black();
-const _TmpMorphInfluencers = { NUM_MORPH_INFLUENCERS: 0 };
+const _TmpMorphInfluencers = {
+    NUM_MORPH_INFLUENCERS: 0,
+    NORMAL: false,
+    TANGENT: false,
+    UV: false,
+    UV2: false,
+};
 /**
  * Binds the logarithmic depth information from the scene to the effect for the given defines.
  * @param defines The generated defines used in the effect
@@ -15171,6 +15213,57 @@ function BindFogParameters(scene, mesh, effect, linearSpace = false) {
     }
 }
 /**
+ * Prepares the list of attributes and defines required for morph targets.
+ * @param morphTargetManager The manager for the morph targets
+ * @param defines The current list of defines
+ * @param attribs The current list of attributes
+ * @param mesh The mesh to prepare the defines and attributes for
+ * @param usePositionMorph Whether the position morph target is used
+ * @param useNormalMorph Whether the normal morph target is used
+ * @param useTangentMorph Whether the tangent morph target is used
+ * @param useUVMorph Whether the UV morph target is used
+ * @param useUV2Morph Whether the UV2 morph target is used
+ * @returns The maxSimultaneousMorphTargets for the effect
+ */
+function PrepareDefinesAndAttributesForMorphTargets(morphTargetManager, defines, attribs, mesh, usePositionMorph, useNormalMorph, useTangentMorph, useUVMorph, useUV2Morph) {
+    const numMorphInfluencers = morphTargetManager.numMaxInfluencers || morphTargetManager.numInfluencers;
+    if (numMorphInfluencers <= 0) {
+        return 0;
+    }
+    defines.push("#define MORPHTARGETS");
+    if (morphTargetManager.hasPositions)
+        defines.push("#define MORPHTARGETTEXTURE_HASPOSITIONS");
+    if (morphTargetManager.hasNormals)
+        defines.push("#define MORPHTARGETTEXTURE_HASNORMALS");
+    if (morphTargetManager.hasTangents)
+        defines.push("#define MORPHTARGETTEXTURE_HASTANGENTS");
+    if (morphTargetManager.hasUVs)
+        defines.push("#define MORPHTARGETTEXTURE_HASUVS");
+    if (morphTargetManager.hasUV2s)
+        defines.push("#define MORPHTARGETTEXTURE_HASUV2S");
+    if (morphTargetManager.supportsPositions && usePositionMorph)
+        defines.push("#define MORPHTARGETS_POSITION");
+    if (morphTargetManager.supportsNormals && useNormalMorph)
+        defines.push("#define MORPHTARGETS_NORMAL");
+    if (morphTargetManager.supportsTangents && useTangentMorph)
+        defines.push("#define MORPHTARGETS_TANGENT");
+    if (morphTargetManager.supportsUVs && useUVMorph)
+        defines.push("#define MORPHTARGETS_UV");
+    if (morphTargetManager.supportsUV2s && useUV2Morph)
+        defines.push("#define MORPHTARGETS_UV2");
+    defines.push("#define NUM_MORPH_INFLUENCERS " + numMorphInfluencers);
+    if (morphTargetManager.isUsingTextureForTargets) {
+        defines.push("#define MORPHTARGETS_TEXTURE");
+    }
+    _TmpMorphInfluencers.NUM_MORPH_INFLUENCERS = numMorphInfluencers;
+    _TmpMorphInfluencers.NORMAL = useNormalMorph;
+    _TmpMorphInfluencers.TANGENT = useTangentMorph;
+    _TmpMorphInfluencers.UV = useUVMorph;
+    _TmpMorphInfluencers.UV2 = useUV2Morph;
+    PrepareAttributesForMorphTargets(attribs, mesh, _TmpMorphInfluencers, usePositionMorph);
+    return numMorphInfluencers;
+}
+/**
  * Prepares the list of attributes required for morph targets according to the effect defines.
  * @param attribs The current list of supported attribs
  * @param mesh The mesh to prepare the morph targets attributes for
@@ -15178,15 +15271,20 @@ function BindFogParameters(scene, mesh, effect, linearSpace = false) {
  */
 function PrepareAttributesForMorphTargetsInfluencers(attribs, mesh, influencers) {
     _TmpMorphInfluencers.NUM_MORPH_INFLUENCERS = influencers;
-    PrepareAttributesForMorphTargets(attribs, mesh, _TmpMorphInfluencers);
+    _TmpMorphInfluencers.NORMAL = false;
+    _TmpMorphInfluencers.TANGENT = false;
+    _TmpMorphInfluencers.UV = false;
+    _TmpMorphInfluencers.UV2 = false;
+    PrepareAttributesForMorphTargets(attribs, mesh, _TmpMorphInfluencers, true);
 }
 /**
  * Prepares the list of attributes required for morph targets according to the effect defines.
  * @param attribs The current list of supported attribs
  * @param mesh The mesh to prepare the morph targets attributes for
  * @param defines The current Defines of the effect
+ * @param usePositionMorph Whether the position morph target is used
  */
-function PrepareAttributesForMorphTargets(attribs, mesh, defines) {
+function PrepareAttributesForMorphTargets(attribs, mesh, defines, usePositionMorph = true) {
     const influencers = defines["NUM_MORPH_INFLUENCERS"];
     if (influencers > 0 && _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_2__/* .EngineStore */ .q.LastCreatedEngine) {
         const maxAttributesCount = _Engines_engineStore_js__WEBPACK_IMPORTED_MODULE_2__/* .EngineStore */ .q.LastCreatedEngine.getCaps().maxVertexAttribs;
@@ -15194,11 +15292,15 @@ function PrepareAttributesForMorphTargets(attribs, mesh, defines) {
         if (manager?.isUsingTextureForTargets) {
             return;
         }
+        const position = manager && manager.supportsPositions && usePositionMorph;
         const normal = manager && manager.supportsNormals && defines["NORMAL"];
         const tangent = manager && manager.supportsTangents && defines["TANGENT"];
         const uv = manager && manager.supportsUVs && defines["UV1"];
+        const uv2 = manager && manager.supportsUV2s && defines["UV2"];
         for (let index = 0; index < influencers; index++) {
-            attribs.push(`position` + index);
+            if (position) {
+                attribs.push(`position` + index);
+            }
             if (normal) {
                 attribs.push(`normal` + index);
             }
@@ -15207,6 +15309,9 @@ function PrepareAttributesForMorphTargets(attribs, mesh, defines) {
             }
             if (uv) {
                 attribs.push(`uv` + "_" + index);
+            }
+            if (uv2) {
+                attribs.push(`uv2` + "_" + index);
             }
             if (attribs.length > maxAttributesCount) {
                 _Misc_logger_js__WEBPACK_IMPORTED_MODULE_0__/* .Logger */ .V.Error("Cannot add more vertex attributes for mesh " + mesh.name);
@@ -15692,16 +15797,30 @@ function PrepareDefinesForMorphTargets(mesh, defines) {
     const manager = mesh.morphTargetManager;
     if (manager) {
         defines["MORPHTARGETS_UV"] = manager.supportsUVs && defines["UV1"];
+        defines["MORPHTARGETS_UV2"] = manager.supportsUV2s && defines["UV2"];
         defines["MORPHTARGETS_TANGENT"] = manager.supportsTangents && defines["TANGENT"];
         defines["MORPHTARGETS_NORMAL"] = manager.supportsNormals && defines["NORMAL"];
+        defines["MORPHTARGETS_POSITION"] = manager.supportsPositions;
+        defines["MORPHTARGETTEXTURE_HASUVS"] = manager.hasUVs;
+        defines["MORPHTARGETTEXTURE_HASUV2S"] = manager.hasUV2s;
+        defines["MORPHTARGETTEXTURE_HASTANGENTS"] = manager.hasTangents;
+        defines["MORPHTARGETTEXTURE_HASNORMALS"] = manager.hasNormals;
+        defines["MORPHTARGETTEXTURE_HASPOSITIONS"] = manager.hasPositions;
         defines["NUM_MORPH_INFLUENCERS"] = manager.numMaxInfluencers || manager.numInfluencers;
         defines["MORPHTARGETS"] = defines["NUM_MORPH_INFLUENCERS"] > 0;
         defines["MORPHTARGETS_TEXTURE"] = manager.isUsingTextureForTargets;
     }
     else {
         defines["MORPHTARGETS_UV"] = false;
+        defines["MORPHTARGETS_UV2"] = false;
         defines["MORPHTARGETS_TANGENT"] = false;
         defines["MORPHTARGETS_NORMAL"] = false;
+        defines["MORPHTARGETS_POSITION"] = false;
+        defines["MORPHTARGETTEXTURE_HASUVS"] = false;
+        defines["MORPHTARGETTEXTURE_HASUV2S"] = false;
+        defines["MORPHTARGETTEXTURE_HASTANGENTS"] = false;
+        defines["MORPHTARGETTEXTURE_HASNORMALS"] = false;
+        defines["MORPHTARGETTEXTURE_HASPOSITIONS"] = false;
         defines["MORPHTARGETS"] = false;
         defines["NUM_MORPH_INFLUENCERS"] = 0;
     }
@@ -15912,8 +16031,9 @@ function PrepareDefinesForCamera(scene, defines) {
  * @param projectedLightTexture defines if projected texture must be used
  * @param uniformBuffersList defines an optional list of uniform buffers
  * @param updateOnlyBuffersList True to only update the uniformBuffersList array
+ * @param iesLightTexture defines if IES texture must be used
  */
-function PrepareUniformsAndSamplersForLight(lightIndex, uniformsList, samplersList, projectedLightTexture, uniformBuffersList = null, updateOnlyBuffersList = false) {
+function PrepareUniformsAndSamplersForLight(lightIndex, uniformsList, samplersList, projectedLightTexture, uniformBuffersList = null, updateOnlyBuffersList = false, iesLightTexture = false) {
     if (uniformBuffersList) {
         uniformBuffersList.push("Light" + lightIndex);
     }
@@ -15927,6 +16047,9 @@ function PrepareUniformsAndSamplersForLight(lightIndex, uniformsList, samplersLi
     if (projectedLightTexture) {
         samplersList.push("projectionLightTexture" + lightIndex);
         uniformsList.push("textureProjectionMatrix" + lightIndex);
+    }
+    if (iesLightTexture) {
+        samplersList.push("iesLightTexture" + lightIndex);
     }
 }
 /**
@@ -15957,7 +16080,7 @@ function PrepareUniformsAndSamplersList(uniformsListOrOptions, samplersList, def
         if (!defines["LIGHT" + lightIndex]) {
             break;
         }
-        PrepareUniformsAndSamplersForLight(lightIndex, uniformsList, samplersList, defines["PROJECTEDLIGHTTEXTURE" + lightIndex], uniformBuffersList);
+        PrepareUniformsAndSamplersForLight(lightIndex, uniformsList, samplersList, defines["PROJECTEDLIGHTTEXTURE" + lightIndex], uniformBuffersList, false, defines["IESLIGHTTEXTURE" + lightIndex]);
     }
     if (defines["NUM_MORPH_INFLUENCERS"]) {
         uniformsList.push("morphTargetInfluences");
@@ -15988,8 +16111,6 @@ var decorators = __webpack_require__(9259);
 var smartArray = __webpack_require__(7931);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/scene.js + 14 modules
 var core_scene = __webpack_require__(554);
-// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
-var math_vector = __webpack_require__(9923);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.color.js
 var math_color = __webpack_require__(6041);
 // EXTERNAL MODULE: ./node_modules/@babylonjs/core/Buffers/buffer.js
@@ -16304,6 +16425,8 @@ class MaterialDefines {
     }
 }
 //# sourceMappingURL=materialDefines.js.map
+// EXTERNAL MODULE: ./node_modules/@babylonjs/core/Maths/math.vector.js
+var math_vector = __webpack_require__(9923);
 ;// ./node_modules/@babylonjs/core/Materials/pushMaterial.js
 
 
@@ -17200,6 +17323,10 @@ class MaterialPluginBase {
          * Indicates that this plugin should be notified for the extra events (HasRenderTargetTextures / FillRenderTargetTextures / HardBindForSubMesh)
          */
         this.registerForExtraEvents = false;
+        /**
+         * Specifies if the material plugin should be serialized, `true` to skip serialization
+         */
+        this.doNotSerialize = false;
         this._material = material;
         this.name = name;
         this.priority = priority;
@@ -17870,7 +17997,6 @@ MaterialHelperGeometryRendering._Configurations = {};
 
 
 
-
 const onCreatedEffectParameters = { effect: null, subMesh: null };
 /** @internal */
 class StandardMaterialDefines extends MaterialDefines {
@@ -17970,9 +18096,16 @@ class StandardMaterialDefines extends MaterialDefines {
         this.TWOSIDEDLIGHTING = false;
         this.SHADOWFLOAT = false;
         this.MORPHTARGETS = false;
+        this.MORPHTARGETS_POSITION = false;
         this.MORPHTARGETS_NORMAL = false;
         this.MORPHTARGETS_TANGENT = false;
         this.MORPHTARGETS_UV = false;
+        this.MORPHTARGETS_UV2 = false;
+        this.MORPHTARGETTEXTURE_HASPOSITIONS = false;
+        this.MORPHTARGETTEXTURE_HASNORMALS = false;
+        this.MORPHTARGETTEXTURE_HASTANGENTS = false;
+        this.MORPHTARGETTEXTURE_HASUVS = false;
+        this.MORPHTARGETTEXTURE_HASUV2S = false;
         this.NUM_MORPH_INFLUENCERS = 0;
         this.MORPHTARGETS_TEXTURE = false;
         this.NONUNIFORMSCALING = false; // https://playground.babylonjs.com#V6DWIH
@@ -18299,7 +18432,6 @@ class StandardMaterial extends PushMaterial {
         this._applyDecalMapAfterDetailMap = false;
         this._shadersLoaded = false;
         this._renderTargets = new smartArray/* SmartArray */.L(16);
-        this._worldViewProjectionMatrix = math_vector/* Matrix */.uq.Zero();
         this._globalAmbientColor = new math_color/* Color3 */.v9(0, 0, 0);
         this._cacheHasRenderTargetTextures = false;
         this.detailMap = new DetailMapConfiguration(this);
@@ -20807,8 +20939,8 @@ function CreatePlaneVertexData(options) {
     const positions = [];
     const normals = [];
     const uvs = [];
-    const width = options.width || options.size || 1;
-    const height = options.height || options.size || 1;
+    const width = options.width !== undefined ? options.width : options.size !== undefined ? options.size : 1;
+    const height = options.height !== undefined ? options.height : options.size !== undefined ? options.size : 1;
     const sideOrientation = options.sideOrientation === 0 ? 0 : options.sideOrientation || _mesh_vertexData_js__WEBPACK_IMPORTED_MODULE_1__/* .VertexData */ .P.DEFAULTSIDE;
     // Vertices
     const halfWidth = width / 2.0;
@@ -22979,6 +23111,7 @@ class TransformNode extends node/* Node */.b {
     /**
      * Defines the passed node as the parent of the current node.
      * The node will remain exactly where it is and its position / rotation will be updated accordingly.
+     * If you don't want to preserve the current rotation / position, assign the parent through parent accessor.
      * Note that if the mesh has a pivot matrix / point defined it will be applied after the parent was updated.
      * In that case the node will not remain in the same space as it is, as the pivot will be applied.
      * To avoid this, you can set updatePivot to true and the pivot will be updated to identity
@@ -23030,7 +23163,9 @@ class TransformNode extends node/* Node */.b {
         return this;
     }
     /**
-     * Adds the passed mesh as a child to the current mesh
+     * Adds the passed mesh as a child to the current mesh.
+     * The node will remain exactly where it is and its position / rotation will be updated accordingly.
+     * This method is equivalent to calling setParent().
      * @param mesh defines the child mesh
      * @param preserveScalingSign if true, keep scaling sign of child. Otherwise, scaling sign might change.
      * @returns the current mesh
@@ -23046,6 +23181,8 @@ class TransformNode extends node/* Node */.b {
      * @returns the current mesh
      */
     removeChild(mesh, preserveScalingSign = false) {
+        if (mesh.parent !== this)
+            return this;
         mesh.setParent(null, preserveScalingSign);
         return this;
     }
@@ -23933,8 +24070,7 @@ class _InternalAbstractMeshDataInfo {
         this._isActiveIntermediate = false;
         this._onlyForInstancesIntermediate = false;
         this._actAsRegularMesh = false;
-        this._currentLOD = null;
-        this._currentLODIsUpToDate = false;
+        this._currentLOD = new Map();
         this._collisionRetryCount = 3;
         this._morphTargetManager = null;
         this._renderingGroupId = 0;
@@ -24239,7 +24375,14 @@ class AbstractMesh extends TransformNode {
         if (!this._internalAbstractMeshDataInfo._materialForRenderPass) {
             this._internalAbstractMeshDataInfo._materialForRenderPass = [];
         }
+        const currentMaterial = this._internalAbstractMeshDataInfo._materialForRenderPass[renderPassId];
+        if (currentMaterial?.meshMap?.[this.uniqueId]) {
+            currentMaterial.meshMap[this.uniqueId] = undefined;
+        }
         this._internalAbstractMeshDataInfo._materialForRenderPass[renderPassId] = material;
+        if (material && material.meshMap) {
+            material.meshMap[this.uniqueId] = this;
+        }
     }
     /**
      * Gets or sets a boolean indicating that this mesh can receive realtime shadows
@@ -26021,6 +26164,21 @@ class AbstractMesh extends TransformNode {
         return this;
     }
     /**
+     * Optimize the indices order so that we keep the faces with similar indices together
+     * @returns the current mesh
+     */
+    async optimizeIndicesAsync() {
+        const indices = this.getIndices();
+        if (!indices) {
+            return this;
+        }
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        const { OptimizeIndices } = await __webpack_require__.e(/* import() */ 575).then(__webpack_require__.bind(__webpack_require__, 8575));
+        OptimizeIndices(indices);
+        this.setIndices(indices, this.getTotalVertices());
+        return this;
+    }
+    /**
      * Align the mesh with a normal
      * @param normal defines the normal to use
      * @param upDirection can be used to redefined the up vector to use (will use the (0, 1, 0) by default)
@@ -26471,6 +26629,13 @@ class _InternalMeshDataInfo {
         this._overrideRenderingFillMode = null;
     }
 }
+const meshCreationOptions = {
+    source: null,
+    parent: null,
+    doNotCloneChildren: false,
+    clonePhysicsImpostor: true,
+    cloneThinInstances: false,
+};
 /**
  * Class used to represent renderable models
  */
@@ -26684,7 +26849,7 @@ class Mesh extends AbstractMesh {
     set forceWorldMatrixInstancedBufferUpdate(value) {
         this._instanceDataStorage.forceMatrixUpdates = value;
     }
-    _copySource(source, doNotCloneChildren, clonePhysicsImpostor = true) {
+    _copySource(source, doNotCloneChildren, clonePhysicsImpostor = true, cloneThinInstances = false) {
         const scene = this.getScene();
         // Geometry
         if (source._geometry) {
@@ -26783,7 +26948,14 @@ class Mesh extends AbstractMesh {
             const directDescendants = source.getDescendants(true);
             for (let index = 0; index < directDescendants.length; index++) {
                 const child = directDescendants[index];
-                if (child.clone) {
+                if (child._isMesh) {
+                    meshCreationOptions.parent = this;
+                    meshCreationOptions.doNotCloneChildren = doNotCloneChildren;
+                    meshCreationOptions.clonePhysicsImpostor = clonePhysicsImpostor;
+                    meshCreationOptions.cloneThinInstances = cloneThinInstances;
+                    child.clone(this.name + "." + child.name, meshCreationOptions);
+                }
+                else if (child.clone) {
                     child.clone(this.name + "." + child.name, this);
                 }
             }
@@ -26818,21 +26990,29 @@ class Mesh extends AbstractMesh {
         }
         // Skeleton
         this.skeleton = source.skeleton;
+        // Thin instances
+        if (cloneThinInstances) {
+            if (source._thinInstanceDataStorage.matrixData) {
+                this.thinInstanceSetBuffer("matrix", new Float32Array(source._thinInstanceDataStorage.matrixData), 16, !source._thinInstanceDataStorage.matrixBuffer.isUpdatable());
+                this._thinInstanceDataStorage.matrixBufferSize = source._thinInstanceDataStorage.matrixBufferSize;
+                this._thinInstanceDataStorage.instancesCount = source._thinInstanceDataStorage.instancesCount;
+            }
+            else {
+                this._thinInstanceDataStorage.matrixBufferSize = source._thinInstanceDataStorage.matrixBufferSize;
+            }
+            if (source._userThinInstanceBuffersStorage) {
+                const userThinInstance = source._userThinInstanceBuffersStorage;
+                for (const kind in userThinInstance.data) {
+                    this.thinInstanceSetBuffer(kind, new Float32Array(userThinInstance.data[kind]), userThinInstance.strides[kind], !userThinInstance.vertexBuffers?.[kind]?.isUpdatable());
+                    this._userThinInstanceBuffersStorage.sizes[kind] = userThinInstance.sizes[kind];
+                }
+            }
+        }
         this.refreshBoundingInfo(true, true);
         this.computeWorldMatrix(true);
     }
-    /**
-     * Constructor
-     * @param name The value used by scene.getMeshByName() to do a lookup.
-     * @param scene The scene to add this mesh to.
-     * @param parent The parent of this mesh, if it has one
-     * @param source An optional Mesh from which geometry is shared, cloned.
-     * @param doNotCloneChildren When cloning, skip cloning child meshes of source, default False.
-     *                  When false, achieved by calling a clone(), also passing False.
-     *                  This will make creation of children, recursive.
-     * @param clonePhysicsImpostor When cloning, include cloning mesh physics impostor, default True.
-     */
-    constructor(name, scene = null, parent = null, source = null, doNotCloneChildren, clonePhysicsImpostor = true) {
+    /** @internal */
+    constructor(name, scene = null, parentOrOptions = null, source = null, doNotCloneChildren, clonePhysicsImpostor = true) {
         super(name, scene);
         // Internal data
         this._internalMeshDataInfo = new _InternalMeshDataInfo();
@@ -26888,8 +27068,21 @@ class Mesh extends AbstractMesh {
                 }
             }
         };
+        let parent = null;
+        let cloneThinInstances = false;
+        if (parentOrOptions && parentOrOptions._addToSceneRootNodes === undefined) {
+            const options = parentOrOptions;
+            parent = options.parent ?? null;
+            source = options.source ?? null;
+            doNotCloneChildren = options.doNotCloneChildren ?? false;
+            clonePhysicsImpostor = options.clonePhysicsImpostor ?? true;
+            cloneThinInstances = options.cloneThinInstances ?? false;
+        }
+        else {
+            parent = parentOrOptions;
+        }
         if (source) {
-            this._copySource(source, doNotCloneChildren, clonePhysicsImpostor);
+            this._copySource(source, doNotCloneChildren, clonePhysicsImpostor, cloneThinInstances);
         }
         // Parent
         if (parent !== null) {
@@ -27551,7 +27744,7 @@ class Mesh extends AbstractMesh {
             }
         }
         this.releaseSubMeshes();
-        return new Meshes_subMesh/* SubMesh */.K(0, 0, totalVertices, 0, this.getTotalIndices(), this);
+        return new Meshes_subMesh/* SubMesh */.K(0, 0, totalVertices, 0, this.getTotalIndices() || totalVertices, this); // getTotalIndices() can be zero if the mesh is unindexed
     }
     /**
      * This function will subdivide the mesh into multiple submeshes
@@ -28784,12 +28977,20 @@ class Mesh extends AbstractMesh {
      * Returns a new Mesh object generated from the current mesh properties.
      * This method must not get confused with createInstance()
      * @param name is a string, the name given to the new mesh
-     * @param newParent can be any Node object (default `null`)
+     * @param newParent can be any Node object (default `null`) or an instance of MeshCloneOptions. If the latter, doNotCloneChildren and clonePhysicsImpostor are unused.
      * @param doNotCloneChildren allows/denies the recursive cloning of the original mesh children if any (default `false`)
      * @param clonePhysicsImpostor allows/denies the cloning in the same time of the original mesh `body` used by the physics engine, if any (default `true`)
      * @returns a new mesh
      */
     clone(name = "", newParent = null, doNotCloneChildren, clonePhysicsImpostor = true) {
+        if (newParent && newParent._addToSceneRootNodes === undefined) {
+            const cloneOptions = newParent;
+            meshCreationOptions.source = this;
+            meshCreationOptions.doNotCloneChildren = cloneOptions.doNotCloneChildren;
+            meshCreationOptions.clonePhysicsImpostor = cloneOptions.clonePhysicsImpostor;
+            meshCreationOptions.cloneThinInstances = cloneOptions.cloneThinInstances;
+            return new Mesh(name, this.getScene(), meshCreationOptions);
+        }
         return new Mesh(name, this.getScene(), newParent, this, doNotCloneChildren, clonePhysicsImpostor);
     }
     /**
@@ -29684,6 +29885,10 @@ class Mesh extends AbstractMesh {
                 if (uvs) {
                     this.geometry.setVerticesData(Buffers_buffer/* VertexBuffer */.R.UVKind + "_" + index, uvs, false, 2);
                 }
+                const uv2s = morphTarget.getUV2s();
+                if (uv2s) {
+                    this.geometry.setVerticesData(Buffers_buffer/* VertexBuffer */.R.UV2Kind + "_" + index, uv2s, false, 2);
+                }
             }
         }
         else {
@@ -29699,6 +29904,9 @@ class Mesh extends AbstractMesh {
                 }
                 if (this.geometry.isVerticesDataPresent(Buffers_buffer/* VertexBuffer */.R.UVKind + index)) {
                     this.geometry.removeVerticesData(Buffers_buffer/* VertexBuffer */.R.UVKind + "_" + index);
+                }
+                if (this.geometry.isVerticesDataPresent(Buffers_buffer/* VertexBuffer */.R.UV2Kind + index)) {
+                    this.geometry.removeVerticesData(Buffers_buffer/* VertexBuffer */.R.UV2Kind + "_" + index);
                 }
                 index++;
             }
@@ -33086,9 +33294,30 @@ class SubMesh {
      */
     _getLinesIndexBuffer(indices, engine) {
         if (!this._linesIndexBuffer) {
-            const linesIndices = [];
-            for (let index = this.indexStart; index < this.indexStart + this.indexCount; index += 3) {
-                linesIndices.push(indices[index], indices[index + 1], indices[index + 1], indices[index + 2], indices[index + 2], indices[index]);
+            const adjustedIndexCount = Math.floor(this.indexCount / 3) * 6;
+            const shouldUseUint32 = this.verticesStart + this.verticesCount > 65535;
+            const linesIndices = shouldUseUint32 ? new Uint32Array(adjustedIndexCount) : new Uint16Array(adjustedIndexCount);
+            let offset = 0;
+            if (indices.length === 0) {
+                // Unindexed mesh
+                for (let index = this.indexStart; index < this.indexStart + this.indexCount; index += 3) {
+                    linesIndices[offset++] = index;
+                    linesIndices[offset++] = index + 1;
+                    linesIndices[offset++] = index + 1;
+                    linesIndices[offset++] = index + 2;
+                    linesIndices[offset++] = index + 2;
+                    linesIndices[offset++] = index;
+                }
+            }
+            else {
+                for (let index = this.indexStart; index < this.indexStart + this.indexCount; index += 3) {
+                    linesIndices[offset++] = indices[index];
+                    linesIndices[offset++] = indices[index + 1];
+                    linesIndices[offset++] = indices[index + 1];
+                    linesIndices[offset++] = indices[index + 2];
+                    linesIndices[offset++] = indices[index + 2];
+                    linesIndices[offset++] = indices[index];
+                }
             }
             this._linesIndexBuffer = engine.createIndexBuffer(linesIndices);
             this._linesIndexCount = linesIndices.length;

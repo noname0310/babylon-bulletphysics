@@ -364,15 +364,15 @@ const defaultUboDeclarationWGSL = { name, shader };
 // Do not edit.
 
 const name = "helperFunctions";
-const shader = `const PI: f32=3.1415926535897932384626433832795;const RECIPROCAL_PI: f32=0.3183098861837907;const RECIPROCAL_PI2: f32=0.15915494309189535;const HALF_MIN: f32=5.96046448e-08; 
-const LinearEncodePowerApprox: f32=2.2;const GammaEncodePowerApprox: f32=1.0/LinearEncodePowerApprox;const LuminanceEncodeApprox: vec3<f32>=vec3<f32> (0.2126,0.7152,0.0722);const Epsilon:f32=0.0000001;fn square(x: f32)->f32 {return x*x;}
+const shader = `const PI: f32=3.1415926535897932384626433832795;const TWO_PI: f32=6.283185307179586;const HALF_PI: f32=1.5707963267948966;const RECIPROCAL_PI: f32=0.3183098861837907;const RECIPROCAL_PI2: f32=0.15915494309189535;const RECIPROCAL_PI4: f32=0.07957747154594767;const HALF_MIN: f32=5.96046448e-08; 
+const LinearEncodePowerApprox: f32=2.2;const GammaEncodePowerApprox: f32=1.0/LinearEncodePowerApprox;const LuminanceEncodeApprox: vec3f=vec3f(0.2126,0.7152,0.0722);const Epsilon:f32=0.0000001;fn square(x: f32)->f32 {return x*x;}
 fn saturate(x: f32)->f32 {return clamp(x,0.0,1.0);}
-fn saturateVec3(x: vec3f)->vec3f {return clamp(x,vec3f(0.0),vec3f(1.0));}
-fn saturateEps(x: f32)->f32 {return clamp(x,Epsilon,1.0);} 
+fn saturateVec3(x: vec3f)->vec3f {return clamp(x,vec3f(),vec3f(1.0));}
+fn saturateEps(x: f32)->f32 {return clamp(x,Epsilon,1.0);}
 fn maxEps(x: f32)->f32 {return max(x,Epsilon);}
 fn maxEpsVec3(x: vec3f)->vec3f {return max(x,vec3f(Epsilon));}
 fn absEps(x: f32)->f32 {return abs(x)+Epsilon;}
-fn transposeMat3(inMatrix: mat3x3f)->mat3x3f {let i0: vec3<f32>=inMatrix[0];let i1: vec3<f32>=inMatrix[1];let i2: vec3<f32>=inMatrix[2];let outMatrix:mat3x3f=mat3x3f(
+fn transposeMat3(inMatrix: mat3x3f)->mat3x3f {let i0: vec3f=inMatrix[0];let i1: vec3f=inMatrix[1];let i2: vec3f=inMatrix[2];let outMatrix:mat3x3f=mat3x3f(
 vec3(i0.x,i1.x,i2.x),
 vec3(i0.y,i1.y,i2.y),
 vec3(i0.z,i1.z,i2.z)
@@ -381,10 +381,10 @@ fn inverseMat3(inMatrix: mat3x3f)->mat3x3f {let a00: f32=inMatrix[0][0];let a01:
 b11/det,(a22*a00-a02*a20)/det,(-a12*a00+a02*a10)/det,
 b21/det,(-a21*a00+a01*a20)/det,(a11*a00-a01*a10)/det);}
 #if USE_EXACT_SRGB_CONVERSIONS
-fn toLinearSpaceExact(color: vec3<f32>)->vec3<f32>
-{let nearZeroSection: vec3<f32>=0.0773993808*color;let remainingSection: vec3<f32>=pow(0.947867299*(color+vec3<f32>(0.055)),vec3<f32>(2.4));return mix(remainingSection,nearZeroSection,lessThanEqual(color,vec3<f32>(0.04045)));}
-fn toGammaSpaceExact(color: vec3<f32>)->vec3<f32>
-{let nearZeroSection: vec3<f32>=12.92*color;let remainingSection: vec3<f32>=1.055*pow(color,vec3<f32>(0.41666))-vec3<f32>(0.055);return mix(remainingSection,nearZeroSection,lessThanEqual(color,vec3<f32>(0.0031308)));}
+fn toLinearSpaceExact(color: vec3f)->vec3f
+{let nearZeroSection: vec3f=0.0773993808*color;let remainingSection: vec3f=pow(0.947867299*(color+vec3f(0.055)),vec3f(2.4));return mix(remainingSection,nearZeroSection,lessThanEqual(color,vec3f(0.04045)));}
+fn toGammaSpaceExact(color: vec3f)->vec3f
+{let nearZeroSection: vec3f=12.92*color;let remainingSection: vec3f=1.055*pow(color,vec3f(0.41666))-vec3f(0.055);return mix(remainingSection,nearZeroSection,lessThanEqual(color,vec3f(0.0031308)));}
 #endif
 fn toLinearSpace(color: f32)->f32
 {
@@ -394,12 +394,12 @@ var nearZeroSection=0.0773993808*color;var remainingSection=pow(0.947867299*(col
 return pow(color,LinearEncodePowerApprox);
 #endif
 }
-fn toLinearSpaceVec3(color: vec3<f32>)->vec3<f32>
+fn toLinearSpaceVec3(color: vec3f)->vec3f
 {
 #if USE_EXACT_SRGB_CONVERSIONS
 return toLinearSpaceExact(color);
 #else
-return pow(color,vec3<f32>(LinearEncodePowerApprox));
+return pow(color,vec3f(LinearEncodePowerApprox));
 #endif
 }
 fn toLinearSpaceVec4(color: vec4<f32>)->vec4<f32>
@@ -415,27 +415,30 @@ fn toGammaSpace(color: vec4<f32>)->vec4<f32>
 #if USE_EXACT_SRGB_CONVERSIONS
 return vec4<f32>(toGammaSpaceExact(color.rgb),color.a);
 #else
-return vec4<f32>(pow(color.rgb,vec3<f32>(GammaEncodePowerApprox)),color.a);
+return vec4<f32>(pow(color.rgb,vec3f(GammaEncodePowerApprox)),color.a);
 #endif
 }
-fn toGammaSpaceVec3(color: vec3<f32>)->vec3<f32>
+fn toGammaSpaceVec3(color: vec3f)->vec3f
 {
 #if USE_EXACT_SRGB_CONVERSIONS
 return toGammaSpaceExact(color);
 #else
-return pow(color,vec3<f32>(GammaEncodePowerApprox));
+return pow(color,vec3f(GammaEncodePowerApprox));
 #endif
 }
-fn squareVec3(value: vec3<f32>)->vec3<f32>
+fn squareVec3(value: vec3f)->vec3f
 {return value*value;}
 fn pow5(value: f32)->f32 {let sq: f32=value*value;return sq*sq*value;}
-fn getLuminance(color: vec3<f32>)->f32
-{return clamp(dot(color,LuminanceEncodeApprox),0.,1.);}
+fn getLuminance(color: vec3f)->f32
+{return saturate(dot(color,LuminanceEncodeApprox));}
 fn getRand(seed: vec2<f32>)->f32 {return fract(sin(dot(seed.xy ,vec2<f32>(12.9898,78.233)))*43758.5453);}
 fn dither(seed: vec2<f32>,varianceAmount: f32)->f32 {let rand: f32=getRand(seed);let normVariance: f32=varianceAmount/255.0;let dither: f32=mix(-normVariance,normVariance,rand);return dither;}
-const rgbdMaxRange: f32=255.0;fn toRGBD(color: vec3<f32>)->vec4<f32> {let maxRGB: f32=max(max(color.r,max(color.g,color.b)),Epsilon);var D: f32 =max(rgbdMaxRange/maxRGB,1.);D =clamp(floor(D)/255.0,0.,1.);var rgb: vec3<f32> =color.rgb*D;rgb=toGammaSpaceVec3(rgb);return vec4<f32>(clamp(rgb,vec3<f32>(0.,0.,0.),vec3<f32>(1.,1.,1.)),D); }
-fn fromRGBD(rgbd: vec4<f32>)->vec3<f32> {let rgb=toLinearSpaceVec3(rgbd.rgb);return rgb/rgbd.a;}
-fn parallaxCorrectNormal(vertexPos: vec3<f32>,origVec: vec3<f32>,cubeSize: vec3<f32>,cubePos: vec3<f32>)->vec3<f32> {let invOrigVec: vec3<f32>=vec3<f32>(1.0,1.0,1.0)/origVec;let halfSize: vec3<f32>=cubeSize*0.5;let intersecAtMaxPlane: vec3<f32>=(cubePos+halfSize-vertexPos)*invOrigVec;let intersecAtMinPlane: vec3<f32>=(cubePos-halfSize-vertexPos)*invOrigVec;let largestIntersec: vec3<f32>=max(intersecAtMaxPlane,intersecAtMinPlane);let distance: f32=min(min(largestIntersec.x,largestIntersec.y),largestIntersec.z);let intersectPositionWS: vec3<f32>=vertexPos+origVec*distance;return intersectPositionWS-cubePos;}
+const rgbdMaxRange: f32=255.0;fn toRGBD(color: vec3f)->vec4<f32> {let maxRGB: f32=max(max(color.r,max(color.g,color.b)),Epsilon);var D: f32 =max(rgbdMaxRange/maxRGB,1.);D =clamp(floor(D)/255.0,0.,1.);var rgb: vec3f =color.rgb*D;rgb=toGammaSpaceVec3(rgb);return vec4<f32>(saturateVec3(rgb),D);}
+fn fromRGBD(rgbd: vec4<f32>)->vec3f {let rgb=toLinearSpaceVec3(rgbd.rgb);return rgb/rgbd.a;}
+fn parallaxCorrectNormal(vertexPos: vec3f,origVec: vec3f,cubeSize: vec3f,cubePos: vec3f)->vec3f {let invOrigVec: vec3f=vec3f(1.)/origVec;let halfSize: vec3f=cubeSize*0.5;let intersecAtMaxPlane: vec3f=(cubePos+halfSize-vertexPos)*invOrigVec;let intersecAtMinPlane: vec3f=(cubePos-halfSize-vertexPos)*invOrigVec;let largestIntersec: vec3f=max(intersecAtMaxPlane,intersecAtMinPlane);let distance: f32=min(min(largestIntersec.x,largestIntersec.y),largestIntersec.z);let intersectPositionWS: vec3f=vertexPos+origVec*distance;return intersectPositionWS-cubePos;}
+fn equirectangularToCubemapDirection(uv : vec2f)->vec3f {var longitude : f32=uv.x*TWO_PI-PI;var latitude : f32=HALF_PI-uv.y*PI;var direction : vec3f;direction.x=cos(latitude)*sin(longitude);direction.y=sin(latitude);direction.z=cos(latitude)*cos(longitude);return direction;}
+fn sqrtClamped(value: f32)->f32 {return sqrt(max(value,0.));}
+fn avg(value: vec3f)->f32 {return dot(value,vec3f(0.333333333));}
 `;
 // Sideeffect
 _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStoreWGSL[name] = shader;
@@ -617,28 +620,51 @@ const shader = `#ifdef MORPHTARGETS
 #ifdef MORPHTARGETS_TEXTURE
 #if {X}==0
 for (var i=0; i<NUM_MORPH_INFLUENCERS; i=i+1) {if (i>=uniforms.morphTargetCount) {break;}
-vertexID=f32(vertexInputs.vertexIndex)*uniforms.morphTargetTextureInfo.x;positionUpdated=positionUpdated+(readVector3FromRawSampler(i,vertexID)-vertexInputs.position)*uniforms.morphTargetInfluences[i];vertexID=vertexID+1.0;
+vertexID=f32(vertexInputs.vertexIndex)*uniforms.morphTargetTextureInfo.x;
+#ifdef MORPHTARGETS_POSITION
+positionUpdated=positionUpdated+(readVector3FromRawSampler(i,vertexID)-vertexInputs.position)*uniforms.morphTargetInfluences[i];
+#endif
+#ifdef MORPHTARGETTEXTURE_HASPOSITIONS
+vertexID=vertexID+1.0;
+#endif
 #ifdef MORPHTARGETS_NORMAL
-normalUpdated=normalUpdated+(readVector3FromRawSampler(i,vertexID) -vertexInputs.normal)*uniforms.morphTargetInfluences[i];vertexID=vertexID+1.0;
+normalUpdated=normalUpdated+(readVector3FromRawSampler(i,vertexID) -vertexInputs.normal)*uniforms.morphTargetInfluences[i];
+#endif
+#ifdef MORPHTARGETTEXTURE_HASNORMALS
+vertexID=vertexID+1.0;
 #endif
 #ifdef MORPHTARGETS_UV
-uvUpdated=uvUpdated+(readVector3FromRawSampler(i,vertexID).xy-vertexInputs.uv)*uniforms.morphTargetInfluences[i];vertexID=vertexID+1.0;
+uvUpdated=uvUpdated+(readVector3FromRawSampler(i,vertexID).xy-vertexInputs.uv)*uniforms.morphTargetInfluences[i];
+#endif
+#ifdef MORPHTARGETTEXTURE_HASUVS
+vertexID=vertexID+1.0;
 #endif
 #ifdef MORPHTARGETS_TANGENT
 tangentUpdated=vec4f(tangentUpdated.xyz+(readVector3FromRawSampler(i,vertexID) -vertexInputs.tangent.xyz)*uniforms.morphTargetInfluences[i],tangentUpdated.a);
 #endif
+#ifdef MORPHTARGETTEXTURE_HASTANGENTS
+vertexID=vertexID+1.0;
+#endif
+#ifdef MORPHTARGETS_UV2
+uv2Updated=uv2Updated+(readVector3FromRawSampler(i,vertexID).xy-vertexInputs.uv2)*uniforms.morphTargetInfluences[i];
+#endif
 }
 #endif
 #else
+#ifdef MORPHTARGETS_POSITION
 positionUpdated=positionUpdated+(vertexInputs.position{X}-vertexInputs.position)*uniforms.morphTargetInfluences[{X}];
+#endif
 #ifdef MORPHTARGETS_NORMAL
-normalUpdated+=(vertexInputs.normal{X}-vertexInputs.normal)*uniforms.morphTargetInfluences[{X}];
+normalUpdated=normalUpdated+(vertexInputs.normal{X}-vertexInputs.normal)*uniforms.morphTargetInfluences[{X}];
 #endif
 #ifdef MORPHTARGETS_TANGENT
 tangentUpdated=vec4f(tangentUpdated.xyz+(vertexInputs.tangent{X}-vertexInputs.tangent.xyz)*uniforms.morphTargetInfluences[{X}],tangentUpdated.a);
 #endif
 #ifdef MORPHTARGETS_UV
 uvUpdated=uvUpdated+(vertexInputs.uv_{X}-vertexInputs.uv)*uniforms.morphTargetInfluences[{X}];
+#endif
+#ifdef MORPHTARGETS_UV2
+uv2Updated=uv2Updated+(vertexInputs.uv2_{X}-vertexInputs.uv2)*uniforms.morphTargetInfluences[{X}];
 #endif
 #endif
 #endif
@@ -661,7 +687,9 @@ const morphTargetsVertexWGSL = { name, shader };
 const name = "morphTargetsVertexDeclaration";
 const shader = `#ifdef MORPHTARGETS
 #ifndef MORPHTARGETS_TEXTURE
+#ifdef MORPHTARGETS_POSITION
 attribute position{X} : vec3<f32>;
+#endif
 #ifdef MORPHTARGETS_NORMAL
 attribute normal{X} : vec3<f32>;
 #endif
@@ -670,6 +698,9 @@ attribute tangent{X} : vec3<f32>;
 #endif
 #ifdef MORPHTARGETS_UV
 attribute uv_{X} : vec2<f32>;
+#endif
+#ifdef MORPHTARGETS_UV2
+attribute uv2_{X} : vec2<f32>;
 #endif
 #elif {X}==0
 uniform morphTargetCount: i32;
@@ -765,7 +796,9 @@ viewProjectionR : mat4x4<f32>,
 #endif 
 view : mat4x4<f32>,
 projection : mat4x4<f32>,
-vEyePosition : vec4<f32>,};var<uniform> scene : Scene;
+vEyePosition : vec4<f32>,};
+#define SCENE_UBO
+var<uniform> scene : Scene;
 `;
 // Sideeffect
 _Engines_shaderStore_js__WEBPACK_IMPORTED_MODULE_0__/* .ShaderStore */ .l.IncludesShadersStoreWGSL[name] = shader;
@@ -871,6 +904,9 @@ vLightGround: vec3f,
 #endif
 shadowsInfo: vec4f,
 depthValues: vec2f} ;var<uniform> light{X} : Light{X};
+#ifdef IESLIGHTTEXTURE{X}
+var iesLightTexture{X}Sampler: sampler;var iesLightTexture{X}: texture_2d<f32>;
+#endif
 #ifdef PROJECTEDLIGHTTEXTURE{X}
 uniform textureProjectionMatrix{X}: mat4x4f;var projectionLightTexture{X}Sampler: sampler;var projectionLightTexture{X}: texture_2d<f32>;
 #endif
@@ -948,8 +984,9 @@ result.diffuse=ndl*diffuseColor*attenuation;
 var angleW: vec3f=normalize(viewDirectionW+lightVectorW);var specComp: f32=max(0.,dot(vNormal,angleW));specComp=pow(specComp,max(1.,glossiness));result.specular=specComp*specularColor*attenuation;
 #endif
 return result;}
-fn computeSpotLighting(viewDirectionW: vec3f,vNormal: vec3f ,lightData: vec4f,lightDirection: vec4f,diffuseColor: vec3f,specularColor: vec3f,range: f32,glossiness: f32)->lightingInfo {var result: lightingInfo;var direction: vec3f=lightData.xyz-fragmentInputs.vPositionW;var lightVectorW: vec3f=normalize(direction);var attenuation: f32=max(0.,1.0-length(direction)/range);var cosAngle: f32=max(0.,dot(lightDirection.xyz,-lightVectorW));if (cosAngle>=lightDirection.w)
-{cosAngle=max(0.,pow(cosAngle,lightData.w));attenuation*=cosAngle;var ndl: f32=max(0.,dot(vNormal,lightVectorW));
+fn getAttenuation(cosAngle: f32,exponent: f32)->f32 {return max(0.,pow(cosAngle,exponent));}
+fn getIESAttenuation(cosAngle: f32,iesLightTexture: texture_2d<f32>,iesLightTextureSampler: sampler)->f32 {var angle=acos(cosAngle)/PI;return textureSampleLevel(iesLightTexture,iesLightTextureSampler,vec2f(angle,0),0.).r;}
+fn computeBasicSpotLighting(viewDirectionW: vec3f,lightVectorW: vec3f,vNormal: vec3f,attenuation: f32,diffuseColor: vec3f,specularColor: vec3f,glossiness: f32)->lightingInfo {var result: lightingInfo;var ndl: f32=max(0.,dot(vNormal,lightVectorW));
 #ifdef NDOTL
 result.ndl=ndl;
 #endif
@@ -958,7 +995,19 @@ result.diffuse=ndl*diffuseColor*attenuation;
 var angleW: vec3f=normalize(viewDirectionW+lightVectorW);var specComp: f32=max(0.,dot(vNormal,angleW));specComp=pow(specComp,max(1.,glossiness));result.specular=specComp*specularColor*attenuation;
 #endif
 return result;}
-result.diffuse=vec3f(0.);
+fn computeIESSpotLighting(viewDirectionW: vec3f,vNormal: vec3f,lightData: vec4f,lightDirection: vec4f,diffuseColor: vec3f,specularColor: vec3f,range: f32,glossiness: f32,iesLightTexture: texture_2d<f32>,iesLightTextureSampler: sampler)->lightingInfo {var direction: vec3f=lightData.xyz-fragmentInputs.vPositionW;var lightVectorW: vec3f=normalize(direction);var attenuation: f32=max(0.,1.0-length(direction)/range);var dotProduct=dot(lightDirection.xyz,-lightVectorW);var cosAngle: f32=max(0.,dotProduct);if (cosAngle>=lightDirection.w)
+{attenuation*=getIESAttenuation(dotProduct,iesLightTexture,iesLightTextureSampler);return computeBasicSpotLighting(viewDirectionW,lightVectorW,vNormal,attenuation,diffuseColor,specularColor,glossiness);}
+var result: lightingInfo;result.diffuse=vec3f(0.);
+#ifdef SPECULARTERM
+result.specular=vec3f(0.);
+#endif
+#ifdef NDOTL
+result.ndl=0.;
+#endif
+return result;}
+fn computeSpotLighting(viewDirectionW: vec3f,vNormal: vec3f ,lightData: vec4f,lightDirection: vec4f,diffuseColor: vec3f,specularColor: vec3f,range: f32,glossiness: f32)->lightingInfo {var direction: vec3f=lightData.xyz-fragmentInputs.vPositionW;var lightVectorW: vec3f=normalize(direction);var attenuation: f32=max(0.,1.0-length(direction)/range);var cosAngle: f32=max(0.,dot(lightDirection.xyz,-lightVectorW));if (cosAngle>=lightDirection.w)
+{attenuation*=getAttenuation(cosAngle,lightData.w);return computeBasicSpotLighting(viewDirectionW,lightVectorW,vNormal,attenuation,diffuseColor,specularColor,glossiness);}
+var result: lightingInfo;result.diffuse=vec3f(0.);
 #ifdef SPECULARTERM
 result.specular=vec3f(0.);
 #endif
@@ -1750,14 +1799,34 @@ preInfo=computeDirectionalPreLightingInfo(light{X}.vLightData,viewDirectionW,nor
 preInfo.NdotV=NdotV;
 #ifdef SPOTLIGHT{X}
 #ifdef LIGHT_FALLOFF_GLTF{X}
-preInfo.attenuation=computeDistanceLightFalloff_GLTF(preInfo.lightDistanceSquared,light{X}.vLightFalloff.y);preInfo.attenuation*=computeDirectionalLightFalloff_GLTF(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightFalloff.z,light{X}.vLightFalloff.w);
-#elif defined(LIGHT_FALLOFF_PHYSICAL{X})
-preInfo.attenuation=computeDistanceLightFalloff_Physical(preInfo.lightDistanceSquared);preInfo.attenuation*=computeDirectionalLightFalloff_Physical(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w);
-#elif defined(LIGHT_FALLOFF_STANDARD{X})
-preInfo.attenuation=computeDistanceLightFalloff_Standard(preInfo.lightOffset,light{X}.vLightFalloff.x);preInfo.attenuation*=computeDirectionalLightFalloff_Standard(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w,light{X}.vLightData.w);
+preInfo.attenuation=computeDistanceLightFalloff_GLTF(preInfo.lightDistanceSquared,light{X}.vLightFalloff.y);
+#ifdef IESLIGHTTEXTURE{X}
+preInfo.attenuation*=computeDirectionalLightFalloff_IES(light{X}.vLightDirection.xyz,preInfo.L,iesLightTexture{X},iesLightTexture{X}Sampler);
 #else
-preInfo.attenuation=computeDistanceLightFalloff(preInfo.lightOffset,preInfo.lightDistanceSquared,light{X}.vLightFalloff.x,light{X}.vLightFalloff.y);preInfo.attenuation*=computeDirectionalLightFalloff(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w,light{X}.vLightData.w,light{X}.vLightFalloff.z,light{X}.vLightFalloff.w);
+preInfo.attenuation*=computeDirectionalLightFalloff_GLTF(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightFalloff.z,light{X}.vLightFalloff.w);
 #endif
+#elif defined(LIGHT_FALLOFF_PHYSICAL{X})
+preInfo.attenuation=computeDistanceLightFalloff_Physical(preInfo.lightDistanceSquared);
+#ifdef IESLIGHTTEXTURE{X}
+preInfo.attenuation*=computeDirectionalLightFalloff_IES(light{X}.vLightDirection.xyz,preInfo.L,iesLightTexture{X},iesLightTexture{X}Sampler);
+#else
+preInfo.attenuation*=computeDirectionalLightFalloff_Physical(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w);
+#endif
+#elif defined(LIGHT_FALLOFF_STANDARD{X})
+preInfo.attenuation=computeDistanceLightFalloff_Standard(preInfo.lightOffset,light{X}.vLightFalloff.x);
+#ifdef IESLIGHTTEXTURE{X}
+preInfo.attenuation*=computeDirectionalLightFalloff_IES(light{X}.vLightDirection.xyz,preInfo.L,iesLightTexture{X},iesLightTexture{X}Sampler);
+#else
+preInfo.attenuation*=computeDirectionalLightFalloff_Standard(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w,light{X}.vLightData.w);
+#endif
+#else
+preInfo.attenuation=computeDistanceLightFalloff(preInfo.lightOffset,preInfo.lightDistanceSquared,light{X}.vLightFalloff.x,light{X}.vLightFalloff.y);
+#ifdef IESLIGHTTEXTURE{X}
+preInfo.attenuation*=computeDirectionalLightFalloff_IES(light{X}.vLightDirection.xyz,preInfo.L,iesLightTexture{X},iesLightTexture{X}Sampler);
+#else
+preInfo.attenuation*=computeDirectionalLightFalloff(light{X}.vLightDirection.xyz,preInfo.L,light{X}.vLightDirection.w,light{X}.vLightData.w,light{X}.vLightFalloff.z,light{X}.vLightFalloff.w);
+#endif 
+#endif 
 #elif defined(POINTLIGHT{X})
 #ifdef LIGHT_FALLOFF_GLTF{X}
 preInfo.attenuation=computeDistanceLightFalloff_GLTF(preInfo.lightDistanceSquared,light{X}.vLightFalloff.y);
@@ -1828,7 +1897,11 @@ info.sheen*=info.clearCoat.w;
 #endif
 #else
 #ifdef SPOTLIGHT{X}
+#ifdef IESLIGHTTEXTURE{X}
+info=computeIESSpotLighting(viewDirectionW,normalW,light{X}.vLightData,light{X}.vLightDirection,diffuse{X}.rgb,light{X}.vLightSpecular.rgb,diffuse{X}.a,glossiness,iesLightTexture{X},iesLightTexture{X}Sampler);
+#else
 info=computeSpotLighting(viewDirectionW,normalW,light{X}.vLightData,light{X}.vLightDirection,diffuse{X}.rgb,light{X}.vLightSpecular.rgb,diffuse{X}.a,glossiness);
+#endif 
 #elif defined(HEMILIGHT{X})
 info=computeHemisphericLighting(viewDirectionW,normalW,light{X}.vLightData,diffuse{X}.rgb,light{X}.vLightSpecular.rgb,light{X}.vLightGround,glossiness);
 #elif defined(POINTLIGHT{X}) || defined(DIRLIGHT{X})
@@ -2731,7 +2804,7 @@ if (uniforms.v_INFONAME_==0.)
 {vertexOutputs.v_VARYINGNAME_UV= (uniforms._MATRIXNAME_Matrix* vec4f(uvUpdated,1.0,0.0)).xy;}
 #ifdef UV2
 else if (uniforms.v_INFONAME_==1.)
-{vertexOutputs.v_VARYINGNAME_UV= (uniforms._MATRIXNAME_Matrix* vec4f(vertexInputs.uv2,1.0,0.0)).xy;}
+{vertexOutputs.v_VARYINGNAME_UV= (uniforms._MATRIXNAME_Matrix* vec4f(uv2Updated,1.0,0.0)).xy;}
 #endif
 #ifdef UV3
 else if (uniforms.v_INFONAME_==2.)
@@ -2778,7 +2851,11 @@ var clipPlaneVertex = __webpack_require__(5197);
 
 const fogVertex_name = "fogVertex";
 const fogVertex_shader = `#ifdef FOG
+#ifdef SCENE_UBO
 vertexOutputs.vFogDistance=(scene.view*worldPos).xyz;
+#else
+vertexOutputs.vFogDistance=(uniforms.view*worldPos).xyz;
+#endif
 #endif
 `;
 // Sideeffect
@@ -2978,6 +3055,9 @@ var tangentUpdated: vec4f=vertexInputs.tangent;
 #ifdef UV1
 var uvUpdated: vec2f=vertexInputs.uv;
 #endif
+#ifdef UV2
+var uv2Updated: vec2f=vertexInputs.uv2;
+#endif
 #include<morphTargetsVertexGlobal>
 #include<morphTargetsVertex>[0..maxSimultaneousMorphTargets]
 #ifdef REFLECTIONMAP_SKYBOX
@@ -3022,7 +3102,13 @@ var uvUpdated: vec2f=vec2f(0.,0.);
 #ifdef MAINUV1
 vertexOutputs.vMainUV1=uvUpdated;
 #endif
-#include<uvVariableDeclaration>[2..7]
+#ifndef UV2
+var uv2Updated: vec2f=vec2f(0.,0.);
+#endif
+#ifdef MAINUV2
+vertexOutputs.vMainUV2=uv2Updated;
+#endif
+#include<uvVariableDeclaration>[3..7]
 #include<samplerVertexImplementation>(_DEFINENAME_,DIFFUSE,_VARYINGNAME_,Diffuse,_MATRIXNAME_,diffuse,_INFONAME_,DiffuseInfos.x)
 #include<samplerVertexImplementation>(_DEFINENAME_,DETAIL,_VARYINGNAME_,Detail,_MATRIXNAME_,detail,_INFONAME_,DetailInfos.x)
 #include<samplerVertexImplementation>(_DEFINENAME_,AMBIENT,_VARYINGNAME_,Ambient,_MATRIXNAME_,ambient,_INFONAME_,AmbientInfos.x)
@@ -3178,6 +3264,9 @@ fn main(input : VertexInputs)->FragmentInputs {var positionUpdated: vec3f=input.
 #ifdef UV1
 var uvUpdated: vec2f=input.uv;
 #endif
+#ifdef UV2
+var uv2Updated: vec2f=input.uv2;
+#endif
 #include<morphTargetsVertexGlobal>
 #include<morphTargetsVertex>[0..maxSimultaneousMorphTargets]
 #include<instancesVertex>
@@ -3200,7 +3289,7 @@ vertexOutputs.vDepthMetric=((vertexOutputs.position.z+uniforms.depthValues.x)/(u
 vertexOutputs.vUV= (uniforms.diffuseMatrix* vec4f(uvUpdated,1.0,0.0)).xy;
 #endif
 #ifdef UV2
-vertexOutputs.vUV= (uniforms.diffuseMatrix* vec4f(input.uv2,1.0,0.0)).xy;
+vertexOutputs.vUV= (uniforms.diffuseMatrix* vec4f(uv2Updated,1.0,0.0)).xy;
 #endif
 #endif
 }
@@ -3494,7 +3583,7 @@ __webpack_require__.r(__webpack_exports__);
 // Do not edit.
 
 const name = "passCubePixelShader";
-const shader = `varying var vUV: vec2f;var textureSamplerSampler: sampler;var textureSampler: texture_cube<f32>;
+const shader = `varying vUV: vec2f;var textureSamplerSampler: sampler;var textureSampler: texture_cube<f32>;
 #define CUSTOM_FRAGMENT_DEFINITIONS
 @fragment
 fn main(input: FragmentInputs)->FragmentOutputs {var uv: vec2f=input.vUV*2.0-1.0;
@@ -3914,6 +4003,9 @@ fn main(input : VertexInputs)->FragmentInputs {var positionUpdated: vec3f=input.
 #ifdef UV1
 var uvUpdated: vec2f=input.uv;
 #endif
+#ifdef UV2
+var uv2Updated: vec2f=input.uv2;
+#endif
 #ifdef NORMAL
 var normalUpdated: vec3f=input.normal;
 #endif
@@ -3942,7 +4034,7 @@ vertexOutputs.position=scene.viewProjection*worldPos;
 vertexOutputs.vUV= (uniforms.diffuseMatrix* vec4f(uvUpdated,1.0,0.0)).xy;
 #endif
 #ifdef UV2
-vertexOutputs.vUV= (uniforms.diffuseMatrix* vec4f(input.uv2,1.0,0.0)).xy;
+vertexOutputs.vUV= (uniforms.diffuseMatrix* vec4f(uv2Updated,1.0,0.0)).xy;
 #endif
 #endif
 #include<clipPlaneVertex>
