@@ -197,12 +197,15 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.addShadowCaster(baseBox);
         const baseSphere = CreateSphere("baseSphere", { diameter: 1 }, scene);
         baseSphere.receiveShadows = true;
+        shadowGenerator.addShadowCaster(baseSphere);
         baseBox.setEnabled(false);
         baseSphere.setEnabled(false);
 
         for (let i = 0; i < rbCount * rowCount * columnCount; ++i) {
             const shapeInfo = shapeInfoList[i % shapeInfoList.length];
             const mesh = shapeInfo.type === "box" ? baseBox.createInstance(`boxInstance${i}`) : baseSphere.createInstance(`sphereInstance${i}`);
+            mesh.receiveShadows = true;
+            shadowGenerator.addShadowCaster(mesh);
             mesh.scaling.copyFrom(shapeInfo.type === "box" ? shapeInfo.size.scale(2) : new Vector3(shapeInfo.radius, shapeInfo.radius, shapeInfo.radius).scale(2));
             mesh.rotationQuaternion = Quaternion.Identity();
             meshes.push(mesh);
@@ -213,7 +216,7 @@ export class SceneBuilder implements ISceneBuilder {
         const benchHelper = new BenchHelper(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
-                bodies[i].getTransformMatrixToRef(matrix);
+                motionStateReader.setDataFromRigidBody(bodies[i]);
                 const mesh = meshes[i];
                 motionStateReader.readDataToRef(mesh.position, mesh.rotationQuaternion!);
             }
@@ -224,7 +227,7 @@ export class SceneBuilder implements ISceneBuilder {
         scene.onBeforeRenderObservable.add(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
-                bodies[i].getTransformMatrixToRef(matrix);
+                motionStateReader.setDataFromRigidBody(bodies[i]);
                 const mesh = meshes[i];
                 motionStateReader.readDataToRef(mesh.position, mesh.rotationQuaternion!);
             }
