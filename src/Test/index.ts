@@ -12,6 +12,7 @@ const scenes: [string, () => Promise<ISceneBuilder>][] = [
     ["b4 multi world600 body", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b4MultiWorld600Body")).SceneBuilder()],
     ["b4 multi world600 body ammo", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b4MultiWorld600BodyAmmo")).SceneBuilder()],
     ["b4 multi world600 body bundle", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b4MultiWorld600BodyBundle")).SceneBuilder()],
+    ["b4 multi world600 body runtime", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/b4MultiWorld600BodyRuntime")).SceneBuilder()],
     ["t constraint", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tConstraint")).SceneBuilder()],
     ["t multi physics runtime", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tMultiPhysicsRuntime")).SceneBuilder()],
     ["t multi physics runtime shadow", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tMultiPhysicsRuntimeShadow")).SceneBuilder()],
