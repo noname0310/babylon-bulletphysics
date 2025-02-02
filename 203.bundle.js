@@ -1361,7 +1361,7 @@ class MultiPhysicsWorld {
 /***/ 48865:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "01db62e7ad31b5376620.wasm";
+module.exports = __webpack_require__.p + "747b1f7274582aff5407.wasm";
 
 /***/ })
 

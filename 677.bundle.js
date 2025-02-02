@@ -193,7 +193,7 @@ class SceneBuilder {
                         constraint.setStiffness(i, 100);
                         constraint.setDamping(i, 1);
                     }
-                    world.addConstraint(constraint, worldId, false);
+                    world.addConstraint(constraint, worldId, true);
                 }
                 bundles.push(boxRigidBodyBundle);
             }

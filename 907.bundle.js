@@ -5,7 +5,7 @@
 /***/ 79603:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__.p + "aaf64dc7052e87f54eac.wasm";
+module.exports = __webpack_require__.p + "af9116441203f720d01d.wasm";
 
 /***/ }),
 
@@ -484,24 +484,24 @@ function physicsWorldUseMotionStateBuffer(world, use_buffer) {
 * @param {number} physics_world
 * @returns {number}
 */
-function createMultiPhysicsRuntime(physics_world) {
-    const ret = wasm.createMultiPhysicsRuntime(physics_world);
+function createPhysicsRuntime(physics_world) {
+    const ret = wasm.createPhysicsRuntime(physics_world);
     return ret >>> 0;
 }
 
 /**
 * @param {number} physics_runtime
 */
-function destroyMultiPhysicsRuntime(physics_runtime) {
-    wasm.destroyMultiPhysicsRuntime(physics_runtime);
+function destroyPhysicsRuntime(physics_runtime) {
+    wasm.destroyPhysicsRuntime(physics_runtime);
 }
 
 /**
-* @param {number} runtime
+* @param {number} physics_runtime
 * @returns {number}
 */
-function multiPhysicsRuntimeGetLockStatePtr(runtime) {
-    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
+function physicsRuntimeGetLockStatePtr(physics_runtime) {
+    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
     return ret >>> 0;
 }
 
@@ -511,8 +511,8 @@ function multiPhysicsRuntimeGetLockStatePtr(runtime) {
 * @param {number} max_sub_steps
 * @param {number} fixed_time_step
 */
-function multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
-    wasm.multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
+function physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
+    wasm.physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
 }
 
 /**
@@ -722,24 +722,24 @@ function constraintSetDamping(ptr, index, damping) {
 * @param {number} physics_world
 * @returns {number}
 */
-function createPhysicsRuntime(physics_world) {
-    const ret = wasm.createPhysicsRuntime(physics_world);
+function createMultiPhysicsRuntime(physics_world) {
+    const ret = wasm.createMultiPhysicsRuntime(physics_world);
     return ret >>> 0;
 }
 
 /**
 * @param {number} physics_runtime
 */
-function destroyPhysicsRuntime(physics_runtime) {
-    wasm.destroyPhysicsRuntime(physics_runtime);
+function destroyMultiPhysicsRuntime(physics_runtime) {
+    wasm.destroyMultiPhysicsRuntime(physics_runtime);
 }
 
 /**
-* @param {number} physics_runtime
+* @param {number} runtime
 * @returns {number}
 */
-function physicsRuntimeGetLockStatePtr(physics_runtime) {
-    const ret = wasm.physicsRuntimeGetLockStatePtr(physics_runtime);
+function multiPhysicsRuntimeGetLockStatePtr(runtime) {
+    const ret = wasm.multiPhysicsRuntimeGetLockStatePtr(runtime);
     return ret >>> 0;
 }
 
@@ -749,8 +749,8 @@ function physicsRuntimeGetLockStatePtr(physics_runtime) {
 * @param {number} max_sub_steps
 * @param {number} fixed_time_step
 */
-function physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
-    wasm.physicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
+function multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step) {
+    wasm.multiPhysicsRuntimeBufferedStepSimulation(physics_runtime, time_step, max_sub_steps, fixed_time_step);
 }
 
 function handleError(f, args) {
