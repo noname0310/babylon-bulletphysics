@@ -142,7 +142,7 @@ export class SceneBuilder implements ISceneBuilder {
                     constraint.setStiffness(l, 100);
                     constraint.setDamping(l, 1);
                 }
-                world.addConstraint(constraint, worldId, false);
+                world.addConstraint(constraint, worldId, true);
             }
 
             bundles.push(boxRigidBodyBundle);

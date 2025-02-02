@@ -169,21 +169,19 @@ export class SceneBuilder implements ISceneBuilder {
                 bodies.push(rigidBody);
             }
 
-            if (shapeType === "u") {
-                for (let k = 0; k < rbCount; k += 2) {
-                    const indices = [worldId * rbCount + k, worldId * rbCount + k + 1] as const;
-                    const constraint = new Generic6DofSpringConstraint(runtime, bodies[indices[0]], bodies[indices[1]], Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
-                    constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
-                    constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
-                    constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));
-                    constraint.setAngularUpperLimit(new Vector3(0, 0, 0));
-                    for (let l = 0; l < 6; ++l) {
-                        constraint.enableSpring(l, true);
-                        constraint.setStiffness(l, 100);
-                        constraint.setDamping(l, 1);
-                    }
-                    world.addConstraint(constraint, worldId, false);
+            for (let k = 0; k < rbCount; k += 2) {
+                const indices = [worldId * rbCount + k, worldId * rbCount + k + 1] as const;
+                const constraint = new Generic6DofSpringConstraint(runtime, bodies[indices[0]], bodies[indices[1]], Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
+                constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
+                constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
+                constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));
+                constraint.setAngularUpperLimit(new Vector3(0, 0, 0));
+                for (let l = 0; l < 6; ++l) {
+                    constraint.enableSpring(l, true);
+                    constraint.setStiffness(l, 100);
+                    constraint.setDamping(l, 1);
                 }
+                world.addConstraint(constraint, worldId, true);
             }
         }
 
