@@ -216,7 +216,7 @@ export class SceneBuilder implements ISceneBuilder {
             for (let i = 0; i < bodies.length; ++i) {
                 motionStateReader.setDataFromRigidBody(bodies[i]);
                 motionStateReader.readDataToRef(vector, quaternion);
-                Matrix.ComposeToRef(vector, quaternion, scale, matrix);
+                Matrix.ComposeToRef(scale, quaternion, vector, matrix);
                 const mesh = meshes[i];
                 matrix.getTranslationToRef(mesh.position);
                 Quaternion.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion!);
@@ -230,7 +230,7 @@ export class SceneBuilder implements ISceneBuilder {
             for (let i = 0; i < bodies.length; ++i) {
                 motionStateReader.setDataFromRigidBody(bodies[i]);
                 motionStateReader.readDataToRef(vector, quaternion);
-                Matrix.ComposeToRef(vector, quaternion, scale, matrix);
+                Matrix.ComposeToRef(scale, quaternion, vector, matrix);
                 const mesh = meshes[i];
                 matrix.getTranslationToRef(mesh.position);
                 Quaternion.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion!);
