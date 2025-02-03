@@ -1,0 +1,233 @@
+import "@babylonjs/core/Meshes/thinInstanceMesh";
+import "@babylonjs/core/Meshes/instancedMesh";
+import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
+import "@babylonjs/core/Materials/standardMaterial";
+
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
+import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
+import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
+import { CreatePlane } from "@babylonjs/core/Meshes/Builders/planeBuilder";
+import { CreateSphere } from "@babylonjs/core/Meshes/Builders/sphereBuilder";
+import type { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
+import { Scene } from "@babylonjs/core/scene";
+
+import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
+import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
+import { MultiPhysicsRuntime } from "@/Runtime/Impl/multiPhysicsRuntime";
+import { PhysicsRuntimeEvaluationType } from "@/Runtime/Impl/physicsRuntimeEvaluationType";
+import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
+import { MotionType } from "@/Runtime/motionType";
+import type { PhysicsShape} from "@/Runtime/physicsShape";
+import { PhysicsBoxShape, PhysicsSphereShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
+import { RigidBody } from "@/Runtime/rigidBody";
+import { RigidBodyBundle } from "@/Runtime/rigidBodyBundle";
+import { RigidBodyConstructionInfo } from "@/Runtime/rigidBodyConstructionInfo";
+import { RigidBodyConstructionInfoList } from "@/Runtime/rigidBodyConstructionInfoList";
+
+import type { ISceneBuilder } from "../baseRuntime";
+import { BenchHelper } from "../Util/benchHelper";
+import { Mulberry32 } from "../Util/mulberry32";
+
+export class SceneBuilder implements ISceneBuilder {
+    public async build(_canvas: HTMLCanvasElement, engine: AbstractEngine): Promise<Scene> {
+        const scene = new Scene(engine);
+        scene.clearColor = new Color4(0.95, 0.95, 0.95, 1.0);
+
+        const camera = new ArcRotateCamera("arcRotateCamera", 0, 0, 500, new Vector3(0, 0, 0), scene);
+        camera.minZ = 1;
+        camera.maxZ = 3000;
+        camera.setPosition(new Vector3(60, 40, -50).scaleInPlace(10));
+        camera.attachControl(undefined, false);
+        camera.inertia = 0.8;
+        camera.speed = 10;
+
+        const hemisphericLight = new HemisphericLight("hemisphericLight", new Vector3(0, 1, 0), scene);
+        hemisphericLight.intensity = 0.5;
+        hemisphericLight.specular = new Color3(0, 0, 0);
+        hemisphericLight.groundColor = new Color3(1, 1, 1);
+
+        const directionalLight = new DirectionalLight("directionalLight", new Vector3(0.5, -1, 1), scene);
+        directionalLight.intensity = 0.5;
+        const shadowBound = 250;
+        directionalLight.shadowMaxZ = shadowBound;
+        directionalLight.shadowMinZ = -shadowBound;
+        directionalLight.autoCalcShadowZBounds = false;
+        directionalLight.autoUpdateExtends = false;
+        directionalLight.shadowOrthoScale = 0;
+        directionalLight.orthoTop = shadowBound;
+        directionalLight.orthoBottom = -shadowBound;
+        directionalLight.orthoLeft = -shadowBound;
+        directionalLight.orthoRight = shadowBound;
+
+        const shadowGenerator = new ShadowGenerator(2048, directionalLight, true);
+        shadowGenerator.transparencyShadow = true;
+        shadowGenerator.usePercentageCloserFiltering = true;
+        shadowGenerator.forceBackFacesOnly = false;
+        shadowGenerator.bias = 0.004;
+        shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
+
+        // Inspector.Show(scene, { enablePopup: false });
+
+        const threadCount = parseInt(prompt("Thread count", "2")!);
+        console.log("Thread count:", threadCount);
+
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
+        const runtime = new MultiPhysicsRuntime(wasmInstance, {
+            allowDynamicShadow: false,
+            preserveBackBuffer: false
+        });
+
+        const evaluationType = prompt("Evaluation type (i, b) immediate, buffered", "i")!;
+        runtime.evaluationType = evaluationType === "i"
+            ? PhysicsRuntimeEvaluationType.Immediate
+            : PhysicsRuntimeEvaluationType.Buffered;
+
+        const matrix = new Matrix();
+
+        {
+            const ground = CreatePlane("ground", { size: 500 }, scene);
+            ground.rotationQuaternion = Quaternion.RotationAxis(new Vector3(1, 0, 0), Math.PI / 2);
+            shadowGenerator.addShadowCaster(ground);
+            ground.receiveShadows = true;
+
+            const groundShape = new PhysicsStaticPlaneShape(runtime, new Vector3(0, 0, -1), 0);
+            const groundRbInfo = new RigidBodyConstructionInfo(wasmInstance);
+            groundRbInfo.shape = groundShape;
+            Matrix.FromQuaternionToRef(ground.rotationQuaternion, matrix);
+            groundRbInfo.setInitialTransform(matrix);
+            groundRbInfo.motionType = MotionType.Static;
+
+            const groundRigidBody = new RigidBody(runtime, groundRbInfo);
+            runtime.addRigidBodyToGlobal(groundRigidBody);
+        }
+
+        const rbCount = 256 * 2;
+
+        const rowCount = 4;
+        const columnCount = 8;
+        const margin = 60;
+
+        const shapes: PhysicsShape[] = [];
+        const shapeInfoList: ({
+            type: "box";
+            size: Vector3;
+        } | {
+            type: "sphere";
+            radius: number;
+        })[] = [];
+
+        const shapeType = prompt("Shape type (u, r) uniform box, random", "u")!;
+        if (shapeType === "u") {
+            const boxShapeSize = new Vector3(1, 1, 1);
+            const boxShape = new PhysicsBoxShape(runtime, boxShapeSize);
+            const boxShapeInfo = { type: "box" as const, size: boxShapeSize };
+            for (let i = 0; i < rbCount; ++i) {
+                shapes.push(boxShape);
+                shapeInfoList.push(boxShapeInfo);
+            }
+        } else {
+            const rng = new Mulberry32(0);
+            for (let i = 0; i < rbCount; ++i) {
+                const type = rng.next() * 2 | 0;
+                if (type === 0) {
+                    const sizeX = rng.next() * 2 + 0.5;
+                    const sizeY = rng.next() * 2 + 0.5;
+                    const sizeZ = rng.next() * 2 + 0.5;
+                    const size = new Vector3(sizeX, sizeY, sizeZ);
+                    shapes.push(new PhysicsBoxShape(runtime, size));
+                    shapeInfoList.push({ type: "box", size });
+                } else if (type === 1) {
+                    const radius = rng.next() * 2 + 1;
+                    shapes.push(new PhysicsSphereShape(runtime, radius));
+                    shapeInfoList.push({ type: "sphere", radius });
+                } else {
+                    throw new Error("Invalid type");
+                }
+            }
+        }
+
+        const bundles: RigidBodyBundle[] = [];
+
+        for (let i = 0; i < rowCount; ++i) for (let j = 0; j < columnCount; ++j) {
+            const worldId = i * columnCount + j;
+            const xOffset = (j - columnCount / 2) * margin + (margin / 2) * (columnCount % 2 ? 0 : 1);
+            const zOffset = (i - rowCount / 2) * margin + (margin / 2) * (rowCount % 2 ? 0 : 1);
+
+            const rbInfoList = new RigidBodyConstructionInfoList(wasmInstance, rbCount);
+            for (let k = 0; k < rbCount; ++k) {
+                rbInfoList.setShape(k, shapes[k]);
+                const initialTransform = Matrix.TranslationToRef(xOffset, 1 + k * 2, zOffset, matrix);
+                rbInfoList.setInitialTransform(k, initialTransform);
+                rbInfoList.setFriction(k, 1.0);
+                rbInfoList.setLinearDamping(k, 0.3);
+                rbInfoList.setAngularDamping(k, 0.3);
+            }
+            const boxRigidBodyBundle = new RigidBodyBundle(runtime, rbInfoList);
+            runtime.addRigidBodyBundle(boxRigidBodyBundle, worldId);
+
+            for (let k = 0; k < rbCount; k += 2) {
+                const indices = [k, k + 1] as const;
+                const constraint = new Generic6DofSpringConstraint(runtime, boxRigidBodyBundle, indices, Matrix.Translation(0, -1.2, 0), Matrix.Translation(0, 1.2, 0), true);
+                constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
+                constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
+                constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));
+                constraint.setAngularUpperLimit(new Vector3(0, 0, 0));
+                for (let l = 0; l < 6; ++l) {
+                    constraint.enableSpring(l, true);
+                    constraint.setStiffness(l, 100);
+                    constraint.setDamping(l, 1);
+                }
+                runtime.addConstraint(constraint, worldId, true);
+            }
+
+            bundles.push(boxRigidBodyBundle);
+        }
+
+        console.log("Rigid body count:", rbCount * rowCount * columnCount);
+
+        const meshes: InstancedMesh[] = [];
+
+        const baseBox = CreateBox("baseBox", { size: 1 }, scene);
+        const baseSphere = CreateSphere("baseSphere", { diameter: 1 }, scene);
+        baseBox.setEnabled(false);
+        baseSphere.setEnabled(false);
+        baseBox.receiveShadows = true;
+        baseSphere.receiveShadows = true;
+
+        for (let i = 0; i < rbCount * rowCount * columnCount; ++i) {
+            const shapeInfo = shapeInfoList[i % shapeInfoList.length];
+            const mesh = shapeInfo.type === "box" ? baseBox.createInstance(`boxInstance${i}`) : baseSphere.createInstance(`sphereInstance${i}`);
+            shadowGenerator.addShadowCaster(mesh);
+            mesh.scaling.copyFrom(shapeInfo.type === "box" ? shapeInfo.size.scale(2) : new Vector3(shapeInfo.radius, shapeInfo.radius, shapeInfo.radius).scale(2));
+            mesh.rotationQuaternion = Quaternion.Identity();
+            meshes.push(mesh);
+        }
+
+        runtime.onTickObservable.add(() => {
+            for (let i = 0; i < bundles.length; ++i) {
+                const bundle = bundles[i];
+                for (let j = 0; j < rbCount; ++j) {
+                    bundle.getTransformMatrixToRef(j, matrix);
+                    const mesh = meshes[i * rbCount + j];
+                    matrix.getTranslationToRef(mesh.position);
+                    Quaternion.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion!);
+                }
+            }
+        });
+
+        const benchHelper = new BenchHelper(() => {
+            runtime.afterAnimations(1 / 60 * 1000);
+            scene.render();
+        });
+        benchHelper.runBench();
+
+        runtime.register(scene);
+
+        return scene;
+    }
+}
