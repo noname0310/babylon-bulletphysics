@@ -207,13 +207,19 @@ export class SceneBuilder implements ISceneBuilder {
         }
 
         const motionStateReader = new MotionStateReader(wasmInstance);
+        const scale = new Vector3(1, 1, 1);
+        const vector = new Vector3();
+        const quaternion = new Quaternion();
 
         const benchHelper = new BenchHelper(() => {
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
                 motionStateReader.setDataFromRigidBody(bodies[i]);
+                motionStateReader.readDataToRef(vector, quaternion);
+                Matrix.ComposeToRef(vector, quaternion, scale, matrix);
                 const mesh = meshes[i];
-                motionStateReader.readDataToRef(mesh.position, mesh.rotationQuaternion!);
+                matrix.getTranslationToRef(mesh.position);
+                Quaternion.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion!);
             }
             scene.render();
         });
@@ -223,8 +229,11 @@ export class SceneBuilder implements ISceneBuilder {
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
                 motionStateReader.setDataFromRigidBody(bodies[i]);
+                motionStateReader.readDataToRef(vector, quaternion);
+                Matrix.ComposeToRef(vector, quaternion, scale, matrix);
                 const mesh = meshes[i];
-                motionStateReader.readDataToRef(mesh.position, mesh.rotationQuaternion!);
+                matrix.getTranslationToRef(mesh.position);
+                Quaternion.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion!);
             }
         });
 
