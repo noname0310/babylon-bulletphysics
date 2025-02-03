@@ -193,34 +193,32 @@ export class SceneBuilder implements ISceneBuilder {
             }
             for (let k = 0; k < rbInfoList.length; ++k) ammo.destroy(rbInfoList[k]);
 
-            if (shapeType === "u") {
-                for (let k = 0; k < rbCount; k += 2) {
-                    const indices = [worldId * rbCount + k, worldId * rbCount + k + 1] as const;
-                    const transform1 = new ammo.btTransform();
-                    const transform2 = new ammo.btTransform();
-                    transform1.setFromOpenGLMatrix(Matrix.Translation(0, -1.2, 0).asArray());
-                    transform2.setFromOpenGLMatrix(Matrix.Translation(0, 1.2, 0).asArray());
-                    const constraint = new ammo.btGeneric6DofSpringConstraint(bodies[indices[0]], bodies[indices[1]], transform1, transform2, true);
-                    ammo.destroy(transform1);
-                    ammo.destroy(transform2);
+            for (let k = 0; k < rbCount; k += 2) {
+                const indices = [worldId * rbCount + k, worldId * rbCount + k + 1] as const;
+                const transform1 = new ammo.btTransform();
+                const transform2 = new ammo.btTransform();
+                transform1.setFromOpenGLMatrix(Matrix.Translation(0, -1.2, 0).asArray());
+                transform2.setFromOpenGLMatrix(Matrix.Translation(0, 1.2, 0).asArray());
+                const constraint = new ammo.btGeneric6DofSpringConstraint(bodies[indices[0]], bodies[indices[1]], transform1, transform2, true);
+                ammo.destroy(transform1);
+                ammo.destroy(transform2);
 
-                    const limit = new ammo.btVector3(0, 0, 0);
-                    limit.setValue(0, 0, 0);
-                    constraint.setLinearLowerLimit(limit);
-                    limit.setValue(0, 0, 0);
-                    constraint.setLinearUpperLimit(limit);
-                    limit.setValue(Math.PI / 4, 0, 0);
-                    constraint.setAngularLowerLimit(limit);
-                    limit.setValue(0, 0, 0);
-                    constraint.setAngularUpperLimit(limit);
-                    ammo.destroy(limit);
-                    for (let l = 0; l < 6; ++l) {
-                        constraint.enableSpring(l, true);
-                        constraint.setStiffness(l, 100);
-                        constraint.setDamping(l, 1);
-                    }
-                    world.addConstraint(constraint, true);
+                const limit = new ammo.btVector3(0, 0, 0);
+                limit.setValue(0, 0, 0);
+                constraint.setLinearLowerLimit(limit);
+                limit.setValue(0, 0, 0);
+                constraint.setLinearUpperLimit(limit);
+                limit.setValue(Math.PI / 4, 0, 0);
+                constraint.setAngularLowerLimit(limit);
+                limit.setValue(0, 0, 0);
+                constraint.setAngularUpperLimit(limit);
+                ammo.destroy(limit);
+                for (let l = 0; l < 6; ++l) {
+                    constraint.enableSpring(l, true);
+                    constraint.setStiffness(l, 100);
+                    constraint.setDamping(l, 1);
                 }
+                world.addConstraint(constraint, true);
             }
         }
 
