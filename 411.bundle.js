@@ -175,21 +175,19 @@ class SceneBuilder {
                     runtime.addRigidBody(rigidBody, worldId);
                     bodies.push(rigidBody);
                 }
-                if (shapeType === "u") {
-                    for (let k = 0; k < rbCount; k += 2) {
-                        const indices = [worldId * rbCount + k, worldId * rbCount + k + 1];
-                        const constraint = new _Runtime_constraint__WEBPACK_IMPORTED_MODULE_21__/* .Generic6DofSpringConstraint */ .vC(runtime, bodies[indices[0]], bodies[indices[1]], _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.Translation(0, -1.2, 0), _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.Translation(0, 1.2, 0), true);
-                        constraint.setLinearLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0));
-                        constraint.setLinearUpperLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0));
-                        constraint.setAngularLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(Math.PI / 4, 0, 0));
-                        constraint.setAngularUpperLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0));
-                        for (let l = 0; l < 6; ++l) {
-                            constraint.enableSpring(l, true);
-                            constraint.setStiffness(l, 100);
-                            constraint.setDamping(l, 1);
-                        }
-                        runtime.addConstraint(constraint, worldId, false);
+                for (let k = 0; k < rbCount; k += 2) {
+                    const indices = [worldId * rbCount + k, worldId * rbCount + k + 1];
+                    const constraint = new _Runtime_constraint__WEBPACK_IMPORTED_MODULE_21__/* .Generic6DofSpringConstraint */ .vC(runtime, bodies[indices[0]], bodies[indices[1]], _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.Translation(0, -1.2, 0), _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Matrix */ .uq.Translation(0, 1.2, 0), true);
+                    constraint.setLinearLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0));
+                    constraint.setLinearUpperLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0));
+                    constraint.setAngularLowerLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(Math.PI / 4, 0, 0));
+                    constraint.setAngularUpperLimit(new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Vector3 */ .Pq(0, 0, 0));
+                    for (let l = 0; l < 6; ++l) {
+                        constraint.enableSpring(l, true);
+                        constraint.setStiffness(l, 100);
+                        constraint.setDamping(l, 1);
                     }
+                    runtime.addConstraint(constraint, worldId, true);
                 }
             }
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
