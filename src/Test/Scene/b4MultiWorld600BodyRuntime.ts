@@ -20,7 +20,6 @@ import { Generic6DofSpringConstraint } from "@/Runtime/constraint";
 import { MultiPhysicsRuntime } from "@/Runtime/Impl/multiPhysicsRuntime";
 import { PhysicsRuntimeEvaluationType } from "@/Runtime/Impl/physicsRuntimeEvaluationType";
 import { BulletWasmInstanceTypeMR } from "@/Runtime/InstanceType/multiRelease";
-import { BulletWasmInstanceTypeSR } from "@/Runtime/InstanceType/singleRelease";
 import { MotionType } from "@/Runtime/motionType";
 import type { PhysicsShape} from "@/Runtime/physicsShape";
 import { PhysicsBoxShape, PhysicsSphereShape, PhysicsStaticPlaneShape } from "@/Runtime/physicsShape";
@@ -74,9 +73,7 @@ export class SceneBuilder implements ISceneBuilder {
         const threadCount = parseInt(prompt("Thread count", "2")!);
         console.log("Thread count:", threadCount);
 
-        const wasmInstance = threadCount === 1
-            ? await getBulletWasmInstance(new BulletWasmInstanceTypeSR())
-            : await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMR(), threadCount);
         const runtime = new MultiPhysicsRuntime(wasmInstance, {
             allowDynamicShadow: false,
             preserveBackBuffer: false

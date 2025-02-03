@@ -253,7 +253,7 @@ export class MultiPhysicsRuntime implements IRuntime {
                 }
             }
 
-            this.wasmInstance.multiPhysicsRuntimeBufferedStepSimulation(this._inner.ptr, deltaTime, this.maxSubSteps, this.fixedTimeStep);
+            this.wasmInstance.multiPhysicsRuntimeBufferedStepSimulation?.(this._inner.ptr, deltaTime, this.maxSubSteps, this.fixedTimeStep);
         } else {
             if (this._preserveBackBuffer) {
                 this.lock.wait(); // ensure that the runtime is not evaluating animations
