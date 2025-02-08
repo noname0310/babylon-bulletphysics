@@ -206,10 +206,10 @@ export class MultiPhysicsRuntime implements IRuntime {
         this._scene = null;
     }
 
-    public afterAnimations(deltaTime: number): void {
+    public afterAnimations(deltaTime: number): number {
         if (this._inner.ptr === 0) {
             this.unregister();
-            return;
+            return 0;
         }
 
         // compute delta time
@@ -227,12 +227,16 @@ export class MultiPhysicsRuntime implements IRuntime {
             deltaTime = this.timeStep;
         }
 
+        let simulationTime = 0;
+
         if (this._evaluationType === PhysicsRuntimeEvaluationType.Buffered) {
             if (this.wasmInstance.multiPhysicsRuntimeBufferedStepSimulation === undefined) { // single thread environment fallback
                 this._physicsWorld.stepSimulation(deltaTime, this.maxSubSteps, this.fixedTimeStep);
             }
 
             this.lock.wait(); // ensure that the runtime is not evaluating the world
+
+            simulationTime = this.wasmInstance.multiPhysicsRuntimeGetLastExecutionTime(this._inner.ptr);
 
             // desync buffer
             if (!this._preserveBackBuffer && !this._usingWasmBackBuffer) {
@@ -285,6 +289,8 @@ export class MultiPhysicsRuntime implements IRuntime {
         }
 
         this.onTickObservable.notifyObservers();
+
+        return simulationTime;
     }
 
     /**

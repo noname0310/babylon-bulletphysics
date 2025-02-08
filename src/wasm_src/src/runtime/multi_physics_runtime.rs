@@ -8,6 +8,7 @@ pub(crate) struct MultiPhysicsRuntime {
     lock: atomic::AtomicU8,
     #[cfg(debug_assertions)]
     ref_count: atomic::AtomicU32,
+    last_execution_time: f64,
 }
 
 impl MultiPhysicsRuntime {
@@ -17,6 +18,7 @@ impl MultiPhysicsRuntime {
             lock: atomic::AtomicU8::new(0),
             #[cfg(debug_assertions)]
             ref_count: atomic::AtomicU32::new(0),
+            last_execution_time: 0.0,
         }
     }
     
@@ -34,10 +36,15 @@ impl MultiPhysicsRuntime {
         runtime.lock.store(1, atomic::Ordering::Release);
     
         rayon::spawn(move || {
+            let window = web_sys::js_sys::global().unchecked_into::<web_sys::WorkerGlobalScope>();
+            let performance = window.performance().unwrap();
+            let start_time = performance.now();
             let runtime = runtime_handle.get_mut();
 
             let multi_physics_world = runtime.multi_physics_world_handle.get_mut();
             multi_physics_world.step_simulation(time_step, max_sub_steps, fixed_time_step);
+            let end_time = performance.now();
+            runtime.last_execution_time = end_time - start_time;
 
             runtime.lock.store(0, atomic::Ordering::Release);
         });
@@ -130,4 +137,11 @@ pub fn multi_physics_runtime_get_lock_state_ptr(runtime: *mut usize) -> *const u
 pub fn multi_physics_runtime_buffered_step_simulation(physics_runtime: *mut usize, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
     let physics_runtime = unsafe { &mut *(physics_runtime as *mut MultiPhysicsRuntime) };
     MultiPhysicsRuntime::buffered_step_simulation(physics_runtime.create_handle(), time_step, max_sub_steps, fixed_time_step);
+}
+
+#[cfg(feature = "parallel")]
+#[wasm_bindgen(js_name = "multiPhysicsRuntimeGetLastExecutionTime")]
+pub fn multi_physics_runtime_get_last_execution_time(runtime: *mut usize) -> f64 {
+    let physics_runtime = unsafe { &mut *(runtime as *mut MultiPhysicsRuntime) };
+    physics_runtime.last_execution_time
 }

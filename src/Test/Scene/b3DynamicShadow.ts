@@ -180,7 +180,12 @@ export class SceneBuilder implements ISceneBuilder {
 
         const benchHelper = new BenchHelper(() => {
             runtime.afterAnimations(1 / 60 * 1000);
+
+            const simulationTime = runtime.wasmInstance.multiPhysicsRuntimeGetLastExecutionTime(runtime.ptr);
+            const renderStart = performance.now();
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.sampleCount = 5000;
         benchHelper.runBench();
