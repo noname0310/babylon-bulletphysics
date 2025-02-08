@@ -3,50 +3,54 @@ export class BenchHelper {
 
     public showFpsPerFrame: boolean;
 
-    private readonly _func: () => void;
+    private readonly _func: () => [number, number];
 
-    public constructor(func: () => void) {
+    public constructor(func: () => [number, number]) {
         this.sampleCount = 600;
         this.showFpsPerFrame = false;
         this._func = func;
     }
 
     public runBench(): void {
-        const sampledFps: number[] = [];
+        const simulationFrameTimes: number[] = [];
+        const renderFrameTimes: number[] = [];
         const sampleCount = this.sampleCount;
 
         for (let i = 0; i < sampleCount; ++i) {
-            const start = performance.now();
-            this._func();
-            const end = performance.now();
-            const fps = 1000 / (end - start);
-            sampledFps.push(fps);
+            const [simulationTime, renderTime] = this._func();
+            simulationFrameTimes.push(simulationTime);
+            renderFrameTimes.push(renderTime);
         }
-        let averageFps = 0;
+        let averageRenderTime = 0;
+        let averageSimulationTime = 0;
         let resultString = "";
         if (this.showFpsPerFrame) {
             let result = "";
             for (let i = 0; i < sampleCount; ++i) {
-                result += `(${i}, ${sampledFps[i]})`;
+                result += `(${i}, ${simulationFrameTimes[i] + renderFrameTimes[i]})`;
                 if (i !== sampleCount - 1) {
                     result += ", ";
                 }
-                averageFps += sampledFps[i];
+                averageRenderTime += renderFrameTimes[i];
+                averageSimulationTime += simulationFrameTimes[i];
             }
             resultString += `Result: ${result}`;
             console.log(resultString);
         } else {
             for (let i = 0; i < sampleCount; ++i) {
-                averageFps += sampledFps[i];
+                averageRenderTime += renderFrameTimes[i];
+                averageSimulationTime += simulationFrameTimes[i];
             }
         }
-        resultString += `Average: ${averageFps / sampleCount}`;
+        resultString += `Average simulation time: ${averageSimulationTime / sampleCount} ms<br>`;
+        resultString += `Average render time: ${averageRenderTime / sampleCount} ms<br>`;
+        resultString += `Average total time: ${(averageSimulationTime + averageRenderTime) / sampleCount} ms<br>`;
         const div = document.createElement("div");
         div.style.position = "absolute";
         div.style.top = "0";
         div.style.left = "0";
         div.style.color = "black";
-        div.textContent = resultString;
+        div.innerHTML = resultString;
         document.body.appendChild(div);
     }
 }
