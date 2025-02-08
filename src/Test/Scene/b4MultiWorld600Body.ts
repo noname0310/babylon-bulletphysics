@@ -206,6 +206,7 @@ export class SceneBuilder implements ISceneBuilder {
         }
 
         const benchHelper = new BenchHelper(() => {
+            const simulationStart = performance.now();
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
                 bodies[i].getTransformMatrixToRef(matrix);
@@ -213,7 +214,12 @@ export class SceneBuilder implements ISceneBuilder {
                 matrix.getTranslationToRef(mesh.position);
                 Quaternion.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion!);
             }
+
+            const renderStart = performance.now();
+            const simulationTime = renderStart - simulationStart;
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.runBench();
 

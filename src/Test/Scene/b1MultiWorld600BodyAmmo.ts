@@ -193,6 +193,7 @@ export class SceneBuilder implements ISceneBuilder {
         const quaternion = new Quaternion();
 
         const benchHelper = new BenchHelper(() => {
+            const simulationStart = performance.now();
             for (let i = 0; i < worlds.length; ++i) worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
                 const body = bodies[i];
@@ -208,7 +209,12 @@ export class SceneBuilder implements ISceneBuilder {
                 matrix.copyToArray(rigidbodyMatrixBuffer, i * 16);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
+
+            const renderStart = performance.now();
+            const simulationTime = renderStart - simulationStart;
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.runBench();
 
