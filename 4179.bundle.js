@@ -205,6 +205,7 @@ class SceneBuilder {
             meshes.push(mesh);
         }
         const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_23__/* .BenchHelper */ .X(() => {
+            const simulationStart = performance.now();
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
                 bodies[i].getTransformMatrixToRef(matrix);
@@ -212,7 +213,11 @@ class SceneBuilder {
                 matrix.getTranslationToRef(mesh.position);
                 _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_9__/* .Quaternion */ .PT.FromRotationMatrixToRef(matrix, mesh.rotationQuaternion);
             }
+            const renderStart = performance.now();
+            const simulationTime = renderStart - simulationStart;
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.runBench();
         scene.onBeforeRenderObservable.add(() => {

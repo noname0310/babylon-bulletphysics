@@ -158,6 +158,7 @@ class SceneBuilder {
             }
         console.log("Rigid body count:", rbCount * rowCount * columnCount);
         const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_21__/* .BenchHelper */ .X(() => {
+            const simulationStart = performance.now();
             world.stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
                 const body = bodies[i];
@@ -166,7 +167,11 @@ class SceneBuilder {
                 matrix.copyToArray(rigidbodyMatrixBuffer, startOffset);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
+            const renderStart = performance.now();
+            const simulationTime = renderStart - simulationStart;
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.runBench();
         scene.onBeforeRenderObservable.add(() => {

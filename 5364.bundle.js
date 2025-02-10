@@ -188,6 +188,7 @@ class SceneBuilder {
         const vector = new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Vector3 */ .Pq();
         const quaternion = new _babylonjs_core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_8__/* .Quaternion */ .PT();
         const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_13__/* .BenchHelper */ .X(() => {
+            const simulationStart = performance.now();
             for (let i = 0; i < worlds.length; ++i)
                 worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
@@ -199,7 +200,11 @@ class SceneBuilder {
                 matrix.copyToArray(rigidbodyMatrixBuffer, i * 16);
             }
             baseBox.thinInstanceBufferUpdated("matrix");
+            const renderStart = performance.now();
+            const simulationTime = renderStart - simulationStart;
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.runBench();
         scene.onBeforeRenderObservable.add(() => {

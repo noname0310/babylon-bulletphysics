@@ -215,8 +215,11 @@ class SceneBuilder {
             }
         });
         const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_22__/* .BenchHelper */ .X(() => {
-            runtime.afterAnimations(1 / 60 * 1000);
+            const simulationTime = runtime.afterAnimations(1 / 60 * 1000);
+            const renderStart = performance.now();
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.runBench();
         runtime.register(scene);

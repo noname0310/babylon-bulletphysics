@@ -236,6 +236,7 @@ class SceneBuilder {
         }
         const transform = new ammo.btTransform();
         const benchHelper = new _Util_benchHelper__WEBPACK_IMPORTED_MODULE_16__/* .BenchHelper */ .X(() => {
+            const simulationStart = performance.now();
             for (let i = 0; i < worlds.length; ++i)
                 worlds[i].stepSimulation(1 / 60, 10, 1 / 60);
             for (let i = 0; i < bodies.length; ++i) {
@@ -247,7 +248,11 @@ class SceneBuilder {
                 mesh.position.set(origin.x(), origin.y(), origin.z());
                 mesh.rotationQuaternion.set(rotation.x(), rotation.y(), rotation.z(), rotation.w());
             }
+            const renderStart = performance.now();
+            const simulationTime = renderStart - simulationStart;
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.runBench();
         scene.onBeforeRenderObservable.add(() => {
