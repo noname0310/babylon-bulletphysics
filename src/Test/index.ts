@@ -17,6 +17,7 @@ const scenes: [string, () => Promise<ISceneBuilder>][] = [
     ["t constraint", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tConstraint")).SceneBuilder()],
     ["t multi physics runtime", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tMultiPhysicsRuntime")).SceneBuilder()],
     ["t multi physics runtime shadow", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tMultiPhysicsRuntimeShadow")).SceneBuilder()],
+    ["t physics plugin", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tPhysicsPlugin")).SceneBuilder()],
     ["t physics runtime", async(): Promise<ISceneBuilder> => new (await import("@/Test/Scene/tPhysicsRuntime")).SceneBuilder()]
 ];
 buildSceneEntry(scenes);

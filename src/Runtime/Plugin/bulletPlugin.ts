@@ -7,17 +7,19 @@ import { Logger } from "@babylonjs/core/Misc/logger";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import type { IRaycastQuery, PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycastResult";
 import type { PhysicsConstraintAxisLimitMode, PhysicsConstraintMotorType, PhysicsShapeParameters} from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
-import { type ConstrainedBodyPair, type IBasePhysicsCollisionEvent, type IPhysicsCollisionEvent, type IPhysicsEnginePluginV2, type PhysicsConstraintAxis, type PhysicsMassProperties, PhysicsMotionType, PhysicsPrestepType, type PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
+import { type ConstrainedBodyPair, type IBasePhysicsCollisionEvent, type IPhysicsCollisionEvent, type IPhysicsEnginePluginV2, type PhysicsConstraintAxis, type PhysicsMassProperties, PhysicsMotionType, PhysicsPrestepType, PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
 import type { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
 import type { PhysicsConstraint } from "@babylonjs/core/Physics/v2/physicsConstraint";
-import type { PhysicsMaterial } from "@babylonjs/core/Physics/v2/physicsMaterial";
+import { type PhysicsMaterial, PhysicsMaterialCombineMode } from "@babylonjs/core/Physics/v2/physicsMaterial";
 import type { PhysicsShape } from "@babylonjs/core/Physics/v2/physicsShape";
 import type { Nullable } from "@babylonjs/core/types";
 
-import type { BulletWasmInstance } from "./bulletWasmInstance";
-import { MultiPhysicsRuntime } from "./Impl/multiPhysicsRuntime";
-import { MotionType } from "./motionType";
-import { RigidBodyConstructionInfo } from "./rigidBodyConstructionInfo";
+import type { BulletWasmInstance } from "../bulletWasmInstance";
+import { MultiPhysicsRuntime } from "../Impl/multiPhysicsRuntime";
+import { MotionType } from "../motionType";
+import { RigidBodyConstructionInfo } from "../rigidBodyConstructionInfo";
+import type { IPluginShape} from "./pluginShape";
+import { PluginBoxShape } from "./pluginShape";
 
 /**
  * The Bullet Physics plugin
@@ -269,33 +271,86 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Synchronizes the transform of a physics body with its transform node.
+     * @param body - The physics body to synchronize.
+     *
+     * This function is useful for keeping the physics body's transform in sync with its transform node.
+     * This is important for ensuring that the physics body is accurately represented in the physics engine.
+     */
     public sync(body: PhysicsBody): void {
         body;
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Synchronizes the transform of a physics body with the transform of its
+     * corresponding transform node.
+     *
+     * @param body - The physics body to synchronize.
+     * @param transformNode - The destination Transform Node.
+     *
+     * This code is useful for synchronizing the position and orientation of a
+     * physics body with the position and orientation of its corresponding
+     * transform node. This is important for ensuring that the physics body and
+     * the transform node are in the same position and orientation in the scene.
+     * This is necessary for the physics engine to accurately simulate the
+     * physical behavior of the body.
+     */
     public syncTransform(body: PhysicsBody, transformNode: TransformNode): void {
         body;
         transformNode;
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Sets the shape of a physics body.
+     * @param body - The physics body to set the shape for.
+     * @param shape - The physics shape to set.
+     *
+     * This function is used to set the shape of a physics body. It is useful for
+     * creating a physics body with a specific shape, such as a box or a sphere,
+     * which can then be used to simulate physical interactions in a physics engine.
+     * This function is especially useful for meshes with multiple instances, as it
+     * will set the shape for each instance of the mesh.
+     */
     public setShape(body: PhysicsBody, shape: Nullable<PhysicsShape>): void {
         body;
         shape;
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Gets the shape of a physics body. This will create a new shape object
+     *
+     * @param body - The physics body.
+     * @returns The shape of the physics body.
+     *
+     */
     public getShape(body: PhysicsBody): Nullable<PhysicsShape> {
         body;
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Gets the type of a physics shape.
+     * @param shape - The physics shape to get the type for.
+     * @returns The type of the physics shape.
+     *
+     */
     public getShapeType(shape: PhysicsShape): PhysicsShapeType {
         shape;
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Sets the event mask of a physics body.
+     * @param body - The physics body to set the event mask for.
+     * @param eventMask - The event mask to set.
+     * @param instanceIndex - The index of the instance to set the event mask for
+     *
+     * This function is useful for setting the event mask of a physics body, which is used to determine which events the body will respond to. This is important for ensuring that the physics engine is able to accurately simulate the behavior of the body in the game world.
+     */
     public setEventMask(body: PhysicsBody, eventMask: number, instanceIndex?: number): void {
         body;
         eventMask;
@@ -303,12 +358,26 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Retrieves the event mask of a physics body.
+     *
+     * @param body - The physics body to retrieve the event mask from.
+     * @param instanceIndex - The index of the instance to retrieve the event mask from.
+     * @returns The event mask of the physics body.
+     *
+     */
     public getEventMask(body: PhysicsBody, instanceIndex?: number): number {
         body;
         instanceIndex;
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * sets the motion type of a physics body.
+     * @param body - The physics body to set the motion type for.
+     * @param motionType - The motion type to set.
+     * @param instanceIndex - The index of the instance to set the motion type for. If undefined, the motion type of all the bodies will be set.
+     */
     public setMotionType(body: PhysicsBody, motionType: PhysicsMotionType, instanceIndex?: number): void {
         body;
         motionType;
@@ -328,6 +397,17 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Sets the mass properties of a physics body.
+     *
+     * @param body - The physics body to set the mass properties of.
+     * @param massProps - The mass properties to set.
+     * @param instanceIndex - The index of the instance to set the mass properties of. If undefined, the mass properties of all the bodies will be set.
+     * This function is useful for setting the mass properties of a physics body,
+     * such as its mass, inertia, and center of mass. This is important for
+     * accurately simulating the physics of the body in the physics engine.
+     *
+     */
     public setMassProperties(body: PhysicsBody, massProps: PhysicsMassProperties, instanceIndex?: number): void {
         body;
         massProps;
@@ -484,39 +564,108 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Initializes a physics shape with the given type and parameters.
+     * @param shape - The physics shape to initialize.
+     * @param type - The type of shape to initialize.
+     * @param options - The parameters for the shape.
+     *
+     * This code is useful for initializing a physics shape with the given type and parameters.
+     * It allows for the creation of a sphere, box, capsule, container, cylinder, mesh, and heightfield.
+     * Depending on the type of shape, different parameters are required.
+     * For example, a sphere requires a radius, while a box requires extents and a rotation.
+     */
     public initShape(shape: PhysicsShape, type: PhysicsShapeType, options: PhysicsShapeParameters): void {
-        shape;
-        type;
-        options;
-        throw new Error("Method not implemented.");
+        switch (type) {
+        case PhysicsShapeType.SPHERE:
+            // use btSphereShape
+            throw new Error("Sphere shape not supported.");
+            break;
+        case PhysicsShapeType.BOX:
+            shape._pluginData = new PluginBoxShape(this.world, options.center, options.rotation, options.extents);
+            break;
+        case PhysicsShapeType.CAPSULE:
+            // use btCapsuleShape
+            throw new Error("Capsule shape not supported.");
+            break;
+        case PhysicsShapeType.CONTAINER:
+            // use btCompoundShape
+            throw new Error("Container shape not supported.");
+            break;
+        case PhysicsShapeType.CYLINDER:
+            // use btCylinderShape
+            throw new Error("Cylinder shape not supported.");
+            break;
+        case PhysicsShapeType.CONVEX_HULL:
+        case PhysicsShapeType.MESH:
+            // use btConvexHullShape
+            // use btBvhTriangleMeshShape
+            throw new Error("Convex hull and mesh shapes not supported.");
+            break;
+        case PhysicsShapeType.HEIGHTFIELD:
+            throw new Error("Heightfield shape not supported.");
+            break;
+        default:
+            throw new Error("Unsupported Shape Type.");
+        }
     }
 
+    /**
+     * Sets the shape filter membership mask of a body
+     * @param shape - The physics body to set the shape filter membership mask for.
+     * @param membershipMask - The shape filter membership mask to set.
+     */
     public setShapeFilterMembershipMask(shape: PhysicsShape, membershipMask: number): void {
-        shape;
-        membershipMask;
-        throw new Error("Method not implemented.");
+        (shape._pluginData as IPluginShape).collisionGroup = membershipMask;
     }
 
+    /**
+     * Gets the shape filter membership mask of a body
+     * @param shape - The physics body to get the shape filter membership mask from.
+     * @returns The shape filter membership mask of the given body.
+     */
     public getShapeFilterMembershipMask(shape: PhysicsShape): number {
-        shape;
-        throw new Error("Method not implemented.");
+        return (shape._pluginData as IPluginShape).collisionGroup;
     }
 
+    /**
+     * Sets the shape filter collide mask of a body
+     * @param shape - The physics body to set the shape filter collide mask for.
+     * @param collideMask - The shape filter collide mask to set.
+     */
     public setShapeFilterCollideMask(shape: PhysicsShape, collideMask: number): void {
-        shape;
-        collideMask;
-        throw new Error("Method not implemented.");
+        (shape._pluginData as IPluginShape).collisionMask = collideMask;
     }
 
+    /**
+     * Gets the shape filter collide mask of a body
+     * @param shape - The physics body to get the shape filter collide mask from.
+     * @returns The shape filter collide mask of the given body.
+     */
     public getShapeFilterCollideMask(shape: PhysicsShape): number {
-        shape;
-        throw new Error("Method not implemented.");
+        return (shape._pluginData as IPluginShape).collisionMask;
     }
 
+    /**
+     * Sets the material of a physics shape.
+     * @param shape - The physics shape to set the material of.
+     * @param material - The material to set.
+     *
+     */
     public setMaterial(shape: PhysicsShape, material: PhysicsMaterial): void {
-        shape;
-        material;
-        throw new Error("Method not implemented.");
+        const dynamicFriction = material.friction ?? 0.5;
+        if (material.staticFriction) {
+            Logger.Warn("Static friction is not supported in bullet.");
+        }
+        const restitution = material.restitution ?? 0.0;
+        if (material.frictionCombine && material.frictionCombine !== PhysicsMaterialCombineMode.MULTIPLY) {
+            Logger.Warn("Friction combine is fixed to MULTIPLY in bullet.");
+        }
+        if (material.restitutionCombine && material.restitutionCombine !== PhysicsMaterialCombineMode.MULTIPLY) {
+            Logger.Warn("Restitution combine is fixed to MULTIPLY in bullet.");
+        }
+
+        (shape._pluginData as IPluginShape).setMaterial(dynamicFriction, restitution);
     }
 
     public getMaterial(shape: PhysicsShape): PhysicsMaterial {

@@ -1,6 +1,7 @@
 import "@babylonjs/core/Meshes/thinInstanceMesh";
 import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import "@babylonjs/core/Materials/standardMaterial";
+import "@babylonjs/core/Physics/joinedPhysicsEngineComponent";
 
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
@@ -15,10 +16,10 @@ import { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
 import { PhysicsShapeBox } from "@babylonjs/core/Physics/v2/physicsShape";
 import { Scene } from "@babylonjs/core/scene";
 
-import { BulletPlugin } from "@/Runtime/bulletPlugin";
 // import { Inspector } from "@babylonjs/inspector";
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
+import { BulletPlugin } from "@/Runtime/Plugin/bulletPlugin";
 
 import type { ISceneBuilder } from "../baseRuntime";
 
