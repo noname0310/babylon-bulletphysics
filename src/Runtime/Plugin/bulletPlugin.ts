@@ -18,6 +18,7 @@ import type { BulletWasmInstance } from "../bulletWasmInstance";
 import { MultiPhysicsRuntime } from "../Impl/multiPhysicsRuntime";
 import { MotionType } from "../motionType";
 import { RigidBodyConstructionInfo } from "../rigidBodyConstructionInfo";
+import { RigidBodyConstructionInfoList } from "../rigidBodyConstructionInfoList";
 import type { IPluginShape} from "./pluginShape";
 import { PluginBoxShape } from "./pluginShape";
 
@@ -409,10 +410,20 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      *
      */
     public setMassProperties(body: PhysicsBody, massProps: PhysicsMassProperties, instanceIndex?: number): void {
-        body;
-        massProps;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const info = body._pluginData;
+        if (info instanceof RigidBodyConstructionInfo) {
+            if (massProps.mass !== undefined) info.mass = massProps.mass;
+        } else if (info instanceof RigidBodyConstructionInfoList) {
+            if (instanceIndex === undefined) {
+                for (let i = 0; i < info.count; i++) {
+                    if (massProps.mass !== undefined) info.setMass(massProps.mass, i);
+                }
+            } else if (massProps.mass !== undefined) {
+                info.setMass(massProps.mass, instanceIndex);
+            }
+        } else {
+            throw new Error("mass cannot be set after body is initialized");
+        }
     }
 
     public getMassProperties(body: PhysicsBody, instanceIndex?: number): PhysicsMassProperties {
