@@ -80,10 +80,10 @@ export class PhysicsRuntime implements IRuntime {
     private _evaluationType: PhysicsRuntimeEvaluationType;
     private _usingWasmBackBuffer: boolean;
 
-    public readonly useDeltaForWorldStep: boolean;
-    public readonly timeStep: number;
-    public readonly maxSubSteps: number;
-    public readonly fixedTimeStep: number;
+    public useDeltaForWorldStep: boolean;
+    public timeStep: number;
+    public maxSubSteps: number;
+    public fixedTimeStep: number;
 
     private readonly _rigidBodyList: RigidBody[];
     private readonly _rigidBodyBundleList: RigidBodyBundle[];

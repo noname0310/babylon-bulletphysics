@@ -2,6 +2,7 @@ import type { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import { Constants } from "./constants";
 import type { IRuntime } from "./Impl/IRuntime";
 import type { RigidBody } from "./rigidBody";
 import type { RigidBodyBundle } from "./rigidBodyBundle";
@@ -151,7 +152,7 @@ export abstract class Constraint {
     }
 }
 
-const matrixBufferSize = 16 * Float32Array.BYTES_PER_ELEMENT;
+const matrixBufferSize = 16 * Constants.A32BytesPerElement;
 
 export class Generic6DofConstraint extends Constraint {
     public constructor(
@@ -182,11 +183,11 @@ export class Generic6DofConstraint extends Constraint {
     ) {
         const wasmInstance = runtime.wasmInstance;
         const frameABufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
-        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
+        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Constants.A32BytesPerElement);
         frameA.copyToArray(frameABuffer.array);
 
         const frameBBufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
-        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
+        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, matrixBufferSize / Constants.A32BytesPerElement);
         frameB.copyToArray(frameBBuffer.array);
 
         const isBundleParam = Array.isArray(bodyBOrIndices);
@@ -276,11 +277,11 @@ export class Generic6DofSpringConstraint extends Constraint {
     ) {
         const wasmInstance = runtime.wasmInstance;
         const frameABufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
-        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
+        const frameABuffer = wasmInstance.createTypedArray(Float32Array, frameABufferPtr, matrixBufferSize / Constants.A32BytesPerElement);
         frameA.copyToArray(frameABuffer.array);
 
         const frameBBufferPtr = wasmInstance.allocateBuffer(matrixBufferSize);
-        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, matrixBufferSize / Float32Array.BYTES_PER_ELEMENT);
+        const frameBBuffer = wasmInstance.createTypedArray(Float32Array, frameBBufferPtr, matrixBufferSize / Constants.A32BytesPerElement);
         frameB.copyToArray(frameBBuffer.array);
 
         const isBundleParam = Array.isArray(bodyBOrIndices);

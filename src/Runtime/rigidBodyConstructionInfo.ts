@@ -2,38 +2,10 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
+import { Constants, RigidBodyConstructionInfoOffsets } from "./constants";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
 import { MotionType } from "./motionType";
 import type { PhysicsShape } from "./physicsShape";
-
-/**
- * RigidBodyConstructionInfo representations
- *
- * shape: *uint32 : offset 0
- * initial_transform: float32[16] : offset 16
- *
- * motionType: uint8 : offset 80
- *
- * padding: uint8[3] : offset 81
- *
- * mass: float32 : offset 84
- * linearDamping: float32 : offset 88
- * angularDamping: float32 : offset 92
- * friction: float32 : offset 96
- * restitution: float32 : offset 100
- * linearSleepingThreshold: float32 : offset 104
- * angularSleepingThreshold: float32 : offset 108
- * collisionGroup: uint16 : offset 112
- * collisionMask: uint16 : offset 114
- * additionalDamping: uint8 : offset 116
- * noContactResponse: uint8 : offset 117
- * disableDeactivation: uint8 : offset 118
- * padding: uint8[9] : offset 119
- *
- * --size: 128
- */
-
-const size = 128;
 
 class RigidBodyConstructionInfoInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
@@ -51,7 +23,7 @@ class RigidBodyConstructionInfoInner {
             return;
         }
 
-        this._wasmInstance.deref()?.deallocateBuffer(this._ptr, size);
+        this._wasmInstance.deref()?.deallocateBuffer(this._ptr, Constants.RigidBodyConstructionInfoSize);
         this._ptr = 0;
         if (this._shapeReference) {
             this._shapeReference.removeReference();
@@ -99,17 +71,12 @@ export class RigidBodyConstructionInfo {
     public constructor(wasmInstance: BulletWasmInstance) {
         this._wasmInstance = wasmInstance;
 
-        const uint32Bytes = Uint32Array.BYTES_PER_ELEMENT;
-        const float32Bytes = Float32Array.BYTES_PER_ELEMENT;
-        const uint8Bytes = Uint8Array.BYTES_PER_ELEMENT;
-        const uint16Bytes = Uint16Array.BYTES_PER_ELEMENT;
-
         // Allocate buffer
-        const ptr = wasmInstance.allocateBuffer(size);
-        this._uint32Ptr = wasmInstance.createTypedArray(Uint32Array, ptr, size / uint32Bytes);
-        this._float32Ptr = wasmInstance.createTypedArray(Float32Array, ptr, size / float32Bytes);
-        this._uint8Ptr = wasmInstance.createTypedArray(Uint8Array, ptr, size / uint8Bytes);
-        this._uint16Ptr = wasmInstance.createTypedArray(Uint16Array, ptr, size / uint16Bytes);
+        const ptr = wasmInstance.allocateBuffer(Constants.RigidBodyConstructionInfoSize);
+        this._uint32Ptr = wasmInstance.createTypedArray(Uint32Array, ptr, Constants.RigidBodyConstructionInfoSize / Constants.A32BytesPerElement);
+        this._float32Ptr = wasmInstance.createTypedArray(Float32Array, ptr, Constants.RigidBodyConstructionInfoSize / Constants.A32BytesPerElement);
+        this._uint8Ptr = wasmInstance.createTypedArray(Uint8Array, ptr, Constants.RigidBodyConstructionInfoSize / Constants.A8BytesPerElement);
+        this._uint16Ptr = wasmInstance.createTypedArray(Uint16Array, ptr, Constants.RigidBodyConstructionInfoSize / Constants.A16BytesPerElement);
 
         this._inner = new RigidBodyConstructionInfoInner(new WeakRef(wasmInstance), ptr);
 
@@ -120,67 +87,67 @@ export class RigidBodyConstructionInfo {
         const uint16Ptr = this._uint16Ptr.array;
 
         // shape
-        uint32Ptr[0x0 / uint32Bytes] = 0;
+        uint32Ptr[RigidBodyConstructionInfoOffsets.Shape / Constants.A32BytesPerElement] = 0;
 
         // initial_transform
-        float32Ptr[0x10 / float32Bytes] = 1;
-        float32Ptr[0x14 / float32Bytes] = 0;
-        float32Ptr[0x18 / float32Bytes] = 0;
-        float32Ptr[0x1C / float32Bytes] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 0] = 1;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 1] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 2] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 3] = 0;
 
-        float32Ptr[0x20 / float32Bytes] = 0;
-        float32Ptr[0x24 / float32Bytes] = 1;
-        float32Ptr[0x28 / float32Bytes] = 0;
-        float32Ptr[0x2C / float32Bytes] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 4] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 5] = 1;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 6] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 7] = 0;
 
-        float32Ptr[0x30 / float32Bytes] = 0;
-        float32Ptr[0x34 / float32Bytes] = 0;
-        float32Ptr[0x38 / float32Bytes] = 1;
-        float32Ptr[0x3C / float32Bytes] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 8] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 9] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 10] = 1;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 11] = 0;
 
-        float32Ptr[0x40 / float32Bytes] = 0;
-        float32Ptr[0x44 / float32Bytes] = 0;
-        float32Ptr[0x48 / float32Bytes] = 0;
-        float32Ptr[0x4C / float32Bytes] = 1;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 12] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 13] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 14] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 15] = 1;
 
         // motionType
-        uint8Ptr[0x50 / uint8Bytes] = MotionType.Dynamic;
+        uint8Ptr[RigidBodyConstructionInfoOffsets.MotionType / Constants.A8BytesPerElement] = MotionType.Dynamic;
 
         // mass
-        float32Ptr[0x54 / float32Bytes] = 1.0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.Mass / Constants.A32BytesPerElement] = 1.0;
 
         // linearDamping
-        float32Ptr[0x58 / float32Bytes] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.LinearDamping / Constants.A32BytesPerElement] = 0;
 
         // angularDamping
-        float32Ptr[0x5C / float32Bytes] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.AngularDamping / Constants.A32BytesPerElement] = 0;
 
         // friction
-        float32Ptr[0x60 / float32Bytes] = 0.5;
+        float32Ptr[RigidBodyConstructionInfoOffsets.Friction / Constants.A32BytesPerElement] = 0.5;
 
         // restitution
-        float32Ptr[0x64 / float32Bytes] = 0.0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.Restitution / Constants.A32BytesPerElement] = 0.0;
 
         // linearSleepingThreshold
-        float32Ptr[0x68 / float32Bytes] = 0.0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.LinearSleepingThreshold / Constants.A32BytesPerElement] = 0.0;
 
         // angularSleepingThreshold
-        float32Ptr[0x6C / float32Bytes] = 1.0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.AngularSleepingThreshold / Constants.A32BytesPerElement] = 1.0;
 
         // collisionGroup
-        uint16Ptr[0x70 / uint16Bytes] = 1 << 0;
+        uint16Ptr[RigidBodyConstructionInfoOffsets.CollisionGroup / Constants.A16BytesPerElement] = 1 << 0;
 
         // collisionMask
-        uint16Ptr[0x72 / uint16Bytes] = 0xFFFF;
+        uint16Ptr[RigidBodyConstructionInfoOffsets.CollisionMask / Constants.A16BytesPerElement] = 0xFFFF;
 
         // additionalDamping
-        uint8Ptr[0x74 / uint8Bytes] = +false;
+        uint8Ptr[RigidBodyConstructionInfoOffsets.AdditionalDamping / Constants.A8BytesPerElement] = +false;
 
         // noContactResponse
-        uint8Ptr[0x75 / uint8Bytes] = +false;
+        uint8Ptr[RigidBodyConstructionInfoOffsets.NoContactResponse / Constants.A8BytesPerElement] = +false;
 
         // disableDeactivation
-        uint8Ptr[0x76 / uint8Bytes] = +false;
+        uint8Ptr[RigidBodyConstructionInfoOffsets.DisableDeactivation / Constants.A8BytesPerElement] = +false;
 
 
         // finalization registry
@@ -225,31 +192,30 @@ export class RigidBodyConstructionInfo {
     public set shape(value: Nullable<PhysicsShape>) {
         this._nullCheck();
         this._inner.shape = value;
-        this._uint32Ptr.array[0x0 / Uint32Array.BYTES_PER_ELEMENT] = value ? value.ptr : 0;
+        this._uint32Ptr.array[RigidBodyConstructionInfoOffsets.Shape / Constants.A32BytesPerElement] = value ? value.ptr : 0;
     }
 
     public getInitialTransformToRef(result: Matrix): Matrix {
         this._nullCheck();
         const float32Ptr = this._float32Ptr.array;
-        const float32Bytes = Float32Array.BYTES_PER_ELEMENT;
 
         result.set(
-            float32Ptr[0x10 / float32Bytes],
-            float32Ptr[0x14 / float32Bytes],
-            float32Ptr[0x18 / float32Bytes],
-            float32Ptr[0x1C / float32Bytes],
-            float32Ptr[0x20 / float32Bytes],
-            float32Ptr[0x24 / float32Bytes],
-            float32Ptr[0x28 / float32Bytes],
-            float32Ptr[0x2C / float32Bytes],
-            float32Ptr[0x30 / float32Bytes],
-            float32Ptr[0x34 / float32Bytes],
-            float32Ptr[0x38 / float32Bytes],
-            float32Ptr[0x3C / float32Bytes],
-            float32Ptr[0x40 / float32Bytes],
-            float32Ptr[0x44 / float32Bytes],
-            float32Ptr[0x48 / float32Bytes],
-            float32Ptr[0x4C / float32Bytes]
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 0],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 1],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 2],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 3],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 4],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 5],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 6],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 7],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 8],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 9],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 10],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 11],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 12],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 13],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 14],
+            float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 15]
         );
 
         return result;
@@ -258,138 +224,137 @@ export class RigidBodyConstructionInfo {
     public setInitialTransform(value: Matrix): void {
         this._nullCheck();
         const float32Ptr = this._float32Ptr.array;
-        const float32Bytes = Float32Array.BYTES_PER_ELEMENT;
 
-        value.copyToArray(float32Ptr, 0x10 / float32Bytes);
+        value.copyToArray(float32Ptr, RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement);
     }
 
     public get motionType(): MotionType {
         this._nullCheck();
-        return this._uint8Ptr.array[0x50 / Uint8Array.BYTES_PER_ELEMENT];
+        return this._uint8Ptr.array[RigidBodyConstructionInfoOffsets.MotionType / Constants.A8BytesPerElement];
     }
 
     public set motionType(value: MotionType) {
         this._nullCheck();
-        this._uint8Ptr.array[0x50 / Uint8Array.BYTES_PER_ELEMENT] = value;
+        this._uint8Ptr.array[RigidBodyConstructionInfoOffsets.MotionType / Constants.A8BytesPerElement] = value;
     }
 
     public get mass(): number {
         this._nullCheck();
-        return this._float32Ptr.array[0x54 / Float32Array.BYTES_PER_ELEMENT];
+        return this._float32Ptr.array[RigidBodyConstructionInfoOffsets.Mass / Constants.A32BytesPerElement];
     }
 
     public set mass(value: number) {
         this._nullCheck();
-        this._float32Ptr.array[0x54 / Float32Array.BYTES_PER_ELEMENT] = value;
+        this._float32Ptr.array[RigidBodyConstructionInfoOffsets.Mass / Constants.A32BytesPerElement] = value;
     }
 
     public get linearDamping(): number {
         this._nullCheck();
-        return this._float32Ptr.array[0x58 / Float32Array.BYTES_PER_ELEMENT];
+        return this._float32Ptr.array[RigidBodyConstructionInfoOffsets.LinearDamping / Constants.A32BytesPerElement];
     }
 
     public set linearDamping(value: number) {
         this._nullCheck();
-        this._float32Ptr.array[0x58 / Float32Array.BYTES_PER_ELEMENT] = value;
+        this._float32Ptr.array[RigidBodyConstructionInfoOffsets.LinearDamping / Constants.A32BytesPerElement] = value;
     }
 
     public get angularDamping(): number {
         this._nullCheck();
-        return this._float32Ptr.array[0x5C / Float32Array.BYTES_PER_ELEMENT];
+        return this._float32Ptr.array[RigidBodyConstructionInfoOffsets.AngularDamping / Constants.A32BytesPerElement];
     }
 
     public set angularDamping(value: number) {
         this._nullCheck();
-        this._float32Ptr.array[0x5C / Float32Array.BYTES_PER_ELEMENT] = value;
+        this._float32Ptr.array[RigidBodyConstructionInfoOffsets.AngularDamping / Constants.A32BytesPerElement] = value;
     }
 
     public get friction(): number {
         this._nullCheck();
-        return this._float32Ptr.array[0x60 / Float32Array.BYTES_PER_ELEMENT];
+        return this._float32Ptr.array[RigidBodyConstructionInfoOffsets.Friction / Constants.A32BytesPerElement];
     }
 
     public set friction(value: number) {
         this._nullCheck();
-        this._float32Ptr.array[0x60 / Float32Array.BYTES_PER_ELEMENT] = value;
+        this._float32Ptr.array[RigidBodyConstructionInfoOffsets.Friction / Constants.A32BytesPerElement] = value;
     }
 
     public get restitution(): number {
         this._nullCheck();
-        return this._float32Ptr.array[0x64 / Float32Array.BYTES_PER_ELEMENT];
+        return this._float32Ptr.array[RigidBodyConstructionInfoOffsets.Restitution / Constants.A32BytesPerElement];
     }
 
     public set restitution(value: number) {
         this._nullCheck();
-        this._float32Ptr.array[0x64 / Float32Array.BYTES_PER_ELEMENT] = value;
+        this._float32Ptr.array[RigidBodyConstructionInfoOffsets.Restitution / Constants.A32BytesPerElement] = value;
     }
 
     public get linearSleepingThreshold(): number {
         this._nullCheck();
-        return this._float32Ptr.array[0x68 / Float32Array.BYTES_PER_ELEMENT];
+        return this._float32Ptr.array[RigidBodyConstructionInfoOffsets.LinearSleepingThreshold / Constants.A32BytesPerElement];
     }
 
     public set linearSleepingThreshold(value: number) {
         this._nullCheck();
-        this._float32Ptr.array[0x68 / Float32Array.BYTES_PER_ELEMENT] = value;
+        this._float32Ptr.array[RigidBodyConstructionInfoOffsets.LinearSleepingThreshold / Constants.A32BytesPerElement] = value;
     }
 
     public get angularSleepingThreshold(): number {
         this._nullCheck();
-        return this._float32Ptr.array[0x6C / Float32Array.BYTES_PER_ELEMENT];
+        return this._float32Ptr.array[RigidBodyConstructionInfoOffsets.AngularSleepingThreshold / Constants.A32BytesPerElement];
     }
 
     public set angularSleepingThreshold(value: number) {
         this._nullCheck();
-        this._float32Ptr.array[0x6C / Float32Array.BYTES_PER_ELEMENT] = value;
+        this._float32Ptr.array[RigidBodyConstructionInfoOffsets.AngularSleepingThreshold / Constants.A32BytesPerElement] = value;
     }
 
     public get collisionGroup(): number {
         this._nullCheck();
-        return this._uint16Ptr.array[0x70 / Uint16Array.BYTES_PER_ELEMENT];
+        return this._uint16Ptr.array[RigidBodyConstructionInfoOffsets.CollisionGroup / Constants.A16BytesPerElement];
     }
 
     public set collisionGroup(value: number) {
         this._nullCheck();
-        this._uint16Ptr.array[0x70 / Uint16Array.BYTES_PER_ELEMENT] = value;
+        this._uint16Ptr.array[RigidBodyConstructionInfoOffsets.CollisionGroup / Constants.A16BytesPerElement] = value;
     }
 
     public get collisionMask(): number {
         this._nullCheck();
-        return this._uint16Ptr.array[0x72 / Uint16Array.BYTES_PER_ELEMENT];
+        return this._uint16Ptr.array[RigidBodyConstructionInfoOffsets.CollisionMask / Constants.A16BytesPerElement];
     }
 
     public set collisionMask(value: number) {
         this._nullCheck();
-        this._uint16Ptr.array[0x72 / Uint16Array.BYTES_PER_ELEMENT] = value;
+        this._uint16Ptr.array[RigidBodyConstructionInfoOffsets.CollisionMask / Constants.A16BytesPerElement] = value;
     }
 
     public get additionalDamping(): boolean {
         this._nullCheck();
-        return !!this._uint8Ptr.array[0x74 / Uint8Array.BYTES_PER_ELEMENT];
+        return !!this._uint8Ptr.array[RigidBodyConstructionInfoOffsets.AdditionalDamping / Constants.A8BytesPerElement];
     }
 
     public set additionalDamping(value: boolean) {
         this._nullCheck();
-        this._uint8Ptr.array[0x74 / Uint8Array.BYTES_PER_ELEMENT] = +value;
+        this._uint8Ptr.array[RigidBodyConstructionInfoOffsets.AdditionalDamping / Constants.A8BytesPerElement] = +value;
     }
 
     public get noContactResponse(): boolean {
         this._nullCheck();
-        return !!this._uint8Ptr.array[0x75 / Uint8Array.BYTES_PER_ELEMENT];
+        return !!this._uint8Ptr.array[RigidBodyConstructionInfoOffsets.NoContactResponse / Constants.A8BytesPerElement];
     }
 
     public set noContactResponse(value: boolean) {
         this._nullCheck();
-        this._uint8Ptr.array[0x75 / Uint8Array.BYTES_PER_ELEMENT] = +value;
+        this._uint8Ptr.array[RigidBodyConstructionInfoOffsets.NoContactResponse / Constants.A8BytesPerElement] = +value;
     }
 
     public get disableDeactivation(): boolean {
         this._nullCheck();
-        return !!this._uint8Ptr.array[0x76 / Uint8Array.BYTES_PER_ELEMENT];
+        return !!this._uint8Ptr.array[RigidBodyConstructionInfoOffsets.DisableDeactivation / Constants.A8BytesPerElement];
     }
 
     public set disableDeactivation(value: boolean) {
         this._nullCheck();
-        this._uint8Ptr.array[0x76 / Uint8Array.BYTES_PER_ELEMENT] = +value;
+        this._uint8Ptr.array[RigidBodyConstructionInfoOffsets.DisableDeactivation / Constants.A8BytesPerElement] = +value;
     }
 }
