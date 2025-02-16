@@ -1,6 +1,6 @@
 import type { DeepImmutable, Tuple } from "@babylonjs/core/types";
 
-import { Constants } from "@/Runtime/constants";
+import { Constants, MotionStateOffsetsInFloat32Array } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
 import type { IRigidBodyBundleImpl } from "../IRigidBodyBundleImpl";
@@ -44,21 +44,21 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
                 continue;
             }
 
-            m[mOffset + 4] = n[nOffset];
-            m[mOffset + 8] = n[nOffset + 1];
-            m[mOffset + 12] = n[nOffset + 2];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 0] = n[nOffset];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 0] = n[nOffset + 1];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 0] = n[nOffset + 2];
 
-            m[mOffset + 5] = n[nOffset + 4];
-            m[mOffset + 9] = n[nOffset + 5];
-            m[mOffset + 13] = n[nOffset + 6];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 1] = n[nOffset + 4];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 1] = n[nOffset + 5];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 1] = n[nOffset + 6];
 
-            m[mOffset + 6] = n[nOffset + 8];
-            m[mOffset + 10] = n[nOffset + 9];
-            m[mOffset + 14] = n[nOffset + 10];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 2] = n[nOffset + 8];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 2] = n[nOffset + 9];
+            m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 2] = n[nOffset + 10];
 
-            m[mOffset + 16] = n[nOffset + 12];
-            m[mOffset + 17] = n[nOffset + 13];
-            m[mOffset + 18] = n[nOffset + 14];
+            m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 0] = n[nOffset + 12];
+            m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 1] = n[nOffset + 13];
+            m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 2] = n[nOffset + 14];
 
             writeMatrixDirtyFlags[i] = 0;
 
@@ -74,7 +74,7 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         const writeMatrixDirtyFlags = this._writeMatrixDirtyFlags;
         const mOffset = index * 16;
 
-        m[mOffset] = array[offset];
+        m[mOffset + 0] = array[offset];
         m[mOffset + 1] = array[offset + 1];
         m[mOffset + 2] = array[offset + 2];
         m[mOffset + 3] = 0;

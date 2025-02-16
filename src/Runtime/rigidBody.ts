@@ -2,7 +2,7 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
-import { Constants } from "./constants";
+import { Constants, MotionStateOffsetsInFloat32Array } from "./constants";
 import type { IRigidBodyImpl } from "./Impl/IRigidBodyImpl";
 import type { IRuntime } from "./Impl/IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
@@ -10,23 +10,6 @@ import { MotionType } from "./motionType";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfo } from "./rigidBodyConstructionInfo";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
-
-/**
- * MotionState representations
- *
- * vtable: u32 : offset 0
- * padding: u32[3] : offset 4
- * matrix_rowx: f32[3] : offset 16
- * padding: u32 : offset 28
- * matrix_rowy: f32[3] : offset 32
- * padding: u32 : offset 44
- * matrix_rowz: f32[3] : offset 48
- * padding: u32 : offset 60
- * translation: f32[3] : offset 64
- * padding: u32 : offset 76
- *
- * --size: 80
- */
 
 class RigidBodyInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
@@ -283,10 +266,22 @@ export class RigidBody {
 
         const m = this._bufferedMotionStatePtr.array;
         return result.set(
-            m[4], m[8], m[12], 0,
-            m[5], m[9], m[13], 0,
-            m[6], m[10], m[14], 0,
-            m[16], m[17], m[18], 1
+            m[MotionStateOffsetsInFloat32Array.MatrixRowX + 0],
+            m[MotionStateOffsetsInFloat32Array.MatrixRowY + 0],
+            m[MotionStateOffsetsInFloat32Array.MatrixRowZ + 0],
+            0,
+            m[MotionStateOffsetsInFloat32Array.MatrixRowX + 1],
+            m[MotionStateOffsetsInFloat32Array.MatrixRowY + 1],
+            m[MotionStateOffsetsInFloat32Array.MatrixRowZ + 1],
+            0,
+            m[MotionStateOffsetsInFloat32Array.MatrixRowX + 2],
+            m[MotionStateOffsetsInFloat32Array.MatrixRowY + 2],
+            m[MotionStateOffsetsInFloat32Array.MatrixRowZ + 2],
+            0,
+            m[MotionStateOffsetsInFloat32Array.Translation + 0],
+            m[MotionStateOffsetsInFloat32Array.Translation + 1],
+            m[MotionStateOffsetsInFloat32Array.Translation + 2],
+            1
         );
     }
 
@@ -298,24 +293,24 @@ export class RigidBody {
 
         const m = this._bufferedMotionStatePtr.array;
 
-        result[offset] = m[4];
-        result[offset + 1] = m[8];
-        result[offset + 2] = m[12];
+        result[offset + 0] = m[MotionStateOffsetsInFloat32Array.MatrixRowX + 0];
+        result[offset + 1] = m[MotionStateOffsetsInFloat32Array.MatrixRowY + 0];
+        result[offset + 2] = m[MotionStateOffsetsInFloat32Array.MatrixRowZ + 0];
         result[offset + 3] = 0;
 
-        result[offset + 4] = m[5];
-        result[offset + 5] = m[9];
-        result[offset + 6] = m[13];
+        result[offset + 4] = m[MotionStateOffsetsInFloat32Array.MatrixRowX + 1];
+        result[offset + 5] = m[MotionStateOffsetsInFloat32Array.MatrixRowY + 1];
+        result[offset + 6] = m[MotionStateOffsetsInFloat32Array.MatrixRowZ + 1];
         result[offset + 7] = 0;
 
-        result[offset + 8] = m[6];
-        result[offset + 9] = m[10];
-        result[offset + 10] = m[14];
+        result[offset + 8] = m[MotionStateOffsetsInFloat32Array.MatrixRowX + 2];
+        result[offset + 9] = m[MotionStateOffsetsInFloat32Array.MatrixRowY + 2];
+        result[offset + 10] = m[MotionStateOffsetsInFloat32Array.MatrixRowZ + 2];
         result[offset + 11] = 0;
 
-        result[offset + 12] = m[16];
-        result[offset + 13] = m[17];
-        result[offset + 14] = m[18];
+        result[offset + 12] = m[MotionStateOffsetsInFloat32Array.Translation + 0];
+        result[offset + 13] = m[MotionStateOffsetsInFloat32Array.Translation + 1];
+        result[offset + 14] = m[MotionStateOffsetsInFloat32Array.Translation + 2];
         result[offset + 15] = 1;
     }
 

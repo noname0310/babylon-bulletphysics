@@ -45,7 +45,7 @@ export default (env: any): webpack.Configuration & { devServer?: WebpackDevServe
         clean: true
     },
     optimization: {
-        minimize: false,
+        minimize: env.production,
         splitChunks: {
             chunks: "all",
             cacheGroups: {

@@ -34,21 +34,21 @@ export const enum Constants {
  * --size: 128
  */
 export const enum RigidBodyConstructionInfoOffsets {
-    Shape = 0,
-    InitialTransform = 16,
-    MotionType = 80,
-    Mass = 84,
-    LinearDamping = 88,
-    AngularDamping = 92,
-    Friction = 96,
-    Restitution = 100,
-    LinearSleepingThreshold = 104,
-    AngularSleepingThreshold = 108,
-    CollisionGroup = 112,
-    CollisionMask = 114,
-    AdditionalDamping = 116,
-    NoContactResponse = 117,
-    DisableDeactivation = 118
+    Shape = 0x00,
+    InitialTransform = 0x10,
+    MotionType = 0x50,
+    Mass = 0x54,
+    LinearDamping = 0x58,
+    AngularDamping = 0x5C,
+    Friction = 0x60,
+    Restitution = 0x64,
+    LinearSleepingThreshold = 0x68,
+    AngularSleepingThreshold = 0x6C,
+    CollisionGroup = 0x70,
+    CollisionMask = 0x72,
+    AdditionalDamping = 0x74,
+    NoContactResponse = 0x75,
+    DisableDeactivation = 0x76
 }
 
 
@@ -74,4 +74,11 @@ export const enum MotionStateOffsets {
     MatrixRowY = 32,
     MatrixRowZ = 48,
     Translation = 64
+}
+
+export const enum MotionStateOffsetsInFloat32Array {
+    MatrixRowX = MotionStateOffsets.MatrixRowX / Constants.A32BytesPerElement,
+    MatrixRowY = MotionStateOffsets.MatrixRowY / Constants.A32BytesPerElement,
+    MatrixRowZ = MotionStateOffsets.MatrixRowZ / Constants.A32BytesPerElement,
+    Translation = MotionStateOffsets.Translation / Constants.A32BytesPerElement
 }

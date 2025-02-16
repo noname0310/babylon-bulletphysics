@@ -1,5 +1,6 @@
 import type { DeepImmutable, Tuple } from "@babylonjs/core/types";
 
+import { MotionStateOffsetsInFloat32Array } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
 import type { IRigidBodyImpl } from "../IRigidBodyImpl";
@@ -27,21 +28,21 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
         const m = this._writeMatrix;
         const n = motionStatePtr.array;
 
-        n[4] = m[0];
-        n[8] = m[1];
-        n[12] = m[2];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowX + 0] = m[0];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowY + 0] = m[1];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowZ + 0] = m[2];
 
-        n[5] = m[4];
-        n[9] = m[5];
-        n[13] = m[6];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowX + 1] = m[4];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowY + 1] = m[5];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowZ + 1] = m[6];
 
-        n[6] = m[8];
-        n[10] = m[9];
-        n[14] = m[10];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowX + 2] = m[8];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowY + 2] = m[9];
+        n[MotionStateOffsetsInFloat32Array.MatrixRowZ + 2] = m[10];
 
-        n[16] = m[12];
-        n[17] = m[13];
-        n[18] = m[14];
+        n[MotionStateOffsetsInFloat32Array.Translation + 0] = m[12];
+        n[MotionStateOffsetsInFloat32Array.Translation + 1] = m[13];
+        n[MotionStateOffsetsInFloat32Array.Translation + 2] = m[14];
 
         this._isWriteMatrixDirty = false;
     }

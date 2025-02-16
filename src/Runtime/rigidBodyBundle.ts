@@ -2,7 +2,7 @@ import type { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
-import { Constants } from "./constants";
+import { Constants, MotionStateOffsetsInFloat32Array } from "./constants";
 import type { IRigidBodyBundleImpl } from "./Impl/IRigidBodyBundleImpl";
 import type { IRuntime } from "./Impl/IRuntime";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
@@ -284,10 +284,22 @@ export class RigidBodyBundle {
         const offset = index * Constants.MotionStateSizeInFloat32Array;
 
         return result.set(
-            m[offset + 4], m[offset + 8], m[offset + 12], 0,
-            m[offset + 5], m[offset + 9], m[offset + 13], 0,
-            m[offset + 6], m[offset + 10], m[offset + 14], 0,
-            m[offset + 16], m[offset + 17], m[offset + 18], 1
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowX + 0],
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowY + 0],
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 0],
+            0,
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowX + 1],
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowY + 1],
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 1],
+            0,
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowX + 2],
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowY + 2],
+            m[offset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 2],
+            0,
+            m[offset + MotionStateOffsetsInFloat32Array.Translation + 0],
+            m[offset + MotionStateOffsetsInFloat32Array.Translation + 1],
+            m[offset + MotionStateOffsetsInFloat32Array.Translation + 2],
+            1
         );
     }
 
@@ -304,24 +316,24 @@ export class RigidBodyBundle {
         const m = this._bufferedMotionStatesPtr.array;
         const mOffset = index * Constants.MotionStateSizeInFloat32Array;
 
-        result[offset] = m[mOffset + 4];
-        result[offset + 1] = m[mOffset + 8];
-        result[offset + 2] = m[mOffset + 12];
+        result[offset + 0] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 0];
+        result[offset + 1] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 0];
+        result[offset + 2] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 0];
         result[offset + 3] = 0;
 
-        result[offset + 4] = m[mOffset + 5];
-        result[offset + 5] = m[mOffset + 9];
-        result[offset + 6] = m[mOffset + 13];
+        result[offset + 4] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 1];
+        result[offset + 5] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 1];
+        result[offset + 6] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 1];
         result[offset + 7] = 0;
 
-        result[offset + 8] = m[mOffset + 6];
-        result[offset + 9] = m[mOffset + 10];
-        result[offset + 10] = m[mOffset + 14];
+        result[offset + 8] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 2];
+        result[offset + 9] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 2];
+        result[offset + 10] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 2];
         result[offset + 11] = 0;
 
-        result[offset + 12] = m[mOffset + 16];
-        result[offset + 13] = m[mOffset + 17];
-        result[offset + 14] = m[mOffset + 18];
+        result[offset + 12] = m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 0];
+        result[offset + 13] = m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 1];
+        result[offset + 14] = m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 2];
         result[offset + 15] = 1;
     }
 
@@ -337,24 +349,24 @@ export class RigidBodyBundle {
         let mOffset = 0;
         let rOffset = offset;
         for (let i = 0; i < count; ++i) {
-            result[rOffset] = m[mOffset + 4];
-            result[rOffset + 1] = m[mOffset + 8];
-            result[rOffset + 2] = m[mOffset + 12];
+            result[rOffset + 0] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 0];
+            result[rOffset + 1] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 0];
+            result[rOffset + 2] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 0];
             result[rOffset + 3] = 0;
 
-            result[rOffset + 4] = m[mOffset + 5];
-            result[rOffset + 5] = m[mOffset + 9];
-            result[rOffset + 6] = m[mOffset + 13];
+            result[rOffset + 4] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 1];
+            result[rOffset + 5] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 1];
+            result[rOffset + 6] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 1];
             result[rOffset + 7] = 0;
 
-            result[rOffset + 8] = m[mOffset + 6];
-            result[rOffset + 9] = m[mOffset + 10];
-            result[rOffset + 10] = m[mOffset + 14];
+            result[rOffset + 8] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowX + 2];
+            result[rOffset + 9] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowY + 2];
+            result[rOffset + 10] = m[mOffset + MotionStateOffsetsInFloat32Array.MatrixRowZ + 2];
             result[rOffset + 11] = 0;
 
-            result[rOffset + 12] = m[mOffset + 16];
-            result[rOffset + 13] = m[mOffset + 17];
-            result[rOffset + 14] = m[mOffset + 18];
+            result[rOffset + 12] = m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 0];
+            result[rOffset + 13] = m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 1];
+            result[rOffset + 14] = m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 2];
             result[rOffset + 15] = 1;
 
             mOffset += Constants.MotionStateSizeInFloat32Array;
