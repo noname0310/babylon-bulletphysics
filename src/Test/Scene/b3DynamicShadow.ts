@@ -179,8 +179,13 @@ export class SceneBuilder implements ISceneBuilder {
         });
 
         const benchHelper = new BenchHelper(() => {
+            const simulationStart = performance.now();
             runtime.afterAnimations(1 / 60 * 1000);
+            const renderStart = performance.now();
+            const simulationTime = renderStart - simulationStart;
             scene.render();
+            const renderTime = performance.now() - renderStart;
+            return [simulationTime, renderTime];
         });
         benchHelper.sampleCount = 5000;
         benchHelper.runBench();
