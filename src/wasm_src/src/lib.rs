@@ -51,8 +51,10 @@ pub fn init() {
     let mut rigidbody_info = runtime::rigidbody::RigidBodyConstructionInfo {
         shape: &mut shape,
         initial_transform: mat4,
+        data_mask: 0x0000,
         motion_type: rigidbody::MotionType::Dynamic as u8,
         mass: 1.0,
+        local_inertia: glam::Vec3::ZERO,
         linear_damping: 0.0,
         angular_damping: 0.0,
         friction: 0.5,

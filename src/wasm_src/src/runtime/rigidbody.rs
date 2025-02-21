@@ -1,4 +1,4 @@
-use glam::Mat4;
+use glam::{Mat4, Vec3};
 use wasm_bindgen::prelude::*;
 
 use crate::bind;
@@ -14,8 +14,10 @@ pub(crate) struct RigidBodyConstructionInfo<'a> {
     pub(crate) initial_transform: Mat4,
 
     // for rigid body
+    pub(crate) data_mask: u16,
     pub(crate) motion_type: u8,
     pub(crate) mass: f32,
+    pub(crate) local_inertia: Vec3,
     pub(crate) linear_damping: f32,
     pub(crate) angular_damping: f32,
     pub(crate) friction: f32,
