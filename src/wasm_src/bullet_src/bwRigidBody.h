@@ -3,6 +3,11 @@
 #include "btBulletDynamicsMinimal.h"
 #include "bwMotionState.h"
 
+enum class bwRigidBodyConstructionInfoDataMask : uint16_t
+{
+    LOCAL_INERTIA = 1 << 0
+};
+
 enum class bwRigidBodyMotionType : uint8_t
 {
     DYNAMIC = 0,
@@ -19,9 +24,10 @@ struct bwRigidBodyConstructionInfo final
     void* m_motionState; // bwMotionState
 
     // for rigid body
+    uint16_t m_dataMask; // bwRigidBodyConstructionInfoDataMask
     uint8_t m_motionType; // bwRigidBodyMotionType
     float m_mass;
-    // m_localInertia
+    btVector3 m_localInertia;
     float m_linearDamping;
     float m_angularDamping;
     float m_friction;
@@ -98,7 +104,14 @@ private:
         btVector3 localInertia(0.0f, 0.0f, 0.0f);
         if (mass != 0.0f)
         {
-            shape->calculateLocalInertia(mass, localInertia);
+            if (info->m_dataMask & static_cast<uint16_t>(bwRigidBodyConstructionInfoDataMask::LOCAL_INERTIA))
+            {
+                localInertia = info->m_localInertia;
+            }
+            else
+            {
+                shape->calculateLocalInertia(mass, localInertia);
+            }
         }
 
         btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
