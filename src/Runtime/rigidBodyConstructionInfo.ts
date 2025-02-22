@@ -1,8 +1,10 @@
 import type { Matrix } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Nullable } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import { Constants, RigidBodyConstructionInfoOffsets } from "./constants";
+import { ConstructionInfoDataMask } from "./constructionInfoDataMask";
 import type { IWasmTypedArray } from "./Misc/IWasmTypedArray";
 import { MotionType } from "./motionType";
 import type { PhysicsShape } from "./physicsShape";
@@ -110,11 +112,19 @@ export class RigidBodyConstructionInfo {
         float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 14] = 0;
         float32Ptr[RigidBodyConstructionInfoOffsets.InitialTransform / Constants.A32BytesPerElement + 15] = 1;
 
+        // dataMask
+        uint16Ptr[RigidBodyConstructionInfoOffsets.DataMask / Constants.A16BytesPerElement] = 0x0000;
+
         // motionType
         uint8Ptr[RigidBodyConstructionInfoOffsets.MotionType / Constants.A8BytesPerElement] = MotionType.Dynamic;
 
         // mass
         float32Ptr[RigidBodyConstructionInfoOffsets.Mass / Constants.A32BytesPerElement] = 1.0;
+
+        // localInertia
+        float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 0] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 1] = 0;
+        float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 2] = 0;
 
         // linearDamping
         float32Ptr[RigidBodyConstructionInfoOffsets.LinearDamping / Constants.A32BytesPerElement] = 0;
@@ -246,6 +256,36 @@ export class RigidBodyConstructionInfo {
     public set mass(value: number) {
         this._nullCheck();
         this._float32Ptr.array[RigidBodyConstructionInfoOffsets.Mass / Constants.A32BytesPerElement] = value;
+    }
+
+    public get localInertia(): Nullable<Vector3> {
+        this._nullCheck();
+        const maskValue = this._uint16Ptr.array[RigidBodyConstructionInfoOffsets.DataMask / Constants.A16BytesPerElement];
+        if ((maskValue & ConstructionInfoDataMask.LocalInertia) === 0) {
+            return null;
+        }
+
+        const float32Ptr = this._float32Ptr.array;
+        const x = float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 0];
+        const y = float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 1];
+        const z = float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 2];
+
+        return new Vector3(x, y, z);
+    }
+
+    public set localInertia(value: Nullable<Vector3>) {
+        this._nullCheck();
+        if (value === null) {
+            this._uint16Ptr.array[RigidBodyConstructionInfoOffsets.DataMask / Constants.A16BytesPerElement] &= ~ConstructionInfoDataMask.LocalInertia;
+            return;
+        }
+
+        this._uint16Ptr.array[RigidBodyConstructionInfoOffsets.DataMask / Constants.A16BytesPerElement] |= ConstructionInfoDataMask.LocalInertia;
+
+        const float32Ptr = this._float32Ptr.array;
+        float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 0] = value.x;
+        float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 1] = value.y;
+        float32Ptr[RigidBodyConstructionInfoOffsets.LocalInertia / Constants.A32BytesPerElement + 2] = value.z;
     }
 
     public get linearDamping(): number {

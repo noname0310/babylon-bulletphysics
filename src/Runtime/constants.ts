@@ -4,7 +4,7 @@ export const enum Constants {
     A32BytesPerElement = 4,
     MotionStateSize = 80,
     MotionStateSizeInFloat32Array = MotionStateSize / A32BytesPerElement,
-    RigidBodyConstructionInfoSize = 128
+    RigidBodyConstructionInfoSize = 144
 }
 
 /**
@@ -13,42 +13,46 @@ export const enum Constants {
  * shape: *uint32 : offset 0
  * initial_transform: float32[16] : offset 16
  *
- * motionType: uint8 : offset 80
+ * dataMask: uint8 : offset 80
+ * motionType: uint8 : offset 82
  *
- * padding: uint8[3] : offset 81
+ * padding: uint8[1] : offset 83
  *
  * mass: float32 : offset 84
- * linearDamping: float32 : offset 88
- * angularDamping: float32 : offset 92
- * friction: float32 : offset 96
- * restitution: float32 : offset 100
- * linearSleepingThreshold: float32 : offset 104
- * angularSleepingThreshold: float32 : offset 108
- * collisionGroup: uint16 : offset 112
- * collisionMask: uint16 : offset 114
- * additionalDamping: uint8 : offset 116
- * noContactResponse: uint8 : offset 117
- * disableDeactivation: uint8 : offset 118
- * padding: uint8[9] : offset 119
+ * localInertia: float32[3] : offset 88
+ * linearDamping: float32 : offset 100
+ * angularDamping: float32 : offset 104
+ * friction: float32 : offset 108
+ * restitution: float32 : offset 112
+ * linearSleepingThreshold: float32 : offset 116
+ * angularSleepingThreshold: float32 : offset 120
+ * collisionGroup: uint16 : offset 124
+ * collisionMask: uint16 : offset 126
+ * additionalDamping: uint8 : offset 128
+ * noContactResponse: uint8 : offset 129
+ * disableDeactivation: uint8 : offset 130
+ * padding: uint8[13] : offset 131
  *
- * --size: 128
+ * --size: 144
  */
 export const enum RigidBodyConstructionInfoOffsets {
     Shape = 0x00,
     InitialTransform = 0x10,
-    MotionType = 0x50,
+    DataMask = 0x50,
+    MotionType = 0x52,
     Mass = 0x54,
-    LinearDamping = 0x58,
-    AngularDamping = 0x5C,
-    Friction = 0x60,
-    Restitution = 0x64,
-    LinearSleepingThreshold = 0x68,
-    AngularSleepingThreshold = 0x6C,
-    CollisionGroup = 0x70,
-    CollisionMask = 0x72,
-    AdditionalDamping = 0x74,
-    NoContactResponse = 0x75,
-    DisableDeactivation = 0x76
+    LocalInertia = 0x58,
+    LinearDamping = 0x64,
+    AngularDamping = 0x68,
+    Friction = 0x6C,
+    Restitution = 0x70,
+    LinearSleepingThreshold = 0x74,
+    AngularSleepingThreshold = 0x78,
+    CollisionGroup = 0x7C,
+    CollisionMask = 0x7E,
+    AdditionalDamping = 0x80,
+    NoContactResponse = 0x81,
+    DisableDeactivation = 0x82
 }
 
 

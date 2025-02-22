@@ -1,3 +1,5 @@
+use glam::Vec3;
+
 use super::motion_state::MotionState;
 use crate::runtime;
 
@@ -20,6 +22,10 @@ extern "C" {
     fn bw_rigidbody_shadow_set_motion_state(shadow: *mut std::ffi::c_void, motion_state: *mut std::ffi::c_void);
 }
 
+pub(crate) enum ConstructionInfoDataMask {
+    LocalInertia = 1 << 0,
+}
+
 pub(crate) enum MotionType {
     Dynamic = 0,
     Static = 1,
@@ -35,8 +41,11 @@ pub(crate) struct RigidBodyConstructionInfo {
     motion_state: *const std::ffi::c_void,
 
     // for rigid body
+    data_mask: u16,
     motion_type: u8,
     mass: f32,
+    local_inertia: Vec3,
+    padding0: f32,
     linear_damping: f32,
     angular_damping: f32,
     friction: f32,
@@ -64,8 +73,11 @@ impl RigidBodyConstructionInfo {
         Self {
             shape: info.shape.ptr(),
             motion_state,
+            data_mask: info.data_mask,
             motion_type: info.motion_type,
             mass: info.mass,
+            local_inertia: info.local_inertia,
+            padding0: 0.0,
             linear_damping: info.linear_damping,
             angular_damping: info.angular_damping,
             friction: info.friction,
