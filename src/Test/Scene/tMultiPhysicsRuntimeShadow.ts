@@ -65,7 +65,7 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.bias = 0.004;
         shadowGenerator.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
 
-        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 4);
+        const wasmInstance = await getBulletWasmInstance(new BulletWasmInstanceTypeMD(), 32);
         const runtime = new MultiPhysicsRuntime(wasmInstance, {
             allowDynamicShadow: true,
             preserveBackBuffer: true
@@ -97,8 +97,8 @@ export class SceneBuilder implements ISceneBuilder {
         shadowGenerator.addShadowCaster(baseBox);
         baseBox.receiveShadows = true;
 
-        const rowCount = 2;
-        const columnCount = 2;
+        const rowCount = 4;
+        const columnCount = 8;
         const margin = 20;
 
         const rigidbodyMatrixBuffer = new Float32Array(rbCount * 16 * rowCount * columnCount);

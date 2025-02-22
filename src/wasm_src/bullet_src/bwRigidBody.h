@@ -150,7 +150,6 @@ public:
         if (info->m_motionType == static_cast<uint8_t>(bwRigidBodyMotionType::KINEMATIC))
         {
             m_body.setCollisionFlags(m_body.getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-            m_body.setActivationState(DISABLE_DEACTIVATION);
         }
         else if (info->m_motionType == static_cast<uint8_t>(bwRigidBodyMotionType::STATIC))
         {
@@ -241,10 +240,10 @@ btRigidBody::btRigidBodyConstructionInfo bwRigidBodyShadow::createRigidBodyConst
 {
     btRigidBody* sourceBody = source->getBody();
     btRigidBody::btRigidBodyConstructionInfo info(
-        sourceBody->getMass(),
+        0.0, //sourceBody->getMass(),
         motionState,
         sourceBody->getCollisionShape(),
-        sourceBody->getLocalInertia()
+        btVector3(0.0, 0.0, 0.0)//sourceBody->getLocalInertia()
     );
     // because shadow is always non-dynamic we don't need to copy damping values
     // info.m_linearDamping = sourceBody->getLinearDamping();
