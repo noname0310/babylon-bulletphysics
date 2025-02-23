@@ -3,9 +3,34 @@
 #include "btBulletDynamicsMinimal.h"
 #include "bwRigidBody.h"
 
+class bwOverlapFilterCallback final : public btOverlapFilterCallback
+{
+    virtual bool needBroadphaseCollision(btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const override
+    {
+        const uint16_t invGroup0 = proxy0->m_collisionFilterGroup >> 16;
+        const uint16_t invGroup1 = proxy1->m_collisionFilterGroup >> 16;
+        
+        if ((invGroup0 & invGroup1) != 0)
+        {
+            return false;
+        }
+
+        const uint16_t group0 = proxy0->m_collisionFilterGroup;
+        const uint16_t mask0 = proxy0->m_collisionFilterMask;
+        const uint16_t group1 = proxy1->m_collisionFilterGroup;
+        const uint16_t mask1 = proxy1->m_collisionFilterMask;
+
+        bool collides = (group0 & mask0) != 0;
+        collides = collides && (group1 & mask1);
+        return collides;
+    }
+};
+
 class bwPhysicsWorld final
 {
 private:
+    bwOverlapFilterCallback m_overlapFilterCallback;
+    btHashedOverlappingPairCache m_broadphasePairCache;
     btDbvtBroadphase m_broadphase;
     btDefaultCollisionConfiguration m_collisionConfig;
     btCollisionDispatcher m_dispatcher;
@@ -13,8 +38,16 @@ private:
     btDiscreteDynamicsWorld m_world;
 
 public:
-    bwPhysicsWorld() : m_broadphase(), m_collisionConfig(), m_dispatcher(&m_collisionConfig), m_solver(), m_world(&m_dispatcher, &m_broadphase, &m_solver, &m_collisionConfig)
+    bwPhysicsWorld() :
+        m_overlapFilterCallback(),
+        m_broadphasePairCache(),
+        m_broadphase(&m_broadphasePairCache),
+        m_collisionConfig(),
+        m_dispatcher(&m_collisionConfig),
+        m_solver(),
+        m_world(&m_dispatcher, &m_broadphase, &m_solver, &m_collisionConfig)
     {
+        m_broadphasePairCache.setOverlapFilterCallback(&m_overlapFilterCallback);
     }
 
     bwPhysicsWorld(bwPhysicsWorld const&) = delete;
@@ -41,7 +74,16 @@ public:
 
     void addRigidBody(bwRigidBody* body)
     {
-        m_world.addRigidBody(body->getBody(), body->getCollisionGroup(), body->getCollisionMask());
+        int group = body->getCollisionGroup();
+        const int collisionFlags = body->getCollisionFlags();
+        if ((collisionFlags & btCollisionObject::CF_KINEMATIC_OBJECT) || (collisionFlags & btCollisionObject::CF_STATIC_OBJECT))
+        {
+            group |= (btBroadphaseProxy::StaticFilter << 16);
+        }
+
+        const int16_t mask = body->getCollisionMask();
+
+        m_world.addRigidBody(body->getBody(), group, mask);
     }
 
     void removeRigidBody(bwRigidBody* body)
@@ -51,7 +93,11 @@ public:
 
     void addRigidBodyShadow(bwRigidBodyShadow* shadow)
     {
-        m_world.addRigidBody(shadow->getBody(), shadow->getCollisionGroup(), shadow->getCollisionMask());
+        int group = shadow->getCollisionGroup();
+        group |= (btBroadphaseProxy::StaticFilter << 16);
+        const int16_t mask = shadow->getCollisionMask();
+
+        m_world.addRigidBody(shadow->getBody(), group, mask);
     }
 
     void removeRigidBodyShadow(bwRigidBodyShadow* shadow)
