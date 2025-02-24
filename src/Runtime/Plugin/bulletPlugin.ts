@@ -411,17 +411,21 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      */
     public setMassProperties(body: PhysicsBody, massProps: PhysicsMassProperties, instanceIndex?: number): void {
         const info = body._pluginData;
+
+        if (massProps.inertiaOrientation !== undefined) Logger.Warn("Inertia orientation is not supported in bullet.");
+        if (massProps.centerOfMass !== undefined) Logger.Warn("Center of mass is not supported in bullet.");
+
         if (info instanceof RigidBodyConstructionInfo) {
             if (massProps.mass !== undefined) info.mass = massProps.mass;
+            if (massProps.inertia !== undefined) info.localInertia = massProps.inertia;
         } else if (info instanceof RigidBodyConstructionInfoList) {
-            if (instanceIndex === undefined) {
-                for (let i = 0; i < info.count; i++) {
-                    if (massProps.mass !== undefined) info.setMass(massProps.mass, i);
-                }
-            } else if (massProps.mass !== undefined) {
-                info.setMass(massProps.mass, instanceIndex);
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : info.count;
+            for (let i = start; i < end; ++i) {
+                if (massProps.mass !== undefined) info.setMass(i, massProps.mass);
+                if (massProps.inertia !== undefined) info.setLocalInertia(i, massProps.inertia);
             }
-        } else {
+        } else { // if (info instanceof RigidBody || info instanceof RigidBodyBundle) {
             throw new Error("mass cannot be set after body is initialized");
         }
     }
