@@ -129,6 +129,122 @@ impl RigidBody {
         self.inner.restore_dynamic();
     }
 
+    pub(crate) fn set_damping(&mut self, linear_damping: f32, angular_damping: f32) {
+        self.inner.set_damping(linear_damping, angular_damping);
+    }
+
+    pub(crate) fn get_linear_damping(&self) -> f32 {
+        self.inner.get_linear_damping()
+    }
+
+    pub(crate) fn get_angular_damping(&self) -> f32 {
+        self.inner.get_angular_damping()
+    }
+
+    pub(crate) fn set_mass_props(&mut self, mass: f32, local_inertia: Vec3) {
+        self.inner.set_mass_props(mass, local_inertia);
+    }
+
+    pub(crate) fn get_mass(&self) -> f32 {
+        self.inner.get_mass()
+    }
+
+    pub(crate) fn get_local_inertia(&self) -> Vec3 {
+        self.inner.get_local_inertia()
+    }
+
+    pub(crate) fn get_total_force(&self) -> Vec3 {
+        self.inner.get_total_force()
+    }
+
+    pub(crate) fn get_total_torque(&self) -> Vec3 {
+        self.inner.get_total_torque()
+    }
+
+    pub(crate) fn apply_central_force(&mut self, force: Vec3) {
+        self.inner.apply_central_force(force);
+    }
+
+    pub(crate) fn apply_torque(&mut self, torque: Vec3) {
+        self.inner.apply_torque(torque);
+    }
+
+    pub(crate) fn apply_force(&mut self, force: Vec3, relative_position: Vec3) {
+        self.inner.apply_force(force, relative_position);
+    }
+
+    pub(crate) fn apply_central_impulse(&mut self, impulse: Vec3) {
+        self.inner.apply_central_impulse(impulse);
+    }
+
+    pub(crate) fn apply_torque_impulse(&mut self, torque: Vec3) {
+        self.inner.apply_torque_impulse(torque);
+    }
+
+    pub(crate) fn apply_impulse(&mut self, impulse: Vec3, relative_position: Vec3) {
+        self.inner.apply_impulse(impulse, relative_position);
+    }
+
+    pub(crate) fn apply_push_impulse(&mut self, impulse: Vec3, relative_position: Vec3) {
+        self.inner.apply_push_impulse(impulse, relative_position);
+    }
+
+    pub(crate) fn get_push_velocity(&self) -> Vec3 {
+        self.inner.get_push_velocity()
+    }
+
+    pub(crate) fn get_turn_velocity(&self) -> Vec3 {
+        self.inner.get_turn_velocity()
+    }
+
+    pub(crate) fn set_push_velocity(&mut self, velocity: Vec3) {
+        self.inner.set_push_velocity(velocity);
+    }
+
+    pub(crate) fn set_turn_velocity(&mut self, velocity: Vec3) {
+        self.inner.set_turn_velocity(velocity);
+    }
+
+    pub(crate) fn apply_central_push_impulse(&mut self, impulse: Vec3) {
+        self.inner.apply_central_push_impulse(impulse);
+    }
+
+    pub(crate) fn apply_torque_turn_impulse(&mut self, torque: Vec3) {
+        self.inner.apply_torque_turn_impulse(torque);
+    }
+
+    pub(crate) fn clear_forces(&mut self) {
+        self.inner.clear_forces();
+    }
+
+    pub(crate) fn get_linear_velocity(&self) -> Vec3 {
+        self.inner.get_linear_velocity()
+    }
+
+    pub(crate) fn get_angular_velocity(&self) -> Vec3 {
+        self.inner.get_angular_velocity()
+    }
+
+    pub(crate) fn set_linear_velocity(&mut self, velocity: Vec3) {
+        self.inner.set_linear_velocity(velocity);
+    }
+
+    pub(crate) fn set_angular_velocity(&mut self, velocity: Vec3) {
+        self.inner.set_angular_velocity(velocity);
+    }
+
+    pub(crate) fn get_velocity_in_local_point(&self, relative_position: Vec3) -> Vec3 {
+        self.inner.get_velocity_in_local_point(relative_position)
+    }
+
+    pub(crate) fn get_push_velocity_in_local_point(&self, relative_position: Vec3) -> Vec3 {
+        self.inner.get_push_velocity_in_local_point(relative_position)
+    }
+
+    pub(crate) fn translate(&mut self, translation: Vec3) {
+        self.inner.translate(translation);
+    }
+
     pub(crate) fn create_handle(&mut self) -> RigidBodyHandle {
         RigidBodyHandle::new(self)
     }
@@ -339,6 +455,122 @@ impl RigidBodyBundle {
 
     pub(crate) fn restore_dynamic(&mut self, index: usize) {
         self.bodies[index].restore_dynamic();
+    }
+
+    pub(crate) fn set_damping(&mut self, index: usize, linear_damping: f32, angular_damping: f32) {
+        self.bodies[index].set_damping(linear_damping, angular_damping);
+    }
+
+    pub(crate) fn get_linear_damping(&self, index: usize) -> f32 {
+        self.bodies[index].get_linear_damping()
+    }
+
+    pub(crate) fn get_angular_damping(&self, index: usize) -> f32 {
+        self.bodies[index].get_angular_damping()
+    }
+
+    pub(crate) fn set_mass_props(&mut self, index: usize, mass: f32, local_inertia: Vec3) {
+        self.bodies[index].set_mass_props(mass, local_inertia);
+    }
+
+    pub(crate) fn get_mass(&self, index: usize) -> f32 {
+        self.bodies[index].get_mass()
+    }
+
+    pub(crate) fn get_local_inertia(&self, index: usize) -> Vec3 {
+        self.bodies[index].get_local_inertia()
+    }
+
+    pub(crate) fn get_total_force(&self, index: usize) -> Vec3 {
+        self.bodies[index].get_total_force()
+    }
+
+    pub(crate) fn get_total_torque(&self, index: usize) -> Vec3 {
+        self.bodies[index].get_total_torque()
+    }
+
+    pub(crate) fn apply_central_force(&mut self, index: usize, force: Vec3) {
+        self.bodies[index].apply_central_force(force);
+    }
+
+    pub(crate) fn apply_torque(&mut self, index: usize, torque: Vec3) {
+        self.bodies[index].apply_torque(torque);
+    }
+
+    pub(crate) fn apply_force(&mut self, index: usize, force: Vec3, relative_position: Vec3) {
+        self.bodies[index].apply_force(force, relative_position);
+    }
+
+    pub(crate) fn apply_central_impulse(&mut self, index: usize, impulse: Vec3) {
+        self.bodies[index].apply_central_impulse(impulse);
+    }
+
+    pub(crate) fn apply_torque_impulse(&mut self, index: usize, torque: Vec3) {
+        self.bodies[index].apply_torque_impulse(torque);
+    }
+
+    pub(crate) fn apply_impulse(&mut self, index: usize, impulse: Vec3, relative_position: Vec3) {
+        self.bodies[index].apply_impulse(impulse, relative_position);
+    }
+
+    pub(crate) fn apply_push_impulse(&mut self, index: usize, impulse: Vec3, relative_position: Vec3) {
+        self.bodies[index].apply_push_impulse(impulse, relative_position);
+    }
+
+    pub(crate) fn get_push_velocity(&self, index: usize) -> Vec3 {
+        self.bodies[index].get_push_velocity()
+    }
+
+    pub(crate) fn get_turn_velocity(&self, index: usize) -> Vec3 {
+        self.bodies[index].get_turn_velocity()
+    }
+
+    pub(crate) fn set_push_velocity(&mut self, index: usize, velocity: Vec3) {
+        self.bodies[index].set_push_velocity(velocity);
+    }
+
+    pub(crate) fn set_turn_velocity(&mut self, index: usize, velocity: Vec3) {
+        self.bodies[index].set_turn_velocity(velocity);
+    }
+
+    pub(crate) fn apply_central_push_impulse(&mut self, index: usize, impulse: Vec3) {
+        self.bodies[index].apply_central_push_impulse(impulse);
+    }
+
+    pub(crate) fn apply_torque_turn_impulse(&mut self, index: usize, torque: Vec3) {
+        self.bodies[index].apply_torque_turn_impulse(torque);
+    }
+
+    pub(crate) fn clear_forces(&mut self, index: usize) {
+        self.bodies[index].clear_forces();
+    }
+
+    pub(crate) fn get_linear_velocity(&self, index: usize) -> Vec3 {
+        self.bodies[index].get_linear_velocity()
+    }
+
+    pub(crate) fn get_angular_velocity(&self, index: usize) -> Vec3 {
+        self.bodies[index].get_angular_velocity()
+    }
+
+    pub(crate) fn set_linear_velocity(&mut self, index: usize, velocity: Vec3) {
+        self.bodies[index].set_linear_velocity(velocity);
+    }
+
+    pub(crate) fn set_angular_velocity(&mut self, index: usize, velocity: Vec3) {
+        self.bodies[index].set_angular_velocity(velocity);
+    }
+
+    pub(crate) fn get_velocity_in_local_point(&self, index: usize, relative_position: Vec3) -> Vec3 {
+        self.bodies[index].get_velocity_in_local_point(relative_position)
+    }
+
+    pub(crate) fn get_push_velocity_in_local_point(&self, index: usize, relative_position: Vec3) -> Vec3 {
+        self.bodies[index].get_push_velocity_in_local_point(relative_position)
+    }
+
+    pub(crate) fn translate(&mut self, index: usize, translation: Vec3) {
+        self.bodies[index].translate(translation);
     }
 
     pub(crate) fn create_handle(&mut self) -> RigidBodyBundleHandle {

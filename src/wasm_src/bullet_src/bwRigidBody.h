@@ -209,6 +209,158 @@ public:
         m_body.setCollisionFlags(m_body.getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
     }
 
+    void setDamping(float linearDamping, float angularDamping)
+    {
+        m_body.setDamping(linearDamping, angularDamping);
+    }
+
+    float getLinearDamping() const
+    {
+        return m_body.getLinearDamping();
+    }
+
+    float getAngularDamping() const
+    {
+        return m_body.getAngularDamping();
+    }
+
+    void setMassProps(float mass, const float* localInertia)
+    {
+        if (localInertia != nullptr)
+        {
+            m_body.setMassProps(mass, btVector3(localInertia[0], localInertia[1], localInertia[2]));
+        }
+        else
+        {
+            m_body.setMassProps(mass, m_body.getLocalInertia());
+        }
+    }
+
+    float getMass() const
+    {
+        return m_body.getMass();
+    }
+
+    btVector3 getLocalInertia() const
+    {
+        return m_body.getLocalInertia();
+    }
+
+    btVector3 getTotalForce() const
+    {
+        return m_body.getTotalForce();
+    }
+
+    btVector3 getTotalTorque() const
+    {
+        return m_body.getTotalTorque();
+    }
+
+    void applyCentralForce(const float* force)
+    {
+        m_body.applyCentralForce(btVector3(force[0], force[1], force[2]));
+    }
+
+    void applyTorque(const float* torque)
+    {
+        m_body.applyTorque(btVector3(torque[0], torque[1], torque[2]));
+    }
+    
+    void applyForce(const float* force, const float* relativePosition)
+    {
+        m_body.applyForce(btVector3(force[0], force[1], force[2]), btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
+    }
+
+    void applyCentralImpulse(const float* impulse)
+    {
+        m_body.applyCentralImpulse(btVector3(impulse[0], impulse[1], impulse[2]));
+    }
+
+    void applyTorqueImpulse(const float* torque)
+    {
+        m_body.applyTorqueImpulse(btVector3(torque[0], torque[1], torque[2]));
+    }
+
+    void applyImpulse(const float* impulse, const float* relativePosition)
+    {
+        m_body.applyImpulse(btVector3(impulse[0], impulse[1], impulse[2]), btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
+    }
+
+    void applyPushImpulse(const float* impulse, const float* relativePosition)
+    {
+        m_body.applyPushImpulse(btVector3(impulse[0], impulse[1], impulse[2]), btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
+    }
+
+    btVector3 getPushVelocity() const
+    {
+        return m_body.getPushVelocity();
+    }
+
+    btVector3 getTurnVelocity() const
+    {
+        return m_body.getTurnVelocity();
+    }
+
+    void setPushVelocity(const float* velocity)
+    {
+        m_body.setPushVelocity(btVector3(velocity[0], velocity[1], velocity[2]));
+    }
+
+    void setTurnVelocity(const float* velocity)
+    {
+        m_body.setTurnVelocity(btVector3(velocity[0], velocity[1], velocity[2]));
+    }
+
+    void applyCentralPushImpulse(const float* impulse)
+    {
+        m_body.applyCentralPushImpulse(btVector3(impulse[0], impulse[1], impulse[2]));
+    }
+
+    void applyTorqueTurnImpulse(const float* torque)
+    {
+        m_body.applyTorqueTurnImpulse(btVector3(torque[0], torque[1], torque[2]));
+    }
+
+    void clearForces()
+    {
+        m_body.clearForces();
+    }
+
+    btVector3 getLinearVelocity() const
+    {
+        return m_body.getLinearVelocity();
+    }
+
+    btVector3 getAngularVelocity() const
+    {
+        return m_body.getAngularVelocity();
+    }
+
+    void setLinearVelocity(const float* velocity)
+    {
+        m_body.setLinearVelocity(btVector3(velocity[0], velocity[1], velocity[2]));
+    }
+
+    void setAngularVelocity(const float* velocity)
+    {
+        m_body.setAngularVelocity(btVector3(velocity[0], velocity[1], velocity[2]));
+    }
+
+    btVector3 getVelocityInLocalPoint(const float* relativePosition) const
+    {
+        return m_body.getVelocityInLocalPoint(btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
+    }
+
+    btVector3 getPushVelocityInLocalPoint(const float* relativePosition) const
+    {
+        return m_body.getPushVelocityInLocalPoint(btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
+    }
+
+    void translate(const float* translation)
+    {
+        m_body.translate(btVector3(translation[0], translation[1], translation[2]));
+    }
+
     int getCollisionFlags() const
     {
         return m_body.getCollisionFlags();
@@ -288,6 +440,207 @@ extern "C" void bw_rigidbody_restore_dynamic(void* body)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     b->restoreDynamic();
+}
+
+extern "C" void bw_rigidbody_set_damping(void* body, float linearDamping, float angularDamping)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->setDamping(linearDamping, angularDamping);
+}
+
+extern "C" float bw_rigidbody_get_linear_damping(const void* body)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    return b->getLinearDamping();
+}
+
+extern "C" float bw_rigidbody_get_angular_damping(const void* body)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    return b->getAngularDamping();
+}
+
+extern "C" void bw_rigidbody_set_mass_props(void* body, float mass, const float* localInertia)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->setMassProps(mass, localInertia);
+}
+
+extern "C" float bw_rigidbody_get_mass(const void* body)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    return b->getMass();
+}
+
+extern "C" void bw_rigidbody_get_local_inertia(const void* body, float* localInertia)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 inertia = b->getLocalInertia();
+    localInertia[0] = inertia.x();
+    localInertia[1] = inertia.y();
+    localInertia[2] = inertia.z();
+}
+
+extern "C" void bw_rigidbody_get_total_force(const void* body, float* force)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 f = b->getTotalForce();
+    force[0] = f.x();
+    force[1] = f.y();
+    force[2] = f.z();
+}
+
+extern "C" void bw_rigidbody_get_total_torque(const void* body, float* torque)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 t = b->getTotalTorque();
+    torque[0] = t.x();
+    torque[1] = t.y();
+    torque[2] = t.z();
+}
+
+extern "C" void bw_rigidbody_apply_central_force(void* body, const float* force)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyCentralForce(force);
+}
+
+extern "C" void bw_rigidbody_apply_torque(void* body, const float* torque)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyTorque(torque);
+}
+
+extern "C" void bw_rigidbody_apply_force(void* body, const float* force, const float* relativePosition)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyForce(force, relativePosition);
+}
+
+extern "C" void bw_rigidbody_apply_central_impulse(void* body, const float* impulse)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyCentralImpulse(impulse);
+}
+
+extern "C" void bw_rigidbody_apply_torque_impulse(void* body, const float* torque)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyTorqueImpulse(torque);
+}
+
+extern "C" void bw_rigidbody_apply_impulse(void* body, const float* impulse, const float* relativePosition)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyImpulse(impulse, relativePosition);
+}
+
+extern "C" void bw_rigidbody_apply_push_impulse(void* body, const float* impulse, const float* relativePosition)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyPushImpulse(impulse, relativePosition);
+}
+
+extern "C" void bw_rigidbody_get_push_velocity(const void* body, float* velocity)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 v = b->getPushVelocity();
+    velocity[0] = v.x();
+    velocity[1] = v.y();
+    velocity[2] = v.z();
+}
+
+extern "C" void bw_rigidbody_get_turn_velocity(const void* body, float* velocity)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 v = b->getTurnVelocity();
+    velocity[0] = v.x();
+    velocity[1] = v.y();
+    velocity[2] = v.z();
+}
+
+extern "C" void bw_rigidbody_set_push_velocity(void* body, const float* velocity)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->setPushVelocity(velocity);
+}
+
+extern "C" void bw_rigidbody_set_turn_velocity(void* body, const float* velocity)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->setTurnVelocity(velocity);
+}
+
+extern "C" void bw_rigidbody_apply_central_push_impulse(void* body, const float* impulse)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyCentralPushImpulse(impulse);
+}
+
+extern "C" void bw_rigidbody_apply_torque_turn_impulse(void* body, const float* torque)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->applyTorqueTurnImpulse(torque);
+}
+
+extern "C" void bw_rigidbody_clear_forces(void* body)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->clearForces();
+}
+
+extern "C" void bw_rigidbody_get_linear_velocity(const void* body, float* velocity)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 v = b->getLinearVelocity();
+    velocity[0] = v.x();
+    velocity[1] = v.y();
+    velocity[2] = v.z();
+}
+
+extern "C" void bw_rigidbody_get_angular_velocity(const void* body, float* velocity)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 v = b->getAngularVelocity();
+    velocity[0] = v.x();
+    velocity[1] = v.y();
+    velocity[2] = v.z();
+}
+
+extern "C" void bw_rigidbody_set_linear_velocity(void* body, const float* velocity)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->setLinearVelocity(velocity);
+}
+
+extern "C" void bw_rigidbody_set_angular_velocity(void* body, const float* velocity)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->setAngularVelocity(velocity);
+}
+
+extern "C" void bw_rigidbody_get_velocity_in_local_point(const void* body, const float* relativePosition, float* velocity)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 v = b->getVelocityInLocalPoint(relativePosition);
+    velocity[0] = v.x();
+    velocity[1] = v.y();
+    velocity[2] = v.z();
+}
+
+extern "C" void bw_rigidbody_get_push_velocity_in_local_point(const void* body, const float* relativePosition, float* velocity)
+{
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    btVector3 v = b->getPushVelocityInLocalPoint(relativePosition);
+    velocity[0] = v.x();
+    velocity[1] = v.y();
+    velocity[2] = v.z();
+}
+
+extern "C" void bw_rigidbody_translate(void* body, const float* translation)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->translate(translation);
 }
 
 extern "C" int bw_rigidbody_get_collision_flags(void* body)
