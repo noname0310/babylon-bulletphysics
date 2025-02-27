@@ -246,30 +246,6 @@ export class RigidBodyBundle {
         }
     }
 
-    public makeKinematic(index: number): void {
-        this._nullCheck();
-        if (index < 0 || this._count <= index) {
-            throw new RangeError("Index out of range");
-        }
-
-        if (this._inner.hasReferences) {
-            this.runtime.lock.wait();
-        }
-        this.runtime.wasmInstance.rigidBodyBundleMakeKinematic(this._inner.ptr, index);
-    }
-
-    public restoreDynamic(index: number): void {
-        this._nullCheck();
-        if (index < 0 || this._count <= index) {
-            throw new RangeError("Index out of range");
-        }
-
-        if (this._inner.hasReferences) {
-            this.runtime.lock.wait();
-        }
-        this.runtime.wasmInstance.rigidBodyBundleRestoreDynamic(this._inner.ptr, index);
-    }
-
     public getTransformMatrixToRef(index: number, result: Matrix): Matrix {
         this._nullCheck();
         if (index < 0 || this._count <= index) {

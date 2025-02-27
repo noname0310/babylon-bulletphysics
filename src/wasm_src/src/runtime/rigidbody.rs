@@ -121,14 +121,6 @@ impl RigidBody {
         }
     }
 
-    pub(crate) fn make_kinematic(&mut self) {
-        self.inner.make_kinematic();
-    }
-
-    pub(crate) fn restore_dynamic(&mut self) {
-        self.inner.restore_dynamic();
-    }
-
     pub(crate) fn set_damping(&mut self, linear_damping: f32, angular_damping: f32) {
         self.inner.set_damping(linear_damping, angular_damping);
     }
@@ -449,14 +441,6 @@ impl RigidBodyBundle {
         }
     }
 
-    pub(crate) fn make_kinematic(&mut self, index: usize) {
-        self.bodies[index].make_kinematic();
-    }
-
-    pub(crate) fn restore_dynamic(&mut self, index: usize) {
-        self.bodies[index].restore_dynamic();
-    }
-
     pub(crate) fn set_damping(&mut self, index: usize, linear_damping: f32, angular_damping: f32) {
         self.bodies[index].set_damping(linear_damping, angular_damping);
     }
@@ -737,18 +721,6 @@ pub fn rigidbody_get_buffered_motion_state_ptr(ptr: *mut usize) -> *mut usize {
     rigidbody.get_buffered_motion_state_ptr() as *mut usize
 }
 
-#[wasm_bindgen(js_name = "rigidBodyMakeKinematic")]
-pub fn rigidbody_make_kinematic(ptr: *mut usize) {
-    let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
-    rigidbody.make_kinematic();
-}
-
-#[wasm_bindgen(js_name = "rigidBodyRestoreDynamic")]
-pub fn rigidbody_restore_dynamic(ptr: *mut usize) {
-    let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
-    rigidbody.restore_dynamic();
-}
-
 #[wasm_bindgen(js_name = "createRigidBodyBundle")]
 pub fn create_rigidbody_bundle(info_list: *mut usize, len: usize) -> *mut usize {
     let info_list = unsafe { std::slice::from_raw_parts_mut(info_list as *mut RigidBodyConstructionInfo, len) };
@@ -774,16 +746,4 @@ pub fn rigid_body_bundle_get_motion_states_ptr(ptr: *mut usize) -> *mut usize {
 pub fn rigid_body_bundle_get_buffered_motion_states_ptr(ptr: *mut usize) -> *mut usize {
     let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
     bundle.get_buffered_motion_states_ptr() as *mut usize
-}
-
-#[wasm_bindgen(js_name = "rigidBodyBundleMakeKinematic")]
-pub fn rigid_body_bundle_make_kinematic(ptr: *mut usize, index: usize) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    bundle.make_kinematic(index);
-}
-
-#[wasm_bindgen(js_name = "rigidBodyBundleRestoreDynamic")]
-pub fn rigid_body_bundle_restore_dynamic(ptr: *mut usize, index: usize) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    bundle.restore_dynamic(index);
 }

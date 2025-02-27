@@ -271,4 +271,16 @@ export class PhysicsWorld {
         }
         return false;
     }
+
+    public makeBodyKinematic(rigidBody: RigidBody): void {
+        this._nullCheck();
+        this._runtime.lock.wait();
+        this._runtime.wasmInstance.physicsWorldMakeBodyKinematic(this._inner.ptr, rigidBody.ptr);
+    }
+
+    public restoreBodyDynamic(rigidBody: RigidBody): void {
+        this._nullCheck();
+        this._runtime.lock.wait();
+        this._runtime.wasmInstance.physicsWorldRestoreBodyDynamic(this._inner.ptr, rigidBody.ptr);
+    }
 }

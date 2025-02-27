@@ -15,6 +15,7 @@ import { Scene } from "@babylonjs/core/scene";
 
 // import { Inspector } from "@babylonjs/inspector";
 import { getBulletWasmInstance } from "@/Runtime/bulletWasmInstance";
+import { Generic6DofConstraint } from "@/Runtime/constraint";
 import { PhysicsRuntime } from "@/Runtime/Impl/physicsRuntime";
 import { PhysicsRuntimeEvaluationType } from "@/Runtime/Impl/physicsRuntimeEvaluationType";
 import { BulletWasmInstanceTypeMD } from "@/Runtime/InstanceType/multiDebug";
@@ -92,11 +93,13 @@ export class SceneBuilder implements ISceneBuilder {
 
         const boxShape = new PhysicsBoxShape(runtime, new Vector3(1, 1, 1));
         const rbInfo = new RigidBodyConstructionInfo(wasmInstance);
+        rbInfo.motionType = MotionType.Dynamic;
         rbInfo.shape = boxShape;
         rbInfo.setInitialTransform(Matrix.TranslationToRef(0, 3, 0, matrix));
         rbInfo.friction = 1.0;
         rbInfo.linearDamping = 0.3;
         rbInfo.angularDamping = 0.3;
+        rbInfo.disableDeactivation = true;
 
         const box1 = CreateBox("box1", { size: 2 }, scene);
         shadowGenerator.addShadowCaster(box1);
@@ -106,18 +109,47 @@ export class SceneBuilder implements ISceneBuilder {
         const box1RigidBody = new RigidBody(runtime, rbInfo);
         runtime.addRigidBody(box1RigidBody);
 
+        const box2 = CreateBox("box2", { size: 2 }, scene);
+        shadowGenerator.addShadowCaster(box2);
+        box2.receiveShadows = true;
+        box2.position.set(0, 6, 0);
+        box2.rotationQuaternion = Quaternion.Identity();
+
+        const box2RigidBody = new RigidBody(runtime, rbInfo);
+        runtime.addRigidBody(box2RigidBody);
+
+        const constraint = new Generic6DofConstraint(
+            runtime,
+            box1RigidBody,
+            box2RigidBody,
+            Matrix.Translation(0, 1, 0),
+            Matrix.Translation(0, -1, 0),
+            true
+        );
+        constraint.setLinearLowerLimit(new Vector3(0, 0, 0));
+        constraint.setLinearUpperLimit(new Vector3(0, 0, 0));
+        constraint.setAngularLowerLimit(new Vector3(Math.PI / 4, 0, 0));
+        constraint.setAngularUpperLimit(new Vector3(0, 0, 0));
+
+        runtime.addConstraint(constraint, true);
+
         let time = 0;
         runtime.onTickObservable.add(() => {
             box1RigidBody.getTransformMatrixToRef(matrix);
             matrix.getTranslationToRef(box1.position);
             Quaternion.FromRotationMatrixToRef(matrix, box1.rotationQuaternion!);
 
+            box2RigidBody.getTransformMatrixToRef(matrix);
+            matrix.getTranslationToRef(box2.position);
+            Quaternion.FromRotationMatrixToRef(matrix, box2.rotationQuaternion!);
+
             time += engine.getDeltaTime();
             matrix.setTranslationFromFloats(0, Math.sin(time / 1000) * 3, 0);
             box1RigidBody.setTransformMatrix(matrix);
         });
 
-        (window as any).box1RigidBody = box1RigidBody;
+        (window as any).runtime = runtime;
+        (window as any).body1 = box1RigidBody;
 
         return scene;
     }

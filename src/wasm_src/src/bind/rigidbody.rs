@@ -9,10 +9,6 @@ extern "C" {
 
     fn bw_destroy_rigidbody(body: *mut std::ffi::c_void);
 
-    fn bw_rigidbody_make_kinematic(body: *mut std::ffi::c_void);
-
-    fn bw_rigidbody_restore_dynamic(body: *mut std::ffi::c_void);
-
     fn bw_rigidbody_set_damping(body: *mut std::ffi::c_void, linear_damping: f32, angular_damping: f32);
 
     fn bw_rigidbody_get_linear_damping(body: *const std::ffi::c_void) -> f32;
@@ -71,7 +67,7 @@ extern "C" {
 
     fn bw_rigidbody_translate(body: *mut std::ffi::c_void, translation: *const f32);
 
-    fn bw_rigidbody_get_collision_flags(body: *mut std::ffi::c_void) -> i32;
+    fn bw_rigidbody_get_motion_type(body: *mut std::ffi::c_void) -> u8;
 
     fn bw_create_rigidbody_shadow(body: *mut std::ffi::c_void, motion_state: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
 
@@ -84,6 +80,7 @@ pub(crate) enum ConstructionInfoDataMask {
     LocalInertia = 1 << 0,
 }
 
+#[derive(PartialEq, Eq)]
 pub(crate) enum MotionType {
     Dynamic = 0,
     Static = 1,
@@ -292,14 +289,6 @@ impl RigidBody {
         self.ptr
     }
 
-    pub(crate) fn make_kinematic(&mut self) {
-        unsafe { bw_rigidbody_make_kinematic(self.ptr) };
-    }
-
-    pub(crate) fn restore_dynamic(&mut self) {
-        unsafe { bw_rigidbody_restore_dynamic(self.ptr) };
-    }
-
     pub(crate) fn set_damping(&mut self, linear_damping: f32, angular_damping: f32) {
         unsafe { bw_rigidbody_set_damping(self.ptr, linear_damping, angular_damping) };
     }
@@ -434,12 +423,17 @@ impl RigidBody {
         unsafe { bw_rigidbody_translate(self.ptr, translation.as_ref().as_ptr()) };
     }
 
-    pub(crate) fn get_collision_flags(&self) -> i32 {
-        unsafe { bw_rigidbody_get_collision_flags(self.ptr) }
+    pub(crate) fn get_motion_type(&self) -> MotionType {
+        match unsafe { bw_rigidbody_get_motion_type(self.ptr) } {
+            0 => MotionType::Dynamic,
+            1 => MotionType::Static,
+            2 => MotionType::Kinematic,
+            _ => panic!("Invalid motion type"),
+        }
     }
 
     pub(crate) fn is_static_or_kinematic(&self) -> bool {
-        self.get_collision_flags() & (MotionType::Static as i32 | MotionType::Kinematic as i32) != 0
+        self.get_motion_type() != MotionType::Dynamic
     }
 }
 

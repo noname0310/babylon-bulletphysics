@@ -75,8 +75,8 @@ public:
     void addRigidBody(bwRigidBody* body)
     {
         int group = body->getCollisionGroup();
-        const int collisionFlags = body->getCollisionFlags();
-        if ((collisionFlags & btCollisionObject::CF_KINEMATIC_OBJECT) || (collisionFlags & btCollisionObject::CF_STATIC_OBJECT))
+        const bwRigidBodyMotionType motionType = body->getMotionType();
+        if (motionType == bwRigidBodyMotionType::KINEMATIC || motionType == bwRigidBodyMotionType::STATIC)
         {
             group |= (btBroadphaseProxy::StaticFilter << 16);
         }
@@ -113,6 +113,58 @@ public:
     void removeConstraint(btTypedConstraint* constraint)
     {
         m_world.removeConstraint(constraint);
+    }
+
+    void makeBodyKinematic(bwRigidBody* body)
+    {
+        btRigidBody* btBody = body->getBody();
+#ifdef BT_DEBUG
+        btCollisionObjectArray& objs = m_world.getCollisionObjectArray();
+        // check body is in this world
+        int iObj = btBody->getWorldArrayIndex();
+        if (iObj >= 0 && iObj < objs.size())
+        {
+            btAssert(btBody == objs[iObj]);
+        }
+        else
+        {
+            const bool found = objs.findLinearSearch(btBody) != objs.size();
+            btAssert(found);
+        }
+#endif
+        btAssert(body->getMotionType() == bwRigidBodyMotionType::DYNAMIC);
+        btBody->setCollisionFlags(btBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+        btBroadphaseProxy* proxy = btBody->getBroadphaseHandle();
+        proxy->m_collisionFilterGroup |= (btBroadphaseProxy::StaticFilter << 16);
+        m_broadphasePairCache.cleanProxyFromPairs(proxy, &m_dispatcher);
+        m_world.refreshBroadphaseProxy(btBody);
+    }
+
+    void restoreBodyDynamic(bwRigidBody* body)
+    {
+        btRigidBody* btBody = body->getBody();
+#ifdef BT_DEBUG
+        btCollisionObjectArray& objs = m_world.getCollisionObjectArray();
+        // check body is in this world
+        int iObj = btBody->getWorldArrayIndex();
+        if (iObj >= 0 && iObj < objs.size())
+        {
+            btAssert(btBody == objs[iObj]);
+        }
+        else
+        {
+            const bool found = objs.findLinearSearch(btBody) != objs.size();
+            btAssert(found);
+        }
+#endif
+        btAssert(body->getMotionType() == bwRigidBodyMotionType::DYNAMIC);
+        btBody->setLinearVelocity(btVector3(0.0f, 0.0f, 0.0f));
+        btBody->setAngularVelocity(btVector3(0.0f, 0.0f, 0.0f));
+        btBody->setCollisionFlags(btBody->getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
+        btBroadphaseProxy* proxy = btBody->getBroadphaseHandle();
+        proxy->m_collisionFilterGroup &= ~(btBroadphaseProxy::StaticFilter << 16);
+        m_broadphasePairCache.cleanProxyFromPairs(proxy, &m_dispatcher);
+        m_world.refreshBroadphaseProxy(btBody);
     }
 };
 
@@ -180,4 +232,18 @@ extern "C" void bw_world_remove_constraint(void* world, void* constraint)
     bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
     btTypedConstraint* c = static_cast<btTypedConstraint*>(constraint);
     w->removeConstraint(c);
+}
+
+extern "C" void bw_world_make_body_kinematic(void* world, void* body)
+{
+    bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    w->makeBodyKinematic(b);
+}
+
+extern "C" void bw_world_restore_body_dynamic(void* world, void* body)
+{
+    bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    w->restoreBodyDynamic(b);
 }

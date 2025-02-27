@@ -44,6 +44,11 @@ struct bwRigidBodyConstructionInfo final
     // m_additionalAngularDampingThresholdSqr
     // m_additionalAngularDampingFactor
     uint8_t m_noContactResponse; // bool
+
+    // From Bullet documentation:
+    // If you plan to animate or move static objects, you should flag them as kinematic. Also disable the
+    // sleeping/deactivation for them during the animation. This means Bullet dynamics world will get the
+    // new worldtransform from the btMotionState every simulation frame.
     uint8_t m_disableDeactivation; // bool
 };
 
@@ -88,6 +93,7 @@ private:
     btRigidBody m_body;
     uint16_t m_collisionGroup;
     uint16_t m_collisionMask;
+    bwRigidBodyMotionType m_motionType;    
 
 private:
     static btRigidBody::btRigidBodyConstructionInfo createRigidBodyConstructionInfo(bwRigidBodyConstructionInfo* info)
@@ -139,7 +145,10 @@ public:
     bwRigidBody(bwRigidBodyConstructionInfo* info):
         m_shape(static_cast<btCollisionShape*>(info->m_shape)),
         m_motionState(static_cast<bwMotionState*>(info->m_motionState)),
-        m_body(createRigidBodyConstructionInfo(info))
+        m_body(createRigidBodyConstructionInfo(info)),
+        m_collisionGroup(info->m_collisionGroup),
+        m_collisionMask(info->m_collisionMask),
+        m_motionType(static_cast<bwRigidBodyMotionType>(info->m_motionType))
     {
         m_body.setSleepingThresholds(info->m_linearSleepingThreshold, info->m_angularSleepingThreshold);
         if (info->m_disableDeactivation)
@@ -160,9 +169,6 @@ public:
         {
             m_body.setCollisionFlags(m_body.getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
         }
-
-        m_collisionGroup = info->m_collisionGroup;
-        m_collisionMask = info->m_collisionMask;
     }
 
     bwRigidBody(bwRigidBody const&) = delete;
@@ -195,18 +201,6 @@ public:
     uint16_t getCollisionMask() const
     {
         return m_collisionMask;
-    }
-
-    void makeKinematic()
-    {
-        m_body.setCollisionFlags(m_body.getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-    }
-
-    void restoreDynamic()
-    {
-        m_body.setLinearVelocity(btVector3(0.0f, 0.0f, 0.0f));
-        m_body.setAngularVelocity(btVector3(0.0f, 0.0f, 0.0f));
-        m_body.setCollisionFlags(m_body.getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
     }
 
     void setDamping(float linearDamping, float angularDamping)
@@ -361,9 +355,9 @@ public:
         m_body.translate(btVector3(translation[0], translation[1], translation[2]));
     }
 
-    int getCollisionFlags() const
+    bwRigidBodyMotionType getMotionType() const
     {
-        return m_body.getCollisionFlags();
+        return m_motionType;
     }
 
     bwRigidBodyShadow* createShadow()
@@ -377,7 +371,7 @@ public:
 
 bwRigidBodyShadow::bwRigidBodyShadow(bwRigidBody* source, bwMotionState* motionState) : m_source(source), m_body(createRigidBodyConstructionInfo(source, motionState))
 {
-    if (source->getCollisionFlags() & btCollisionObject::CF_STATIC_OBJECT)
+    if (source->getMotionType() == bwRigidBodyMotionType::STATIC)
     {
         m_body.setCollisionFlags(m_body.getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
     }
@@ -428,18 +422,6 @@ extern "C" void bw_destroy_rigidbody(void* body)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     delete b;
-}
-
-extern "C" void bw_rigidbody_make_kinematic(void* body)
-{
-    bwRigidBody* b = static_cast<bwRigidBody*>(body);
-    b->makeKinematic();
-}
-
-extern "C" void bw_rigidbody_restore_dynamic(void* body)
-{
-    bwRigidBody* b = static_cast<bwRigidBody*>(body);
-    b->restoreDynamic();
 }
 
 extern "C" void bw_rigidbody_set_damping(void* body, float linearDamping, float angularDamping)
@@ -643,10 +625,10 @@ extern "C" void bw_rigidbody_translate(void* body, const float* translation)
     b->translate(translation);
 }
 
-extern "C" int bw_rigidbody_get_collision_flags(void* body)
+extern "C" uint8_t bw_rigidbody_get_motion_type(const void* body)
 {
-    bwRigidBody* b = static_cast<bwRigidBody*>(body);
-    return b->getCollisionFlags();
+    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+    return static_cast<uint8_t>(b->getMotionType());
 }
 
 extern "C" void* bw_create_rigidbody_shadow(void* body, void* motionState)
