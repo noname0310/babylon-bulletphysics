@@ -10,6 +10,7 @@ import { MotionType } from "./motionType";
 import type { PhysicsShape } from "./physicsShape";
 import type { RigidBodyConstructionInfo } from "./rigidBodyConstructionInfo";
 import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoList";
+import { IPhysicsWorld } from "./IPhysicsWorld";
 
 class RigidBodyInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
@@ -91,7 +92,7 @@ export class RigidBody {
 
     private readonly _inner: RigidBodyInner;
 
-    private _worldReference: Nullable<object>;
+    private _worldReference: Nullable<IPhysicsWorld>;
 
     public impl: IRigidBodyImpl;
     public readonly isDynamic: boolean;
@@ -200,7 +201,7 @@ export class RigidBody {
     /**
      * @internal
      */
-    public setWorldReference(worldReference: Nullable<object>): void {
+    public setWorldReference(worldReference: Nullable<IPhysicsWorld>): void {
         if (this._worldReference !== null && worldReference !== null) {
             throw new Error("Cannot add rigid body to multiple worlds");
         }
@@ -218,7 +219,7 @@ export class RigidBody {
     /**
      * @internal
      */
-    public getWorldReference(): Nullable<object> {
+    public getWorldReference(): Nullable<IPhysicsWorld> {
         return this._worldReference;
     }
 
