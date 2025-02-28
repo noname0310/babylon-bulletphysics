@@ -1,4 +1,4 @@
-use glam::Vec3;
+use glam::{Mat4, Vec3};
 use wasm_bindgen::prelude::*;
 
 use crate::bind;
@@ -216,8 +216,8 @@ impl RigidBodyBundle {
         self.bodies[index].translate(translation);
     }
 
-    pub(crate) fn commit_transform(&mut self, index: usize) {
-        self.bodies[index].commit_transform();
+    pub(crate) fn set_world_transform(&mut self, index: usize, transform: &Mat4) {
+        self.bodies[index].set_world_transform(transform);
     }
 
     pub(crate) fn create_handle(&mut self) -> RigidBodyBundleHandle {
@@ -614,8 +614,9 @@ pub fn rigid_body_bundle_translate(ptr: *mut usize, index: usize, translation_x:
     bundle.translate(index, translation);
 }
 
-#[wasm_bindgen(js_name = "rigidBodyBundleCommitTransform")]
-pub fn rigid_body_bundle_commit_transform(ptr: *mut usize, index: usize) {
+#[wasm_bindgen(js_name = "rigidBodyBundleSetWorldTransform")]
+pub fn rigid_body_bundle_set_world_transform(ptr: *mut usize, index: usize, transform_ptr: *const f32) {
     let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    bundle.commit_transform(index);
+    let transform = unsafe { &*(transform_ptr as *mut Mat4) };
+    bundle.set_world_transform(index, transform);
 }
