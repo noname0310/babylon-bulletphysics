@@ -2,7 +2,8 @@ use glam::{Vec3, Mat4};
 
 use crate::bind;
 
-use super::rigidbody::{RigidBody, RigidBodyBundle, RigidBodyBundleHandle, RigidBodyHandle};
+use super::rigidbody::{RigidBody, RigidBodyHandle};
+use super::rigidbody_bundle::{RigidBodyBundle, RigidBodyBundleHandle};
 
 use wasm_bindgen::prelude::*;
 

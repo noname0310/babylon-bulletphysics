@@ -4,7 +4,8 @@ use wasm_bindgen::prelude::*;
 
 use super::constraint::{Constraint, ConstraintHandle};
 use super::physics_world::PhysicsWorld;
-use super::rigidbody::{RigidBody, RigidBodyBundle, RigidBodyBundleHandle, RigidBodyHandle};
+use super::rigidbody::{RigidBody, RigidBodyHandle};
+use super::rigidbody_bundle::{RigidBodyBundle, RigidBodyBundleHandle};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;

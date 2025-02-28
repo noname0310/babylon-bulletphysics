@@ -3,7 +3,8 @@ use wasm_bindgen::prelude::*;
 use crate::bind;
 
 use super::constraint::{Constraint, ConstraintHandle};
-use super::rigidbody::{RigidBody, RigidBodyBundle, RigidBodyBundleHandle, RigidBodyBundleShadow, RigidBodyHandle, RigidBodyShadow};
+use super::rigidbody::{RigidBody,RigidBodyHandle, RigidBodyShadow};
+use super::rigidbody_bundle::{RigidBodyBundle, RigidBodyBundleHandle, RigidBodyBundleShadow};
 
 #[cfg(debug_assertions)]
 struct PhysicsWorldHandleInfo {

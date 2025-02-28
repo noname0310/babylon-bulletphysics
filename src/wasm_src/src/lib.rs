@@ -48,7 +48,7 @@ pub fn init() {
     let shape = runtime::collision_shape::CollisionShape::Box(runtime::collision_shape::BoxShape::new(glam::Vec3::new(1.0, 1.0, 1.0)));
     let mut shape = Box::new(shape);
 
-    let mut rigidbody_info = runtime::rigidbody::RigidBodyConstructionInfo {
+    let mut rigidbody_info = runtime::rigidbody_construction_info::RigidBodyConstructionInfo {
         shape: &mut shape,
         initial_transform: mat4,
         data_mask: 0x0000,

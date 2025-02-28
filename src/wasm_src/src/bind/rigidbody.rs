@@ -124,7 +124,7 @@ pub(crate) struct RigidBodyConstructionInfo {
 
 impl RigidBodyConstructionInfo {
     pub(crate) fn from_runtime_info_raw(
-        info: &runtime::rigidbody::RigidBodyConstructionInfo,
+        info: &runtime::rigidbody_construction_info::RigidBodyConstructionInfo,
         motion_state: *const std::ffi::c_void,
     ) -> Self {
         Self {
@@ -156,7 +156,7 @@ impl RigidBodyConstructionInfo {
     }
     
     pub(crate) fn from_runtime_info(
-        info: &runtime::rigidbody::RigidBodyConstructionInfo,
+        info: &runtime::rigidbody_construction_info::RigidBodyConstructionInfo,
         motion_state: &MotionState,
     ) -> Self {
         Self::from_runtime_info_raw(info, motion_state.ptr())
