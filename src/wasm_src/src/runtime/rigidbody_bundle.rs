@@ -391,14 +391,14 @@ pub fn rigid_body_bundle_set_damping(ptr: *mut usize, index: usize, linear_dampi
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetLinearDamping")]
-pub fn rigid_body_bundle_get_linear_damping(ptr: *mut usize, index: usize) -> f32 {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_linear_damping(ptr: *const usize, index: usize) -> f32 {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     bundle.get_linear_damping(index)
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetAngularDamping")]
-pub fn rigid_body_bundle_get_angular_damping(ptr: *mut usize, index: usize) -> f32 {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_angular_damping(ptr: *const usize, index: usize) -> f32 {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     bundle.get_angular_damping(index)
 }
 
@@ -410,14 +410,14 @@ pub fn rigid_body_bundle_set_mass_props(ptr: *mut usize, index: usize, mass: f32
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetMass")]
-pub fn rigid_body_bundle_get_mass(ptr: *mut usize, index: usize) -> f32 {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_mass(ptr: *const usize, index: usize) -> f32 {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     bundle.get_mass(index)
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetLocalInertia")]
-pub fn rigid_body_bundle_get_local_inertia(ptr: *mut usize, index: usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_local_inertia(ptr: *const usize, index: usize, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     let local_inertia = bundle.get_local_inertia(index);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = local_inertia.x;
@@ -426,8 +426,8 @@ pub fn rigid_body_bundle_get_local_inertia(ptr: *mut usize, index: usize, out: *
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetTotalForce")]
-pub fn rigid_body_bundle_get_total_force(ptr: *mut usize, index: usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_total_force(ptr: *const usize, index: usize, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     let force = bundle.get_total_force(index);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = force.x;
@@ -436,8 +436,8 @@ pub fn rigid_body_bundle_get_total_force(ptr: *mut usize, index: usize, out: *mu
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetTotalTorque")]
-pub fn rigid_body_bundle_get_total_torque(ptr: *mut usize, index: usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_total_torque(ptr: *const usize, index: usize, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     let torque = bundle.get_total_torque(index);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = torque.x;
@@ -460,10 +460,10 @@ pub fn rigid_body_bundle_apply_torque(ptr: *mut usize, index: usize, torque_x: f
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleApplyForce")]
-pub fn rigid_body_bundle_apply_force(ptr: *mut usize, index: usize, force_ptr: *mut usize, relative_position_ptr: *mut usize) {
+pub fn rigid_body_bundle_apply_force(ptr: *mut usize, index: usize, force_ptr: *const f32, relative_position_ptr: *const f32) {
     let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    let force = unsafe { *(force_ptr as *mut Vec3) };
-    let relative_position = unsafe { *(relative_position_ptr as *mut Vec3) };
+    let force = unsafe { *(force_ptr as *const Vec3) };
+    let relative_position = unsafe { *(relative_position_ptr as *const Vec3) };
     bundle.apply_force(index, force, relative_position);
 }
 
@@ -482,24 +482,24 @@ pub fn rigid_body_bundle_apply_torque_impulse(ptr: *mut usize, index: usize, tor
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleApplyImpulse")]
-pub fn rigid_body_bundle_apply_impulse(ptr: *mut usize, index: usize, impulse_ptr: *mut usize, relative_position_ptr: *mut usize) {
+pub fn rigid_body_bundle_apply_impulse(ptr: *mut usize, index: usize, impulse_ptr: *const f32, relative_position_ptr: *const f32) {
     let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    let impulse = unsafe { *(impulse_ptr as *mut Vec3) };
-    let relative_position = unsafe { *(relative_position_ptr as *mut Vec3) };
+    let impulse = unsafe { *(impulse_ptr as *const Vec3) };
+    let relative_position = unsafe { *(relative_position_ptr as *const Vec3) };
     bundle.apply_impulse(index, impulse, relative_position);
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleApplyPushImpulse")]
-pub fn rigid_body_bundle_apply_push_impulse(ptr: *mut usize, index: usize, impulse_ptr: *mut usize, relative_position_ptr: *mut usize) {
+pub fn rigid_body_bundle_apply_push_impulse(ptr: *mut usize, index: usize, impulse_ptr: *const f32, relative_position_ptr: *const f32) {
     let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    let impulse = unsafe { *(impulse_ptr as *mut Vec3) };
-    let relative_position = unsafe { *(relative_position_ptr as *mut Vec3) };
+    let impulse = unsafe { *(impulse_ptr as *const Vec3) };
+    let relative_position = unsafe { *(relative_position_ptr as *const Vec3) };
     bundle.apply_push_impulse(index, impulse, relative_position);
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetPushVelocity")]
-pub fn rigid_body_bundle_get_push_velocity(ptr: *mut usize, index: usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_push_velocity(ptr: *const usize, index: usize, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     let velocity = bundle.get_push_velocity(index);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = velocity.x;
@@ -508,8 +508,8 @@ pub fn rigid_body_bundle_get_push_velocity(ptr: *mut usize, index: usize, out: *
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetTurnVelocity")]
-pub fn rigid_body_bundle_get_turn_velocity(ptr: *mut usize, index: usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_turn_velocity(ptr: *const usize, index: usize, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     let velocity = bundle.get_turn_velocity(index);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = velocity.x;
@@ -552,8 +552,8 @@ pub fn rigid_body_bundle_clear_forces(ptr: *mut usize, index: usize) {
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetLinearVelocity")]
-pub fn rigid_body_bundle_get_linear_velocity(ptr: *mut usize, index: usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_linear_velocity(ptr: *const usize, index: usize, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     let velocity = bundle.get_linear_velocity(index);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = velocity.x;
@@ -562,8 +562,8 @@ pub fn rigid_body_bundle_get_linear_velocity(ptr: *mut usize, index: usize, out:
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetAngularVelocity")]
-pub fn rigid_body_bundle_get_angular_velocity(ptr: *mut usize, index: usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+pub fn rigid_body_bundle_get_angular_velocity(ptr: *const usize, index: usize, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
     let velocity = bundle.get_angular_velocity(index);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = velocity.x;
@@ -586,9 +586,9 @@ pub fn rigid_body_bundle_set_angular_velocity(ptr: *mut usize, index: usize, vel
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetVelocityInLocalPoint")]
-pub fn rigid_body_bundle_get_velocity_in_local_point(ptr: *mut usize, index: usize, relative_position_ptr: *mut usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    let relative_position = unsafe { *(relative_position_ptr as *mut Vec3) };
+pub fn rigid_body_bundle_get_velocity_in_local_point(ptr: *const usize, index: usize, relative_position_ptr: *const f32, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
+    let relative_position = unsafe { *(relative_position_ptr as *const Vec3) };
     let velocity = bundle.get_velocity_in_local_point(index, relative_position);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = velocity.x;
@@ -597,9 +597,9 @@ pub fn rigid_body_bundle_get_velocity_in_local_point(ptr: *mut usize, index: usi
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetPushVelocityInLocalPoint")]
-pub fn rigid_body_bundle_get_push_velocity_in_local_point(ptr: *mut usize, index: usize, relative_position_ptr: *mut usize, out: *mut f32) {
-    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    let relative_position = unsafe { *(relative_position_ptr as *mut Vec3) };
+pub fn rigid_body_bundle_get_push_velocity_in_local_point(ptr: *const usize, index: usize, relative_position_ptr: *const f32, out: *mut f32) {
+    let bundle = unsafe { &*(ptr as *const RigidBodyBundle) };
+    let relative_position = unsafe { *(relative_position_ptr as *const Vec3) };
     let velocity = bundle.get_push_velocity_in_local_point(index, relative_position);
     let out = unsafe { &mut *(out as *mut [f32; 3]) };
     out[0] = velocity.x;
