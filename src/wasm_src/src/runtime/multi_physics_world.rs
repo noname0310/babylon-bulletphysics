@@ -511,7 +511,7 @@ pub fn multi_physics_world_make_body_kinematic(world: *mut usize, rigidbody: *mu
 }
 
 #[wasm_bindgen(js_name = "multiPhysicsWorldRestoreBodyDynamic")]
-pub fn multi_physics_world_make_body_dynamic(world: *mut usize, rigidbody: *mut usize) {
+pub fn multi_physics_world_restore_body_dynamic(world: *mut usize, rigidbody: *mut usize) {
     let world = unsafe { &mut *(world as *mut MultiPhysicsWorld) };
     let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
     world.restore_body_dynamic(rigidbody.create_handle());
