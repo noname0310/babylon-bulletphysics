@@ -3,12 +3,12 @@ import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { Constraint } from "./constraint";
 import type { IRuntime } from "./Impl/IRuntime";
-import type { IPhysicsWorld } from "./IPhysicsWorld";
-import { PhysicsWorldKind } from "./IPhysicsWorld";
+import { PhysicsWorldInternalKind } from "./IPhysicsWorldInternal";
 import type { RigidBody } from "./rigidBody";
 import type { RigidBodyBundle } from "./rigidBodyBundle";
 
 class PhysicsWorldInner {
+    public readonly worldKind: PhysicsWorldInternalKind;
     private readonly _runtime: WeakRef<IRuntime>;
     private _ptr: number;
 
@@ -19,6 +19,7 @@ class PhysicsWorldInner {
     private _referenceCount: number;
 
     public constructor(runtime: WeakRef<IRuntime>, ptr: number) {
+        this.worldKind = PhysicsWorldInternalKind.PhysicsWorld;
         this._runtime = runtime;
         this._ptr = ptr;
 
@@ -134,16 +135,12 @@ function physicsWorldFinalizer(inner: PhysicsWorldInner): void {
 
 const physicsWorldRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<PhysicsWorldInner>>();
 
-export class PhysicsWorld implements IPhysicsWorld {
-    public readonly worldKind: PhysicsWorldKind;
-
+export class PhysicsWorld {
     private readonly _runtime: IRuntime;
 
     private readonly _inner: PhysicsWorldInner;
 
     public constructor(runtime: IRuntime) {
-        this.worldKind = PhysicsWorldKind.PhysicsWorld;
-
         this._runtime = runtime;
 
         const ptr = runtime.wasmInstance.createPhysicsWorld();
