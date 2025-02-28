@@ -358,4 +358,14 @@ export class PhysicsRuntime implements IRuntime {
         this._nullCheck();
         return this._physicsWorld.removeConstraint(constraint);
     }
+
+    public makeBodyKinematic(rigidBody: RigidBody): void {
+        this._nullCheck();
+        this._physicsWorld.makeBodyKinematic(rigidBody);
+    }
+
+    public restoreBodyDynamic(rigidBody: RigidBody): void {
+        this._nullCheck();
+        this._physicsWorld.restoreBodyDynamic(rigidBody);
+    }
 }

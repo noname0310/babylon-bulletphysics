@@ -3,7 +3,8 @@ use wasm_bindgen::prelude::*;
 use crate::bind;
 
 use super::constraint::{Constraint, ConstraintHandle};
-use super::rigidbody::{RigidBody, RigidBodyBundle, RigidBodyBundleHandle, RigidBodyBundleShadow, RigidBodyHandle, RigidBodyShadow};
+use super::rigidbody::{RigidBody,RigidBodyHandle, RigidBodyShadow};
+use super::rigidbody_bundle::{RigidBodyBundle, RigidBodyBundleHandle, RigidBodyBundleShadow};
 
 #[cfg(debug_assertions)]
 struct PhysicsWorldHandleInfo {
@@ -280,6 +281,14 @@ impl PhysicsWorld {
         }
     }
 
+    pub(crate) fn make_body_kinematic(&mut self, mut rigidbody: RigidBodyHandle) {
+        self.inner.make_body_kinematic(rigidbody.get_mut().get_inner_mut());
+    }
+
+    pub(crate) fn restore_body_dynamic(&mut self, mut rigidbody: RigidBodyHandle) {
+        self.inner.restore_body_dynamic(rigidbody.get_mut().get_inner_mut());
+    }
+
     pub(crate) fn is_empty(&self) -> bool {
         self.object_count == 0
     }
@@ -481,6 +490,20 @@ pub fn physics_world_remove_constraint(world: *mut usize, constraint: *mut usize
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
     let constraint = unsafe { &mut *(constraint as *mut Constraint) };
     world.remove_constraint(constraint.create_handle());
+}
+
+#[wasm_bindgen(js_name = "physicsWorldMakeBodyKinematic")]
+pub fn physics_world_make_body_kinematic(world: *mut usize, rigidbody: *mut usize) {
+    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
+    let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
+    world.make_body_kinematic(rigidbody.create_handle());
+}
+
+#[wasm_bindgen(js_name = "physicsWorldRestoreBodyDynamic")]
+pub fn physics_world_make_body_dynamic(world: *mut usize, rigidbody: *mut usize) {
+    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
+    let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
+    world.restore_body_dynamic(rigidbody.create_handle());
 }
 
 #[wasm_bindgen(js_name = "physicsWorldUseMotionStateBuffer")]

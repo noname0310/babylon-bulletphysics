@@ -242,22 +242,6 @@ export class RigidBody {
         }
     }
 
-    public makeKinematic(): void {
-        this._nullCheck();
-        if (this._inner.hasReferences) {
-            this.runtime.lock.wait();
-        }
-        this.runtime.wasmInstance.rigidBodyMakeKinematic(this._inner.ptr);
-    }
-
-    public restoreDynamic(): void {
-        this._nullCheck();
-        if (this._inner.hasReferences) {
-            this.runtime.lock.wait();
-        }
-        this.runtime.wasmInstance.rigidBodyRestoreDynamic(this._inner.ptr);
-    }
-
     public getTransformMatrixToRef(result: Matrix): Matrix {
         this._nullCheck();
         if (this._inner.hasReferences && this.impl.shouldSync) {
