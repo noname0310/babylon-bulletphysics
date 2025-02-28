@@ -355,6 +355,13 @@ public:
         m_body.translate(btVector3(translation[0], translation[1], translation[2]));
     }
 
+    void commitTransform()
+    {
+        btTransform transform;
+        m_motionState->getWorldTransform(transform);
+        m_body.setWorldTransform(transform);
+    }
+
     bwRigidBodyMotionType getMotionType() const
     {
         return m_motionType;
@@ -623,6 +630,12 @@ extern "C" void bw_rigidbody_translate(void* body, const float* translation)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     b->translate(translation);
+}
+
+extern "C" void bw_rigidbody_commit_transform(void* body)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->commitTransform();
 }
 
 extern "C" uint8_t bw_rigidbody_get_motion_type(const void* body)

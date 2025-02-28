@@ -67,6 +67,8 @@ extern "C" {
 
     fn bw_rigidbody_translate(body: *mut std::ffi::c_void, translation: *const f32);
 
+    fn bw_rigidbody_commit_transform(body: *mut std::ffi::c_void);
+
     fn bw_rigidbody_get_motion_type(body: *mut std::ffi::c_void) -> u8;
 
     fn bw_create_rigidbody_shadow(body: *mut std::ffi::c_void, motion_state: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
@@ -421,6 +423,10 @@ impl RigidBody {
 
     pub(crate) fn translate(&mut self, translation: Vec3) {
         unsafe { bw_rigidbody_translate(self.ptr, translation.as_ref().as_ptr()) };
+    }
+
+    pub(crate) fn commit_transform(&mut self) {
+        unsafe { bw_rigidbody_commit_transform(self.ptr) };
     }
 
     pub(crate) fn get_motion_type(&self) -> MotionType {
