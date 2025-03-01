@@ -492,20 +492,6 @@ pub fn physics_world_remove_constraint(world: *mut usize, constraint: *mut usize
     world.remove_constraint(constraint.create_handle());
 }
 
-#[wasm_bindgen(js_name = "physicsWorldMakeBodyKinematic")]
-pub fn physics_world_make_body_kinematic(world: *mut usize, rigidbody: *mut usize) {
-    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
-    let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
-    world.make_body_kinematic(rigidbody.create_handle());
-}
-
-#[wasm_bindgen(js_name = "physicsWorldRestoreBodyDynamic")]
-pub fn physics_world_make_body_dynamic(world: *mut usize, rigidbody: *mut usize) {
-    let world = unsafe { &mut *(world as *mut PhysicsWorld) };
-    let rigidbody = unsafe { &mut *(rigidbody as *mut RigidBody) };
-    world.restore_body_dynamic(rigidbody.create_handle());
-}
-
 #[wasm_bindgen(js_name = "physicsWorldUseMotionStateBuffer")]
 pub fn physics_world_use_motion_state_buffer(world: *mut usize, use_buffer: bool) {
     let world = unsafe { &mut *(world as *mut PhysicsWorld) };
