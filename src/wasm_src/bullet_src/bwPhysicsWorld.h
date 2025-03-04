@@ -133,6 +133,13 @@ public:
         }
 #endif
         btAssert(body->getMotionType() == bwRigidBodyMotionType::DYNAMIC);
+
+        // handle multiple calls to makeBodyKinematic
+        if (btBody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT)
+        {
+            return;
+        }
+        
         btBody->setCollisionFlags(btBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
         btBroadphaseProxy* proxy = btBody->getBroadphaseHandle();
         proxy->m_collisionFilterGroup |= (btBroadphaseProxy::StaticFilter << 16);
@@ -158,6 +165,13 @@ public:
         }
 #endif
         btAssert(body->getMotionType() == bwRigidBodyMotionType::DYNAMIC);
+
+        // handle multiple calls to restoreBodyDynamic
+        if (!(btBody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+        {
+            return;
+        }
+
         btBody->setLinearVelocity(btVector3(0.0f, 0.0f, 0.0f));
         btBody->setAngularVelocity(btVector3(0.0f, 0.0f, 0.0f));
         btBody->setCollisionFlags(btBody->getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
