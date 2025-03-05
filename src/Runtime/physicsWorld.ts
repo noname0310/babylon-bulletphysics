@@ -3,12 +3,10 @@ import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { BulletWasmInstance } from "./bulletWasmInstance";
 import type { Constraint } from "./constraint";
 import type { IRuntime } from "./Impl/IRuntime";
-import { PhysicsWorldInternalKind } from "./IPhysicsWorldInternal";
 import type { RigidBody } from "./rigidBody";
 import type { RigidBodyBundle } from "./rigidBodyBundle";
 
 class PhysicsWorldInner {
-    public readonly worldKind: PhysicsWorldInternalKind;
     private readonly _runtime: WeakRef<IRuntime>;
     private _ptr: number;
 
@@ -19,7 +17,6 @@ class PhysicsWorldInner {
     private _referenceCount: number;
 
     public constructor(runtime: WeakRef<IRuntime>, ptr: number) {
-        this.worldKind = PhysicsWorldInternalKind.PhysicsWorld;
         this._runtime = runtime;
         this._ptr = ptr;
 
