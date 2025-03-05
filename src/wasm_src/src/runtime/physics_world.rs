@@ -59,12 +59,19 @@ impl PhysicsWorld {
                 body.get_mut().sync_buffered_motion_state();
             }
             for bundle in self.body_bundles.iter_mut() {
-                bundle.get_mut().sync_buffered_motion_state();
+                bundle.get_mut().sync_buffered_motion_states();
             }
         }
     }
 
     pub(crate) fn step_simulation(&mut self, time_step: f32, max_sub_steps: i32, fixed_time_step: f32) {
+        let mut world_handle = self.create_handle();
+        for body in self.bodies.iter_mut() {
+            body.get_mut().update_temporal_kinematic_state(world_handle.clone());
+        }
+        for bundle in self.body_bundles.iter_mut() {
+            bundle.get_mut().update_temporal_kinematic_states(world_handle.clone());
+        }
         self.inner.step_simulation(time_step, max_sub_steps, fixed_time_step);
     }
 
@@ -102,6 +109,7 @@ impl PhysicsWorld {
 
         self.bodies.remove(self.bodies.iter().position(|b| *b == rigidbody).unwrap());
 
+        rigidbody.get_mut().clear_temporal_kinematic_state();
         if self.use_motion_state_buffer {
             rigidbody.get_mut().clear_buffered_motion_state();
         }
@@ -129,7 +137,7 @@ impl PhysicsWorld {
         self.body_bundles.push(bundle.clone());
 
         if self.use_motion_state_buffer {
-            bundle.get_mut().init_buffered_motion_state();
+            bundle.get_mut().init_buffered_motion_states();
         }
 
         #[cfg(debug_assertions)]
@@ -151,8 +159,10 @@ impl PhysicsWorld {
 
         self.body_bundles.remove(self.body_bundles.iter().position(|b| *b == bundle).unwrap());
 
+        
+        bundle.get_mut().clear_temporal_kinematic_states();
         if self.use_motion_state_buffer {
-            bundle.get_mut().clear_buffered_motion_state();
+            bundle.get_mut().clear_buffered_motion_states();
         }
 
         #[cfg(debug_assertions)]
@@ -281,12 +291,20 @@ impl PhysicsWorld {
         }
     }
 
-    pub(crate) fn make_body_kinematic(&mut self, mut rigidbody: RigidBodyHandle) {
+    pub(super) fn make_body_kinematic(&mut self, mut rigidbody: RigidBodyHandle) {
         self.inner.make_body_kinematic(rigidbody.get_mut().get_inner_mut());
     }
 
-    pub(crate) fn restore_body_dynamic(&mut self, mut rigidbody: RigidBodyHandle) {
+    pub(super) fn restore_body_dynamic(&mut self, mut rigidbody: RigidBodyHandle) {
         self.inner.restore_body_dynamic(rigidbody.get_mut().get_inner_mut());
+    }
+
+    pub(super) fn make_raw_body_kinematic(&mut self, rigidbody: &mut bind::rigidbody::RigidBody) {
+        self.inner.make_body_kinematic(rigidbody);
+    }
+
+    pub(super) fn restore_raw_body_dynamic(&mut self, rigidbody: &mut bind::rigidbody::RigidBody) {
+        self.inner.restore_body_dynamic(rigidbody);
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -298,7 +316,7 @@ impl PhysicsWorld {
             body.get_mut().init_buffered_motion_state();
         }
         for bundle in self.body_bundles.iter_mut() {
-            bundle.get_mut().init_buffered_motion_state();
+            bundle.get_mut().init_buffered_motion_states();
         }
     }
 
@@ -307,7 +325,7 @@ impl PhysicsWorld {
             body.get_mut().clear_buffered_motion_state();
         }
         for bundle in self.body_bundles.iter_mut() {
-            bundle.get_mut().clear_buffered_motion_state();
+            bundle.get_mut().clear_buffered_motion_states();
         }
     }
 
@@ -336,7 +354,7 @@ impl PhysicsWorld {
             }
             for bundle in self.body_bundles.iter_mut() {
                 let bundle = bundle.get_mut();
-                bundle.init_buffered_motion_state();
+                bundle.init_buffered_motion_states();
             }
         } else {
             for body in self.bodies.iter_mut() {
@@ -345,7 +363,7 @@ impl PhysicsWorld {
             }
             for bundle in self.body_bundles.iter_mut() {
                 let bundle = bundle.get_mut();
-                bundle.clear_buffered_motion_state();
+                bundle.clear_buffered_motion_states();
             }
         }
 

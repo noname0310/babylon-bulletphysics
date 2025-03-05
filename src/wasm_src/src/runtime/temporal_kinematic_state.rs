@@ -1,3 +1,4 @@
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) enum TemporalKinematicState {
     Disabled = 0,
     Idle = 1,
