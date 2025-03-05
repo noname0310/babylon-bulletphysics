@@ -67,7 +67,7 @@ extern "C" {
 
     fn bw_rigidbody_translate(body: *mut std::ffi::c_void, translation: *const f32);
 
-    fn bw_rigidbody_set_world_transform(body: *mut std::ffi::c_void, matrix: *const f32);
+    fn bw_rigidbody_get_world_transform_ptr(body: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
 
     fn bw_rigidbody_get_motion_type(body: *mut std::ffi::c_void) -> u8;
 
@@ -425,8 +425,8 @@ impl RigidBody {
         unsafe { bw_rigidbody_translate(self.ptr, translation.as_ref().as_ptr()) };
     }
 
-    pub(crate) fn set_world_transform(&mut self, matrix: &Mat4) {
-        unsafe { bw_rigidbody_set_world_transform(self.ptr, matrix.as_ref().as_ptr()) };
+    pub(crate) fn get_world_transform_ptr_mut(&mut self) -> *mut std::ffi::c_void {
+        unsafe { bw_rigidbody_get_world_transform_ptr(self.ptr) }
     }
 
     pub(crate) fn get_motion_type(&self) -> MotionType {

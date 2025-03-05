@@ -355,11 +355,9 @@ public:
         m_body.translate(btVector3(translation[0], translation[1], translation[2]));
     }
 
-    void setWorldTransform(const float* matrix)
+    btTransform& getWorldTransform()
     {
-        btTransform transform;
-        transform.setFromOpenGLMatrix(matrix);
-        m_body.setWorldTransform(transform);
+        return m_body.getWorldTransform();
     }
 
     bwRigidBodyMotionType getMotionType() const
@@ -632,10 +630,10 @@ extern "C" void bw_rigidbody_translate(void* body, const float* translation)
     b->translate(translation);
 }
 
-extern "C" void bw_rigidbody_set_world_transform(void* body, const float* matrix)
+extern "C" void* bw_rigidbody_get_world_transform_ptr(void* body)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
-    b->setWorldTransform(matrix);
+    return &b->getWorldTransform();
 }
 
 extern "C" uint8_t bw_rigidbody_get_motion_type(const void* body)

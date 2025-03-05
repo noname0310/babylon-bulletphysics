@@ -206,8 +206,9 @@ impl RigidBody {
         self.inner.translate(translation);
     }
 
-    pub(crate) fn set_world_transform(&mut self, transform: &Mat4) {
-        self.inner.set_world_transform(transform);
+    pub(crate) fn get_world_transform_ptr_mut(&mut self) -> *mut std::ffi::c_void {
+        self.inner.get_world_transform_ptr_mut()
+    }
     }
 
     pub(crate) fn create_handle(&mut self) -> RigidBodyHandle {
@@ -577,8 +578,12 @@ pub fn rigidbody_translate(ptr: *mut usize, translation_x: f32, translation_y: f
     rigidbody.translate(translation);
 }
 
-#[wasm_bindgen(js_name = "rigidBodySetWorldTransform")]
-pub fn rigidbody_set_world_transform(ptr: *mut usize, transform_ptr: *const f32) {
+#[wasm_bindgen(js_name = "rigidBodyGetWorldTransformPtr")]
+pub fn rigidbody_set_world_transform(ptr: *mut usize) -> *mut usize {
+    let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
+    rigidbody.get_world_transform_ptr_mut() as *mut usize
+}
+
     let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
     let transform = unsafe { &*(transform_ptr as *const Mat4) };
     rigidbody.set_world_transform(&transform);
