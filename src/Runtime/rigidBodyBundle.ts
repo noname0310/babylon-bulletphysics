@@ -373,7 +373,7 @@ export class RigidBodyBundle {
         if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        this.impl.setTransformMatrixFromArray(this._motionStatesPtr, index, array, offset);
+        this.impl.setTransformMatrixFromArray(this._motionStatesPtr, this._temporalKinematicStatesPtr, index, array, offset);
     }
 
     public setTransformMatricesFromArray(array: DeepImmutable<ArrayLike<number>>, offset: number = 0): void {
@@ -385,6 +385,25 @@ export class RigidBodyBundle {
         if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        this.impl.setTransformMatricesFromArray(this._motionStatesPtr, array, offset);
+        this.impl.setTransformMatricesFromArray(this._motionStatesPtr, this._temporalKinematicStatesPtr, array, offset);
+    }
+
+    public setDynamicTransformMatrix(matrix: Matrix): void {
+        this.setTransformMatricesFromArray(matrix.m, 0);
+    }
+
+    public setDynamicTransformMatrixFromArray(index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+        if (this._worldTransformPtrArray[index] === null) {
+            throw new Error("Cannot set dynamic transform of non-dynamic body");
+        }
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        this.impl.setDynamicTransformMatrixFromArray(this._worldTransformPtrArray, index, array, offset);
     }
 }
