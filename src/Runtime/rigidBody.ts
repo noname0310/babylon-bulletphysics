@@ -337,4 +337,18 @@ export class RigidBody {
         }
         this.impl.setDynamicTransformMatrixFromArray(this._worldTransformPtr, array, offset);
     }
+
+    public get needToCommit(): boolean {
+        return this.impl.needToCommit ?? false;
+    }
+
+    public commitToWasm(): void {
+        if (this.impl.commitToWasm === undefined) {
+            throw new Error("commit only avalible on buffered evaluation mode");
+        }
+        this._nullCheck();
+        this.runtime.lock.wait();
+
+        this.impl.commitToWasm(this._motionStatePtr, this._temporalKinematicStatePtr, this._worldTransformPtr);
+    }
 }

@@ -229,6 +229,18 @@ export class PhysicsRuntime implements IRuntime {
                 }
             }
 
+            // commit changes
+            {
+                const rigidBodyList = this._rigidBodyList;
+                for (let i = 0; i < rigidBodyList.length; ++i) {
+                    rigidBodyList[i].commitToWasm();
+                }
+                const rigidBodyBundleList = this._rigidBodyBundleList;
+                for (let i = 0; i < rigidBodyBundleList.length; ++i) {
+                    rigidBodyBundleList[i].commitToWasm();
+                }
+            }
+
             this.wasmInstance.physicsRuntimeBufferedStepSimulation(this._inner.ptr, deltaTime, this.maxSubSteps, this.fixedTimeStep);
         } else {
             // sync buffer
@@ -282,11 +294,25 @@ export class PhysicsRuntime implements IRuntime {
         } else {
             const rigidBodyList = this._rigidBodyList;
             for (let i = 0; i < rigidBodyList.length; ++i) {
-                rigidBodyList[i].impl = new ImmediateRigidBodyImpl();
+                const rigidBody = rigidBodyList[i];
+                // commit changes
+                if (rigidBody.needToCommit) {
+                    this.lock.wait();
+                    rigidBody.commitToWasm();
+                }
+
+                rigidBody.impl = new ImmediateRigidBodyImpl();
             }
             const rigidBodyBundleList = this._rigidBodyBundleList;
             for (let i = 0; i < rigidBodyBundleList.length; ++i) {
-                rigidBodyBundleList[i].impl = new ImmediateRigidBodyBundleImpl(rigidBodyBundleList[i].count);
+                const rigidBodyBundle = rigidBodyBundleList[i];
+                // commit changes
+                if (rigidBodyBundle.needToCommit) {
+                    this.lock.wait();
+                    rigidBodyBundle.commitToWasm();
+                }
+
+                rigidBodyBundle.impl = new ImmediateRigidBodyBundleImpl(rigidBodyBundle.count);
             }
         }
     }

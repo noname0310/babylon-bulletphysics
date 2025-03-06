@@ -7,4 +7,6 @@ export interface IRigidBodyBundleImpl {
     setTransformMatrixFromArray(motionStatesPtr: IWasmTypedArray<Float32Array>, temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>, index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number): void;
     setTransformMatricesFromArray(motionStatesPtr: IWasmTypedArray<Float32Array>, temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>, array: DeepImmutable<ArrayLike<number>>, offset: number): void;
     setDynamicTransformMatrixFromArray(worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[], index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number): void;
+    readonly needToCommit?: boolean;
+    commitToWasm?(motionStatesPtr: IWasmTypedArray<Float32Array>, temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>, worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[]): void;
 }

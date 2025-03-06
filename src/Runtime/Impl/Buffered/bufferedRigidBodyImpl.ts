@@ -8,6 +8,8 @@ import type { IRigidBodyImpl } from "../IRigidBodyImpl";
 export class BufferedRigidBodyImpl implements IRigidBodyImpl {
     public readonly shouldSync: boolean;
 
+    private _isDirty: boolean;
+
     /**
      * for setTransformMatrix
      */
@@ -23,6 +25,8 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
     public constructor() {
         this.shouldSync = false;
 
+        this._isDirty = false;
+
         this._motionStateMatrixBuffer = new Float32Array(16);
         this._isMotionStateMatrixBufferDirty = false;
 
@@ -30,7 +34,15 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
         this._isDynamicTransformMatrixBufferDirty = false;
     }
 
+    public get needToCommit(): boolean {
+        return this._isDirty;
+    }
+
     public commitToWasm(motionStatePtr: IWasmTypedArray<Float32Array>, temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>, worldTransformPtr: Nullable<IWasmTypedArray<Float32Array>>): void {
+        if (!this._isDirty) {
+            return;
+        }
+
         if (this._isMotionStateMatrixBufferDirty) {
             const m = this._motionStateMatrixBuffer;
             const n = motionStatePtr.array;
@@ -81,11 +93,14 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
 
             this._isDynamicTransformMatrixBufferDirty = false;
         }
+
+        this._isDirty = false;
     }
 
     public setTransformMatrixFromArray(_motionStatePtr: IWasmTypedArray<Float32Array>, _temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
         this._motionStateMatrixBuffer.set(array, offset);
         this._isMotionStateMatrixBufferDirty = true;
+        this._isDirty = true;
     }
 
     public setDynamicTransformMatrixFromArray(_worldTransformPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
@@ -94,5 +109,6 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
         }
         this._dynamicTransformMatrixBuffer.set(array, offset);
         this._isDynamicTransformMatrixBufferDirty = true;
+        this._isDirty = true;
     }
 }
