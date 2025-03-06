@@ -12,7 +12,7 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         this.shouldSync = true;
     }
 
-    public setTransformMatrixFromArray(motionStatePtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+    public setTransformMatrixFromArray(motionStatePtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
         const m = motionStatePtr.array;
 
         m[MotionStateOffsetsInFloat32Array.MatrixRowX + 0] = array[offset];

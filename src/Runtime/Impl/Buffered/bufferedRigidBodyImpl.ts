@@ -47,7 +47,7 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
         this._isWriteMatrixDirty = false;
     }
 
-    public setTransformMatrixFromArray(_motionStatePtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+    public setTransformMatrixFromArray(_motionStatePtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
         this._writeMatrix.set(array, offset);
         this._isWriteMatrixDirty = true;
     }

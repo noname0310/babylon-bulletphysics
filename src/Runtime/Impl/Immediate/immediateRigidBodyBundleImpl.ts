@@ -15,7 +15,7 @@ export class ImmediateRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._count = count;
     }
 
-    public setTransformMatrixFromArray(motionStatesPtr: IWasmTypedArray<Float32Array>, index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+    public setTransformMatrixFromArray(motionStatesPtr: IWasmTypedArray<Float32Array>, index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
         const m = motionStatesPtr.array;
         const mOffset = index * Constants.MotionStateSizeInFloat32Array;
 
@@ -36,7 +36,7 @@ export class ImmediateRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         m[mOffset + MotionStateOffsetsInFloat32Array.Translation + 2] = array[offset + 14];
     }
 
-    public setTransformMatricesFromArray(motionStatesPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<ArrayLike<number>>, offset: number = 0): void {
+    public setTransformMatricesFromArray(motionStatesPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<ArrayLike<number>>, offset: number): void {
         const m = motionStatesPtr.array;
 
         const count = this._count;

@@ -69,7 +69,7 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._isWriteMatricesDirty = false;
     }
 
-    public setTransformMatrixFromArray(_motionStatesPtr: IWasmTypedArray<Float32Array>, index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+    public setTransformMatrixFromArray(_motionStatesPtr: IWasmTypedArray<Float32Array>, index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
         const m = this._writeMatrices;
         const writeMatrixDirtyFlags = this._writeMatrixDirtyFlags;
         const mOffset = index * 16;
@@ -95,7 +95,7 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._isWriteMatricesDirty = true;
     }
 
-    public setTransformMatricesFromArray(_motionStatesPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<ArrayLike<number>>, offset: number = 0): void {
+    public setTransformMatricesFromArray(_motionStatesPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<ArrayLike<number>>, offset: number): void {
         this._writeMatrices.set(array, offset);
         this._isWriteMatricesDirty = true;
     }
