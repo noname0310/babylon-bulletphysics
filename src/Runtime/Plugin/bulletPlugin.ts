@@ -129,7 +129,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * same transformation.
      */
     public setPhysicsBodyTransformation(body: PhysicsBody, node: TransformNode): void {
-        if (body.getPrestepType() == PhysicsPrestepType.TELEPORT) {
+        if (body.getPrestepType() === PhysicsPrestepType.TELEPORT) {
             const transformNode = body.transformNode;
             if (body.numInstances > 0) {
                 // instances
@@ -144,9 +144,9 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                 // regular
                 // this._hknp.HP_Body_SetQTransform(body._pluginData.hpBodyId, this._getTransformInfos(node));
             }
-        } else if (body.getPrestepType() == PhysicsPrestepType.ACTION) {
+        } else if (body.getPrestepType() === PhysicsPrestepType.ACTION) {
             this.setTargetTransform(body, node.absolutePosition, node.absoluteRotationQuaternion);
-        } else if (body.getPrestepType() == PhysicsPrestepType.DISABLED) {
+        } else if (body.getPrestepType() === PhysicsPrestepType.DISABLED) {
             Logger.Warn("Prestep type is set to DISABLED. Unable to set physics body transformation.");
         } else {
             Logger.Warn("Invalid prestep type set to physics body.");
