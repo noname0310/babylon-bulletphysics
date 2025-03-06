@@ -1,10 +1,11 @@
 import type { BulletWasmInstance } from "../bulletWasmInstance";
+import type { IWasmSpinLock } from "../Misc/IWasmSpinLock";
 import type { RigidBodyBundle } from "../rigidBodyBundle";
 import { ImmediateRigidBodyBundleImpl } from "./Immediate/immediateRigidBodyBundleImpl";
 import { ImmediateRigidBodyImpl } from "./Immediate/immediateRigidBodyImpl";
 import type { IRuntime } from "./IRuntime";
 
-class NullSpinlock {
+class NullSpinlock implements IWasmSpinLock {
     public wait(): void { }
 }
 
