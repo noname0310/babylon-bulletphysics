@@ -134,6 +134,7 @@ export class SceneBuilder implements ISceneBuilder {
         runtime.addConstraint(constraint, true);
 
         let time = 0;
+        let frameNumber = 0;
         runtime.onTickObservable.add(() => {
             box1RigidBody.getTransformMatrixToRef(matrix);
             matrix.getTranslationToRef(box1.position);
@@ -144,8 +145,11 @@ export class SceneBuilder implements ISceneBuilder {
             Quaternion.FromRotationMatrixToRef(matrix, box2.rotationQuaternion!);
 
             time += engine.getDeltaTime();
-            matrix.setTranslationFromFloats(0, Math.sin(time / 1000) * 3, 0);
-            box1RigidBody.setTransformMatrix(matrix);
+            frameNumber += 1;
+            if (frameNumber % 3 == 0) {
+                matrix.setTranslationFromFloats(0, Math.sin(time / 1000) * 3, 0);
+                box1RigidBody.setTransformMatrix(matrix);
+            }
         });
 
         (window as any).runtime = runtime;
