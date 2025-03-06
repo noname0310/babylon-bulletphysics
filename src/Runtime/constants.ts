@@ -57,6 +57,34 @@ export const enum RigidBodyConstructionInfoOffsets {
 
 
 /**
+ * btTransform representations
+ * matrix_rowx: f32[3] : offset 0
+ * padding: u32 : offset 12
+ * matrix_rowy: f32[3] : offset 16
+ * padding: u32 : offset 28
+ * matrix_rowz: f32[3] : offset 32
+ * padding: u32 : offset 44
+ * translation: f32[3] : offset 48
+ * padding: u32 : offset 60
+ *
+ * --size: 60
+ */
+export const enum BtTransformOffsets {
+    MatrixRowX = 0,
+    MatrixRowY = 16,
+    MatrixRowZ = 32,
+    Translation = 48
+}
+
+export const enum BtTransformOffsetsInFloat32Array {
+    MatrixRowX = BtTransformOffsets.MatrixRowX / Constants.A32BytesPerElement,
+    MatrixRowY = BtTransformOffsets.MatrixRowY / Constants.A32BytesPerElement,
+    MatrixRowZ = BtTransformOffsets.MatrixRowZ / Constants.A32BytesPerElement,
+    Translation = BtTransformOffsets.Translation / Constants.A32BytesPerElement
+}
+
+
+/**
  * MotionState representations
  *
  * vtable: u32 : offset 0
@@ -74,10 +102,11 @@ export const enum RigidBodyConstructionInfoOffsets {
  */
 export const enum MotionStateOffsets {
     VTable = 0,
-    MatrixRowX = 16,
-    MatrixRowY = 32,
-    MatrixRowZ = 48,
-    Translation = 64
+    TransformOffset = 16,
+    MatrixRowX = BtTransformOffsets.MatrixRowX + MotionStateOffsets.TransformOffset,
+    MatrixRowY = BtTransformOffsets.MatrixRowY + MotionStateOffsets.TransformOffset,
+    MatrixRowZ = BtTransformOffsets.MatrixRowZ + MotionStateOffsets.TransformOffset,
+    Translation = BtTransformOffsets.Translation + MotionStateOffsets.TransformOffset,
 }
 
 export const enum MotionStateOffsetsInFloat32Array {
