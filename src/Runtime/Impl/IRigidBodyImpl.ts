@@ -4,5 +4,6 @@ import type { IWasmTypedArray } from "../Misc/IWasmTypedArray";
 
 export interface IRigidBodyImpl {
     readonly shouldSync: boolean;
-    setTransformMatrixFromArray(motionStatePtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void;
+    setTransformMatrixFromArray(motionStatePtr: IWasmTypedArray<Float32Array>, temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void;
+    setDynamicTransformMatrixFromArray(worldTransformPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void;
 }

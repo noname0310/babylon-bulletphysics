@@ -1,6 +1,6 @@
 import type { DeepImmutable, Tuple } from "@babylonjs/core";
 
-import { MotionStateOffsetsInFloat32Array } from "@/Runtime/constants";
+import { BtTransformOffsets, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
 import type { IRigidBodyImpl } from "../IRigidBodyImpl";
@@ -12,7 +12,7 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         this.shouldSync = true;
     }
 
-    public setTransformMatrixFromArray(motionStatePtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setTransformMatrixFromArray(motionStatePtr: IWasmTypedArray<Float32Array>, temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
         const m = motionStatePtr.array;
 
         m[MotionStateOffsetsInFloat32Array.MatrixRowX + 0] = array[offset];
@@ -30,5 +30,30 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         m[MotionStateOffsetsInFloat32Array.Translation + 0] = array[offset + 12];
         m[MotionStateOffsetsInFloat32Array.Translation + 1] = array[offset + 13];
         m[MotionStateOffsetsInFloat32Array.Translation + 2] = array[offset + 14];
+
+        const temporalKinematicState = temporalKinematicStatePtr.array;
+        if (temporalKinematicState[0] !== TemporalKinematicState.Disabled) {
+            temporalKinematicState[0] = TemporalKinematicState.WaitForRestore;
+        }
+    }
+
+    public setDynamicTransformMatrixFromArray(worldTransformPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+        const m = worldTransformPtr.array;
+
+        m[BtTransformOffsets.MatrixRowX + 0] = array[offset];
+        m[BtTransformOffsets.MatrixRowY + 0] = array[offset + 1];
+        m[BtTransformOffsets.MatrixRowZ + 0] = array[offset + 2];
+
+        m[BtTransformOffsets.MatrixRowX + 1] = array[offset + 4];
+        m[BtTransformOffsets.MatrixRowY + 1] = array[offset + 5];
+        m[BtTransformOffsets.MatrixRowZ + 1] = array[offset + 6];
+
+        m[BtTransformOffsets.MatrixRowX + 2] = array[offset + 8];
+        m[BtTransformOffsets.MatrixRowY + 2] = array[offset + 9];
+        m[BtTransformOffsets.MatrixRowZ + 2] = array[offset + 10];
+
+        m[BtTransformOffsets.Translation + 0] = array[offset + 12];
+        m[BtTransformOffsets.Translation + 1] = array[offset + 13];
+        m[BtTransformOffsets.Translation + 2] = array[offset + 14];
     }
 }
