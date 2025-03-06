@@ -2,6 +2,8 @@ export const enum Constants {
     A8BytesPerElement = 1,
     A16BytesPerElement = 2,
     A32BytesPerElement = 4,
+    BtTransformSize = 64,
+    BtTransformSizeInFloat32Array = BtTransformSize / A32BytesPerElement,
     MotionStateSize = 80,
     MotionStateSizeInFloat32Array = MotionStateSize / A32BytesPerElement,
     RigidBodyConstructionInfoSize = 144
@@ -67,7 +69,7 @@ export const enum RigidBodyConstructionInfoOffsets {
  * translation: f32[3] : offset 48
  * padding: u32 : offset 60
  *
- * --size: 60
+ * --size: 64
  */
 export const enum BtTransformOffsets {
     MatrixRowX = 0,
@@ -103,10 +105,10 @@ export const enum BtTransformOffsetsInFloat32Array {
 export const enum MotionStateOffsets {
     VTable = 0,
     TransformOffset = 16,
-    MatrixRowX = BtTransformOffsets.MatrixRowX + MotionStateOffsets.TransformOffset,
-    MatrixRowY = BtTransformOffsets.MatrixRowY + MotionStateOffsets.TransformOffset,
-    MatrixRowZ = BtTransformOffsets.MatrixRowZ + MotionStateOffsets.TransformOffset,
-    Translation = BtTransformOffsets.Translation + MotionStateOffsets.TransformOffset,
+    MatrixRowX = BtTransformOffsets.MatrixRowX + TransformOffset,
+    MatrixRowY = BtTransformOffsets.MatrixRowY + TransformOffset,
+    MatrixRowZ = BtTransformOffsets.MatrixRowZ + TransformOffset,
+    Translation = BtTransformOffsets.Translation + TransformOffset,
 }
 
 export const enum MotionStateOffsetsInFloat32Array {

@@ -87,6 +87,9 @@ export class RigidBodyBundle {
 
     private readonly _motionStatesPtr: IWasmTypedArray<Float32Array>;
     private _bufferedMotionStatesPtr: IWasmTypedArray<Float32Array>;
+    // save only dynamic body ptr for temporal kinematic
+    private readonly _worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[];
+    private readonly _temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>;
 
     private readonly _inner: RigidBodyBundleInner;
     private readonly _count: number;
@@ -120,6 +123,20 @@ export class RigidBodyBundle {
         this._motionStatesPtr = wasmInstance.createTypedArray(Float32Array, motionStatesPtr, count * Constants.MotionStateSizeInFloat32Array);
         const bufferedMotionStatesPtr = wasmInstance.rigidBodyBundleGetBufferedMotionStatesPtr(ptr);
         this._bufferedMotionStatesPtr = wasmInstance.createTypedArray(Float32Array, bufferedMotionStatesPtr, count * Constants.MotionStateSizeInFloat32Array);
+        const worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[] = [];
+        let isContainsDynamic = false;
+        for (let i = 0; i < count; ++i) {
+            if (info.getMotionType(i) === MotionType.Dynamic) {
+                isContainsDynamic = true;
+                const worldTransformPtr = wasmInstance.rigidBodyBundleGetWorldTransformPtr(ptr, i);
+                worldTransformPtrArray.push(wasmInstance.createTypedArray(Float32Array, worldTransformPtr, Constants.BtTransformSizeInFloat32Array));
+            } else {
+                worldTransformPtrArray.push(null);
+            }
+        }
+        this._worldTransformPtrArray = worldTransformPtrArray;
+        const temporalKinematicStatesPtr = wasmInstance.rigidBodyBundleGetTemporalKinematicStatesPtr(ptr);
+        this._temporalKinematicStatesPtr = wasmInstance.createTypedArray(Uint8Array, temporalKinematicStatesPtr, count);
         this._inner = new RigidBodyBundleInner(new WeakRef(runtime.wasmInstance), ptr, shapeReferences);
         this._count = count;
         this._worldReference = null;
@@ -133,13 +150,6 @@ export class RigidBodyBundle {
         registry.register(this, this._inner, this);
 
         this.impl = runtime.createRigidBodyBundleImpl(this);
-        let isContainsDynamic = false;
-        for (let i = 0; i < count; ++i) {
-            if (info.getMotionType(i) === MotionType.Dynamic) {
-                isContainsDynamic = true;
-                break;
-            }
-        }
         this.isContainsDynamic = isContainsDynamic;
     }
 

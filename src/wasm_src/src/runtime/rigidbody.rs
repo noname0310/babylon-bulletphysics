@@ -622,7 +622,7 @@ pub fn rigidbody_set_world_transform(ptr: *mut usize) -> *mut usize {
 }
 
 #[wasm_bindgen(js_name = "rigidBodyGetTemporalKinematicStatePtr")]
-pub fn rigidbody_get_temporal_kinematic_state_ptr(ptr: *mut usize) -> *mut usize {
+pub fn rigidbody_get_temporal_kinematic_state_ptr(ptr: *mut usize) -> *mut u8 {
     let rigidbody = unsafe { &mut *(ptr as *mut RigidBody) };
-    rigidbody.get_temporal_kinematic_state_ptr_mut() as *mut usize
+    rigidbody.get_temporal_kinematic_state_ptr_mut() as *mut u8
 }

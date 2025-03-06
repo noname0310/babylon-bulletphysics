@@ -88,6 +88,9 @@ export class RigidBody {
 
     private readonly _motionStatePtr: IWasmTypedArray<Float32Array>;
     private _bufferedMotionStatePtr: IWasmTypedArray<Float32Array>;
+    // save only dynamic body ptr for temporal kinematic
+    private readonly _worldTransformPtr: Nullable<IWasmTypedArray<Float32Array>>;
+    private readonly _temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>;
 
     private readonly _inner: RigidBodyInner;
 
@@ -120,6 +123,10 @@ export class RigidBody {
             throw new Error("Cannot create rigid body with shapes from different runtimes");
         }
 
+        const isDynamic = n !== undefined
+            ? (info as RigidBodyConstructionInfoList).getMotionType(n) === MotionType.Dynamic
+            : (info as RigidBodyConstructionInfo).motionType === MotionType.Dynamic;
+
         this.runtime = runtime;
         const wasmInstance = runtime.wasmInstance;
         const ptr = wasmInstance.createRigidBody(infoPtr);
@@ -127,6 +134,14 @@ export class RigidBody {
         this._motionStatePtr = wasmInstance.createTypedArray(Float32Array, motionStatePtr, Constants.MotionStateSizeInFloat32Array);
         const bufferedMotionStatePtr = wasmInstance.rigidBodyGetBufferedMotionStatePtr(ptr);
         this._bufferedMotionStatePtr = wasmInstance.createTypedArray(Float32Array, bufferedMotionStatePtr, Constants.MotionStateSizeInFloat32Array);
+        if (isDynamic) {
+            const worldTransformPtr = wasmInstance.rigidBodyGetWorldTransformPtr(ptr);
+            this._worldTransformPtr = wasmInstance.createTypedArray(Float32Array, worldTransformPtr, Constants.BtTransformSizeInFloat32Array);
+        } else {
+            this._worldTransformPtr = null;
+        }
+        const temporalKinematicStatePtr = wasmInstance.rigidBodyGetTemporalKinematicStatePtr(ptr);
+        this._temporalKinematicStatePtr = wasmInstance.createTypedArray(Uint8Array, temporalKinematicStatePtr, 1);
         this._inner = new RigidBodyInner(new WeakRef(runtime.wasmInstance), ptr, shape);
         this._worldReference = null;
 
@@ -139,9 +154,7 @@ export class RigidBody {
         registry.register(this, this._inner, this);
 
         this.impl = runtime.createRigidBodyImpl();
-        this.isDynamic = n !== undefined
-            ? (info as RigidBodyConstructionInfoList).getMotionType(n) === MotionType.Dynamic
-            : (info as RigidBodyConstructionInfo).motionType === MotionType.Dynamic;
+        this.isDynamic = isDynamic;
     }
 
     public dispose(): void {

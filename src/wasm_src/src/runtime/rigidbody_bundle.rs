@@ -666,7 +666,7 @@ pub fn rigid_body_bundle_get_world_transform_ptr(ptr: *mut usize, index: usize) 
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetTemporalKinematicStatesPtr")]
-pub fn rigid_body_bundle_get_temporal_kinematic_states_ptr(ptr: *mut usize) -> *mut usize {
+pub fn rigid_body_bundle_get_temporal_kinematic_states_ptr(ptr: *mut usize) -> *mut u8 {
     let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
-    bundle.get_temporal_kinematic_states_ptr_mut() as *mut usize
+    bundle.get_temporal_kinematic_states_ptr_mut() as *mut u8
 }
