@@ -418,6 +418,12 @@ export class RigidBodyBundle {
         this._nullCheck();
         this.runtime.lock.wait();
 
-        this.impl.commitToWasm(this._motionStatesPtr, this._temporalKinematicStatesPtr, this._worldTransformPtrArray);
+        this.impl.commitToWasm(
+            this.runtime.wasmInstance,
+            this._inner.ptr,
+            this._motionStatesPtr,
+            this._temporalKinematicStatesPtr,
+            this._worldTransformPtrArray
+        );
     }
 }

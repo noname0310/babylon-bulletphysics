@@ -1,5 +1,6 @@
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
+import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BtTransformOffsets, Constants, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
@@ -15,7 +16,13 @@ export class ImmediateRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._count = count;
     }
 
-    public setTransformMatrixFromArray(motionStatesPtr: IWasmTypedArray<Float32Array>, temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>, index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setTransformMatrixFromArray(
+        motionStatesPtr: IWasmTypedArray<Float32Array>,
+        temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>,
+        index: number,
+        array: DeepImmutable<Tuple<number, 16>>,
+        offset: number
+    ): void {
         const m = motionStatesPtr.array;
         const mOffset = index * Constants.MotionStateSizeInFloat32Array;
 
@@ -41,7 +48,12 @@ export class ImmediateRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         }
     }
 
-    public setTransformMatricesFromArray(motionStatesPtr: IWasmTypedArray<Float32Array>, temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>, array: DeepImmutable<ArrayLike<number>>, offset: number): void {
+    public setTransformMatricesFromArray(
+        motionStatesPtr: IWasmTypedArray<Float32Array>,
+        temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>,
+        array: DeepImmutable<ArrayLike<number>>,
+        offset: number
+    ): void {
         const m = motionStatesPtr.array;
         const temporalKinematicStates = temporalKinematicStatesPtr.array;
 
@@ -74,7 +86,12 @@ export class ImmediateRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         }
     }
 
-    public setDynamicTransformMatrixFromArray(worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[], index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setDynamicTransformMatrixFromArray(
+        worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[],
+        index: number,
+        array: DeepImmutable<Tuple<number, 16>>,
+        offset: number
+    ): void {
         const m = worldTransformPtrArray[index]!.array;
 
         m[BtTransformOffsets.MatrixRowX + 0] = array[offset];
@@ -92,5 +109,22 @@ export class ImmediateRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         m[BtTransformOffsets.Translation + 0] = array[offset + 12];
         m[BtTransformOffsets.Translation + 1] = array[offset + 13];
         m[BtTransformOffsets.Translation + 2] = array[offset + 14];
+    }
+
+    public setDamping(
+        wasmInstance: BulletWasmInstance,
+        bodyPtr: number,
+        linearDamping: number,
+        angularDamping: number
+    ): void {
+        wasmInstance.rigidBodySetDamping(bodyPtr, linearDamping, angularDamping);
+    }
+
+    public getLinearDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
+        return wasmInstance.rigidBodyGetLinearDamping(bodyPtr);
+    }
+
+    public getAngularDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
+        return wasmInstance.rigidBodyGetAngularDamping(bodyPtr);
     }
 }

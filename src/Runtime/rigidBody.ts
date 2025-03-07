@@ -343,19 +343,19 @@ export class RigidBody {
         if (this._inner.hasReferences && this.impl.shouldSync) {
             this.runtime.lock.wait();
         }
-        this.impl.setDamping(this._inner.ptr, linearDamping, angularDamping);
+        this.impl.setDamping(this.runtime.wasmInstance, this._inner.ptr, linearDamping, angularDamping);
     }
 
     public getLinearDamping(): number {
         this._nullCheck();
         // does not need to synchronization because damping is not changed by physics simulation
-        return this.impl.getLinearDamping(this._inner.ptr);
+        return this.impl.getLinearDamping(this.runtime.wasmInstance, this._inner.ptr);
     }
 
     public getAngularDamping(): number {
         this._nullCheck();
         // does not need to synchronization because damping is not changed by physics simulation
-        return this.impl.getAngularDamping(this._inner.ptr);
+        return this.impl.getAngularDamping(this.runtime.wasmInstance, this._inner.ptr);
     }
 
     public get needToCommit(): boolean {
@@ -369,6 +369,12 @@ export class RigidBody {
         this._nullCheck();
         this.runtime.lock.wait();
 
-        this.impl.commitToWasm(this._motionStatePtr, this._temporalKinematicStatePtr, this._worldTransformPtr);
+        this.impl.commitToWasm(
+            this.runtime.wasmInstance,
+            this._inner.ptr,
+            this._motionStatePtr,
+            this._temporalKinematicStatePtr,
+            this._worldTransformPtr
+        );
     }
 }

@@ -1,9 +1,11 @@
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
+import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BtTransformOffsets, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
 import type { IRigidBodyImpl } from "../IRigidBodyImpl";
+import { RigidBodyCommand } from "./rigidBodyCommand";
 
 export class BufferedRigidBodyImpl implements IRigidBodyImpl {
     public readonly shouldSync: boolean;
@@ -22,6 +24,8 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
     private _dynamicTransformMatrixBuffer: Nullable<Float32Array>;
     private _isDynamicTransformMatrixBufferDirty: boolean;
 
+    private readonly _commandBuffer: Map<RigidBodyCommand, any[]>;
+
     public constructor() {
         this.shouldSync = false;
 
@@ -32,13 +36,21 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
 
         this._dynamicTransformMatrixBuffer = null;
         this._isDynamicTransformMatrixBufferDirty = false;
+
+        this._commandBuffer = new Map();
     }
 
     public get needToCommit(): boolean {
         return this._isDirty;
     }
 
-    public commitToWasm(motionStatePtr: IWasmTypedArray<Float32Array>, temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>, worldTransformPtr: Nullable<IWasmTypedArray<Float32Array>>): void {
+    public commitToWasm(
+        wasmInstance: BulletWasmInstance,
+        bodyPtr: number,
+        motionStatePtr: IWasmTypedArray<Float32Array>,
+        temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>,
+        worldTransformPtr: Nullable<IWasmTypedArray<Float32Array>>
+    ): void {
         if (!this._isDirty) {
             return;
         }
@@ -94,16 +106,34 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
             this._isDynamicTransformMatrixBufferDirty = false;
         }
 
+        for (const [command, args] of this._commandBuffer) {
+            switch (command) {
+            case RigidBodyCommand.SetDamping:
+                wasmInstance.rigidBodySetDamping(bodyPtr, args[0], args[1]);
+                break;
+            }
+        }
+        this._commandBuffer.clear();
+
         this._isDirty = false;
     }
 
-    public setTransformMatrixFromArray(_motionStatePtr: IWasmTypedArray<Float32Array>, _temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setTransformMatrixFromArray(
+        _motionStatePtr: IWasmTypedArray<Float32Array>,
+        _temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>,
+        array: DeepImmutable<Tuple<number, 16>>,
+        offset: number
+    ): void {
         this._motionStateMatrixBuffer.set(array, offset);
         this._isMotionStateMatrixBufferDirty = true;
         this._isDirty = true;
     }
 
-    public setDynamicTransformMatrixFromArray(_worldTransformPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setDynamicTransformMatrixFromArray(
+        _worldTransformPtr: IWasmTypedArray<Float32Array>,
+        array: DeepImmutable<Tuple<number, 16>>,
+        offset: number
+    ): void {
         if (this._dynamicTransformMatrixBuffer === null) {
             this._dynamicTransformMatrixBuffer = new Float32Array(16);
         }

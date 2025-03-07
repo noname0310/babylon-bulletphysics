@@ -1,5 +1,6 @@
 import type { DeepImmutable, Tuple } from "@babylonjs/core";
 
+import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BtTransformOffsets, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
@@ -12,7 +13,12 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         this.shouldSync = true;
     }
 
-    public setTransformMatrixFromArray(motionStatePtr: IWasmTypedArray<Float32Array>, temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setTransformMatrixFromArray(
+        motionStatePtr: IWasmTypedArray<Float32Array>,
+        temporalKinematicStatePtr: IWasmTypedArray<Uint8Array>,
+        array: DeepImmutable<Tuple<number, 16>>,
+        offset: number
+    ): void {
         const m = motionStatePtr.array;
 
         m[MotionStateOffsetsInFloat32Array.MatrixRowX + 0] = array[offset];
@@ -37,7 +43,11 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         }
     }
 
-    public setDynamicTransformMatrixFromArray(worldTransformPtr: IWasmTypedArray<Float32Array>, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setDynamicTransformMatrixFromArray(
+        worldTransformPtr: IWasmTypedArray<Float32Array>,
+        array: DeepImmutable<Tuple<number, 16>>,
+        offset: number
+    ): void {
         const m = worldTransformPtr.array;
 
         m[BtTransformOffsets.MatrixRowX + 0] = array[offset];
@@ -55,5 +65,22 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         m[BtTransformOffsets.Translation + 0] = array[offset + 12];
         m[BtTransformOffsets.Translation + 1] = array[offset + 13];
         m[BtTransformOffsets.Translation + 2] = array[offset + 14];
+    }
+
+    public setDamping(
+        wasmInstance: BulletWasmInstance,
+        bodyPtr: number,
+        linearDamping: number,
+        angularDamping: number
+    ): void {
+        wasmInstance.rigidBodySetDamping(bodyPtr, linearDamping, angularDamping);
+    }
+
+    public getLinearDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
+        return wasmInstance.rigidBodyGetLinearDamping(bodyPtr);
+    }
+
+    public getAngularDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
+        return wasmInstance.rigidBodyGetAngularDamping(bodyPtr);
     }
 }

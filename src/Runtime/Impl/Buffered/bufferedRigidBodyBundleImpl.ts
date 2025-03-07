@@ -1,9 +1,11 @@
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
+import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BtTransformOffsets, Constants, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
 import type { IRigidBodyBundleImpl } from "../IRigidBodyBundleImpl";
+import { RigidBodyCommand } from "./rigidBodyCommand";
 
 export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
     public readonly shouldSync: boolean;
@@ -24,6 +26,8 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
     private _isDynamicTransformMatricesBufferDirty: boolean;
     private _dynamicTransformMatrixDirtyFlags: Nullable<Uint8Array>;
 
+    private readonly _commandBuffer: Map<`${RigidBodyCommand}-${number}`, any[]>;
+
     private readonly _count: number;
 
     public constructor(count: number) {
@@ -39,6 +43,8 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._isDynamicTransformMatricesBufferDirty = false;
         this._dynamicTransformMatrixDirtyFlags = null;
 
+        this._commandBuffer = new Map();
+
         this._count = count;
     }
 
@@ -46,7 +52,13 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         return this._isDirty;
     }
 
-    public commitToWasm(motionStatesPtr: IWasmTypedArray<Float32Array>, temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>, worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[]): void {
+    public commitToWasm(
+        wasmInstance: BulletWasmInstance,
+        bundlePtr: number,
+        motionStatesPtr: IWasmTypedArray<Float32Array>,
+        temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>,
+        worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[]
+    ): void {
         if (!this._isDirty) {
             return;
         }
@@ -136,10 +148,26 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
             this._isDynamicTransformMatricesBufferDirty = false;
         }
 
+        for (const [commandAndIndex, args] of this._commandBuffer) {
+            const [command, index] = commandAndIndex.split("-").map((v) => parseInt(v, 10)) as [RigidBodyCommand, number];
+            switch (command) {
+            case RigidBodyCommand.SetDamping:
+                wasmInstance.rigidBodyBundleSetDamping(bundlePtr, index, args[0], args[1]);
+                break;
+            }
+        }
+        this._commandBuffer.clear();
+
         this._isDirty = false;
     }
 
-    public setTransformMatrixFromArray(_motionStatesPtr: IWasmTypedArray<Float32Array>, _temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>, index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setTransformMatrixFromArray(
+        _motionStatesPtr: IWasmTypedArray<Float32Array>,
+        _temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>,
+        index: number,
+        array: DeepImmutable<Tuple<number, 16>>,
+        offset: number
+    ): void {
         const m = this._motionStateMatricesBuffer;
         const motionStateMatrixDirtyFlags = this._motionStateMatrixDirtyFlags;
         const mOffset = index * 16;
@@ -166,7 +194,12 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._isDirty = true;
     }
 
-    public setTransformMatricesFromArray(_motionStatesPtr: IWasmTypedArray<Float32Array>, _temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>, array: DeepImmutable<ArrayLike<number>>, offset: number): void {
+    public setTransformMatricesFromArray(
+        _motionStatesPtr: IWasmTypedArray<Float32Array>,
+        _temporalKinematicStatesPtr: IWasmTypedArray<Uint8Array>,
+        array: DeepImmutable<ArrayLike<number>>,
+        offset: number
+    ): void {
         this._motionStateMatricesBuffer.set(array, offset);
 
         this._motionStateMatrixDirtyFlags.fill(1);
@@ -174,7 +207,12 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._isDirty = true;
     }
 
-    public setDynamicTransformMatrixFromArray(_worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[], index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number): void {
+    public setDynamicTransformMatrixFromArray(
+        _worldTransformPtrArray: Nullable<IWasmTypedArray<Float32Array>>[],
+        index: number,
+        array: DeepImmutable<Tuple<number, 16>>,
+        offset: number
+    ): void {
         if (this._dynamicTransformMatricesBuffer === null) {
             this._dynamicTransformMatricesBuffer = new Float32Array(this._motionStateMatricesBuffer.length);
         }
