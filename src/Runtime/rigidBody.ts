@@ -338,6 +338,26 @@ export class RigidBody {
         this.impl.setDynamicTransformMatrixFromArray(this._worldTransformPtr, array, offset);
     }
 
+    public setDamping(linearDamping: number, angularDamping: number): void {
+        this._nullCheck();
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        this.impl.setDamping(this._inner.ptr, linearDamping, angularDamping);
+    }
+
+    public getLinearDamping(): number {
+        this._nullCheck();
+        // does not need to synchronization because damping is not changed by physics simulation
+        return this.impl.getLinearDamping(this._inner.ptr);
+    }
+
+    public getAngularDamping(): number {
+        this._nullCheck();
+        // does not need to synchronization because damping is not changed by physics simulation
+        return this.impl.getAngularDamping(this._inner.ptr);
+    }
+
     public get needToCommit(): boolean {
         return this.impl.needToCommit ?? false;
     }
