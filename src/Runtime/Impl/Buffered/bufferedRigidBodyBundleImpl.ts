@@ -26,7 +26,7 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
     private _isDynamicTransformMatricesBufferDirty: boolean;
     private _dynamicTransformMatrixDirtyFlags: Nullable<Uint8Array>;
 
-    private readonly _commandBuffer: Map<`${RigidBodyCommand}-${number}`, any[]>;
+    private readonly _commandBuffer: Map<RigidBodyCommand, any[]>[];
 
     private readonly _count: number;
 
@@ -43,7 +43,10 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._isDynamicTransformMatricesBufferDirty = false;
         this._dynamicTransformMatrixDirtyFlags = null;
 
-        this._commandBuffer = new Map();
+        const commandBuffer = this._commandBuffer = new Array(count);
+        for (let i = 0; i < count; ++i) {
+            commandBuffer[i] = new Map();
+        }
 
         this._count = count;
     }
@@ -148,15 +151,20 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
             this._isDynamicTransformMatricesBufferDirty = false;
         }
 
-        for (const [commandAndIndex, args] of this._commandBuffer) {
-            const [command, index] = commandAndIndex.split("-").map((v) => parseInt(v, 10)) as [RigidBodyCommand, number];
-            switch (command) {
-            case RigidBodyCommand.SetDamping:
-                wasmInstance.rigidBodyBundleSetDamping(bundlePtr, index, args[0], args[1]);
-                break;
+        const commandBuffer = this._commandBuffer;
+        for (let index = 0; index < this._count; ++index) {
+            if (commandBuffer[index].size === 0) {
+                continue;
             }
+            for (const [command, args] of commandBuffer[index]) {
+                switch (command) {
+                case RigidBodyCommand.SetDamping:
+                    wasmInstance.rigidBodyBundleSetDamping(bundlePtr, index, args[0], args[1]);
+                    break;
+                }
+            }
+            commandBuffer[index].clear();
         }
-        this._commandBuffer.clear();
 
         this._isDirty = false;
     }
@@ -243,5 +251,26 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         this._dynamicTransformMatrixDirtyFlags[index] = 1;
         this._isDynamicTransformMatricesBufferDirty = true;
         this._isDirty = true;
+    }
+
+    public setDamping(
+        _wasmInstance: BulletWasmInstance,
+        _bundlePtr: number,
+        index: number,
+        linearDamping: number,
+        angularDamping: number
+    ): void {
+        this._commandBuffer[index].set(RigidBodyCommand.SetDamping, [linearDamping, angularDamping]);
+        this._isDirty = true;
+    }
+
+    // this member is not updated by wasm so no need to synchronization before read
+    public getLinearDamping(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): number {
+        return wasmInstance.rigidBodyBundleGetLinearDamping(bundlePtr, index);
+    }
+
+    // this member is not updated by wasm so no need to synchronization before read
+    public getAngularDamping(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): number {
+        return wasmInstance.rigidBodyBundleGetAngularDamping(bundlePtr, index);
     }
 }

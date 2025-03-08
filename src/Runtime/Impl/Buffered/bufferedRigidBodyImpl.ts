@@ -141,4 +141,24 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
         this._isDynamicTransformMatrixBufferDirty = true;
         this._isDirty = true;
     }
+
+    public setDamping(
+        _wasmInstance: BulletWasmInstance,
+        _bodyPtr: number,
+        linearDamping: number,
+        angularDamping: number
+    ): void {
+        this._commandBuffer.set(RigidBodyCommand.SetDamping, [linearDamping, angularDamping]);
+        this._isDirty = true;
+    }
+
+    // this member is not updated by wasm so no need to synchronization before read
+    public getLinearDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
+        return wasmInstance.rigidBodyGetLinearDamping(bodyPtr);
+    }
+
+    // this member is not updated by wasm so no need to synchronization before read
+    public getAngularDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
+        return wasmInstance.rigidBodyGetAngularDamping(bodyPtr);
+    }
 }
