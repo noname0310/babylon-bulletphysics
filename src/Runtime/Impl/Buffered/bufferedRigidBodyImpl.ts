@@ -1,7 +1,8 @@
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
-import { BtTransformOffsets, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
+import { BtTransformOffsets, Constants, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
 import type { IRigidBodyImpl } from "../IRigidBodyImpl";
@@ -111,6 +112,10 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
             case RigidBodyCommand.SetDamping:
                 wasmInstance.rigidBodySetDamping(bodyPtr, args[0], args[1]);
                 break;
+            case RigidBodyCommand.SetMassProps: {
+                const localInertia = args[1] as Vector3;
+                wasmInstance.rigidBodySetMassProps(bodyPtr, args[0], localInertia.x, localInertia.y, localInertia.z);
+            }
             }
         }
         this._commandBuffer.clear();
@@ -160,5 +165,30 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
     // this member is not updated by wasm so no need to synchronization before read
     public getAngularDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
         return wasmInstance.rigidBodyGetAngularDamping(bodyPtr);
+    }
+
+    public setMassProps(
+        _wasmInstance: BulletWasmInstance,
+        _bodyPtr: number,
+        mass: number,
+        localInertia: DeepImmutable<Vector3>
+    ): void {
+        this._commandBuffer.set(RigidBodyCommand.SetMassProps, [mass, localInertia.clone()]);
+        this._isDirty = true;
+    }
+
+    // this member is not updated by wasm so no need to synchronization before read
+    public getMass(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
+        return wasmInstance.rigidBodyGetMass(bodyPtr);
+    }
+
+    // this member is not updated by wasm so no need to synchronization before read
+    public getLocalInertia(wasmInstance: BulletWasmInstance, bodyPtr: number): DeepImmutable<Vector3> {
+        const outBufferPtr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
+        const outBuffer = wasmInstance.createTypedArray(Float32Array, outBufferPtr, 3).array;
+        wasmInstance.rigidBodyGetLocalInertia(bodyPtr, outBufferPtr);
+        const result = new Vector3(outBuffer[0], outBuffer[1], outBuffer[2]);
+        wasmInstance.deallocateBuffer(outBufferPtr, 3 * Constants.A32BytesPerElement);
+        return result;
     }
 }

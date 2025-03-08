@@ -1,3 +1,4 @@
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
@@ -161,6 +162,10 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
                 case RigidBodyCommand.SetDamping:
                     wasmInstance.rigidBodyBundleSetDamping(bundlePtr, index, args[0], args[1]);
                     break;
+                case RigidBodyCommand.SetMassProps: {
+                    const localInertia = args[1] as Vector3;
+                    wasmInstance.rigidBodyBundleSetMassProps(bundlePtr, index, args[0], localInertia.x, localInertia.y, localInertia.z);
+                }
                 }
             }
             commandBuffer[index].clear();
@@ -272,5 +277,31 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
     // this member is not updated by wasm so no need to synchronization before read
     public getAngularDamping(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): number {
         return wasmInstance.rigidBodyBundleGetAngularDamping(bundlePtr, index);
+    }
+
+    public setMassProps(
+        _wasmInstance: BulletWasmInstance,
+        _bundlePtr: number,
+        index: number,
+        mass: number,
+        localInertia: DeepImmutable<Vector3>
+    ): void {
+        this._commandBuffer[index].set(RigidBodyCommand.SetMassProps, [mass, localInertia.clone()]);
+        this._isDirty = true;
+    }
+
+    // this member is not updated by wasm so no need to synchronization before read
+    public getMass(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): number {
+        return wasmInstance.rigidBodyBundleGetMass(bundlePtr, index);
+    }
+
+    // this member is not updated by wasm so no need to synchronization before read
+    public getLocalInertia(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): DeepImmutable<Vector3> {
+        const outBufferPtr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
+        const outBuffer = wasmInstance.createTypedArray(Float32Array, outBufferPtr, 3).array;
+        wasmInstance.rigidBodyBundleGetLocalInertia(bundlePtr, index, outBufferPtr);
+        const result = new Vector3(outBuffer[0], outBuffer[1], outBuffer[2]);
+        wasmInstance.deallocateBuffer(outBufferPtr, 3 * Constants.A32BytesPerElement);
+        return result;
     }
 }

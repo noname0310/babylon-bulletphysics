@@ -1,4 +1,4 @@
-import type { Matrix } from "@babylonjs/core/Maths/math.vector";
+import type { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
@@ -405,6 +405,82 @@ export class RigidBodyBundle {
             this.runtime.lock.wait();
         }
         this.impl.setDynamicTransformMatrixFromArray(this._worldTransformPtrArray, index, array, offset);
+    }
+
+    public setDamping(index: number, linearDamping: number, angularDamping: number): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        this.impl.setDamping(this.runtime.wasmInstance, this._inner.ptr, index, linearDamping, angularDamping);
+    }
+
+    public getLinearDamping(index: number): number {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        // does not need to synchronization because local inertia is not changed by physics simulation
+        return this.impl.getLinearDamping(this.runtime.wasmInstance, this._inner.ptr, index);
+    }
+
+    public getAngularDamping(index: number): number {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        // does not need to synchronization because local inertia is not changed by physics simulation
+        return this.impl.getAngularDamping(this.runtime.wasmInstance, this._inner.ptr, index);
+    }
+
+    public setMassProps(index: number, mass: number, localInertia: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        this.impl.setMassProps(this.runtime.wasmInstance, this._inner.ptr, index, mass, localInertia);
+    }
+
+    public getMass(index: number): number {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        // does not need to synchronization because local inertia is not changed by physics simulation
+        return this.impl.getMass(this.runtime.wasmInstance, this._inner.ptr, index);
+    }
+
+    public getLocalInertia(index: number): DeepImmutable<Vector3> {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        // does not need to synchronization because local inertia is not changed by physics simulation
+        return this.impl.getLocalInertia(this.runtime.wasmInstance, this._inner.ptr, index);
     }
 
     public get needToCommit(): boolean {

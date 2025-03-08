@@ -1,3 +1,4 @@
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
@@ -113,18 +114,42 @@ export class ImmediateRigidBodyBundleImpl implements IRigidBodyBundleImpl {
 
     public setDamping(
         wasmInstance: BulletWasmInstance,
-        bodyPtr: number,
+        bundlePtr: number,
+        index: number,
         linearDamping: number,
         angularDamping: number
     ): void {
-        wasmInstance.rigidBodySetDamping(bodyPtr, linearDamping, angularDamping);
+        wasmInstance.rigidBodyBundleSetDamping(bundlePtr, index, linearDamping, angularDamping);
     }
 
-    public getLinearDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
-        return wasmInstance.rigidBodyGetLinearDamping(bodyPtr);
+    public getLinearDamping(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): number {
+        return wasmInstance.rigidBodyBundleGetLinearDamping(bundlePtr, index);
     }
 
-    public getAngularDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
-        return wasmInstance.rigidBodyGetAngularDamping(bodyPtr);
+    public getAngularDamping(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): number {
+        return wasmInstance.rigidBodyBundleGetAngularDamping(bundlePtr, index);
+    }
+
+    public setMassProps(
+        wasmInstance: BulletWasmInstance,
+        bundlePtr: number,
+        index: number,
+        mass: number,
+        localInertia: DeepImmutable<Vector3>
+    ): void {
+        wasmInstance.rigidBodyBundleSetMassProps(bundlePtr, index, mass, localInertia.x, localInertia.y, localInertia.z);
+    }
+
+    public getMass(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): number {
+        return wasmInstance.rigidBodyBundleGetMass(bundlePtr, index);
+    }
+
+    public getLocalInertia(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): DeepImmutable<Vector3> {
+        const outBufferPtr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
+        const outBuffer = wasmInstance.createTypedArray(Float32Array, outBufferPtr, 3).array;
+        wasmInstance.rigidBodyBundleGetLocalInertia(bundlePtr, index, outBufferPtr);
+        const result = new Vector3(outBuffer[0], outBuffer[1], outBuffer[2]);
+        wasmInstance.deallocateBuffer(outBufferPtr, 3 * Constants.A32BytesPerElement);
+        return result;
     }
 }

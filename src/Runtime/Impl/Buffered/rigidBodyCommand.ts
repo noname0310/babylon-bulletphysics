@@ -1,3 +1,4 @@
 export const enum RigidBodyCommand {
-    SetDamping
+    SetDamping,
+    SetMassProps
 }

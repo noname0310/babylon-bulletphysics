@@ -1,4 +1,4 @@
-import type { Matrix } from "@babylonjs/core/Maths/math.vector";
+import type { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "./bulletWasmInstance";
@@ -356,6 +356,26 @@ export class RigidBody {
         this._nullCheck();
         // does not need to synchronization because damping is not changed by physics simulation
         return this.impl.getAngularDamping(this.runtime.wasmInstance, this._inner.ptr);
+    }
+
+    public setMassProps(mass: number, localInertia: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        this.impl.setMassProps(this.runtime.wasmInstance, this._inner.ptr, mass, localInertia);
+    }
+
+    public getMass(): number {
+        this._nullCheck();
+        // does not need to synchronization because mass is not changed by physics simulation
+        return this.impl.getMass(this.runtime.wasmInstance, this._inner.ptr);
+    }
+
+    public getLocalInertia(): DeepImmutable<Vector3> {
+        this._nullCheck();
+        // does not need to synchronization because local inertia is not changed by physics simulation
+        return this.impl.getLocalInertia(this.runtime.wasmInstance, this._inner.ptr);
     }
 
     public get needToCommit(): boolean {

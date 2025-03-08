@@ -1,7 +1,8 @@
-import type { DeepImmutable, Tuple } from "@babylonjs/core";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { DeepImmutable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
-import { BtTransformOffsets, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
+import { BtTransformOffsets, Constants, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
 import type { IRigidBodyImpl } from "../IRigidBodyImpl";
@@ -82,5 +83,27 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
 
     public getAngularDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
         return wasmInstance.rigidBodyGetAngularDamping(bodyPtr);
+    }
+
+    public setMassProps(
+        wasmInstance: BulletWasmInstance,
+        bodyPtr: number,
+        mass: number,
+        localInertia: DeepImmutable<Vector3>
+    ): void {
+        wasmInstance.rigidBodySetMassProps(bodyPtr, mass, localInertia.x, localInertia.y, localInertia.z);
+    }
+
+    public getMass(wasmInstance: BulletWasmInstance, bodyPtr: number): number {
+        return wasmInstance.rigidBodyGetMass(bodyPtr);
+    }
+
+    public getLocalInertia(wasmInstance: BulletWasmInstance, bodyPtr: number): DeepImmutable<Vector3> {
+        const outBufferPtr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
+        const outBuffer = wasmInstance.createTypedArray(Float32Array, outBufferPtr, 3).array;
+        wasmInstance.rigidBodyGetLocalInertia(bodyPtr, outBufferPtr);
+        const result = new Vector3(outBuffer[0], outBuffer[1], outBuffer[2]);
+        wasmInstance.deallocateBuffer(outBufferPtr, 3 * Constants.A32BytesPerElement);
+        return result;
     }
 }
