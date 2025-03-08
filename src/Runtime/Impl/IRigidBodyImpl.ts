@@ -1,3 +1,4 @@
+import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable, Tuple } from "@babylonjs/core/types";
 
 import type { BulletWasmInstance } from "../bulletWasmInstance";
@@ -32,4 +33,12 @@ export interface IRigidBodyImpl {
     ): void;
     getLinearDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number;
     getAngularDamping(wasmInstance: BulletWasmInstance, bodyPtr: number): number;
+    setMassProps(
+        wasmInstance: BulletWasmInstance,
+        bodyPtr: number,
+        mass: number,
+        localInertia: DeepImmutable<Vector3>
+    ): void;
+    getMass(wasmInstance: BulletWasmInstance, bodyPtr: number): number;
+    getLocalInertia(wasmInstance: BulletWasmInstance, bodyPtr: number): DeepImmutable<Vector3>;
 }
