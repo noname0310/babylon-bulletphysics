@@ -106,4 +106,8 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         wasmInstance.deallocateBuffer(outBufferPtr, 3 * Constants.A32BytesPerElement);
         return result;
     }
+    
+    public translate(wasmInstance: BulletWasmInstance, bodyPtr: number, translation: DeepImmutable<Vector3>): void {
+        wasmInstance.rigidBodyTranslate(bodyPtr, translation.x, translation.y, translation.z);
+    }
 }

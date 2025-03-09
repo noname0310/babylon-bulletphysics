@@ -41,4 +41,5 @@ export interface IRigidBodyImpl {
     ): void;
     getMass(wasmInstance: BulletWasmInstance, bodyPtr: number): number;
     getLocalInertia(wasmInstance: BulletWasmInstance, bodyPtr: number): DeepImmutable<Vector3>;
+    translate(wasmInstance: BulletWasmInstance, bodyPtr: number, translation: DeepImmutable<Vector3>): void;
 }

@@ -115,6 +115,12 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
             case RigidBodyCommand.SetMassProps: {
                 const localInertia = args[1] as Vector3;
                 wasmInstance.rigidBodySetMassProps(bodyPtr, args[0], localInertia.x, localInertia.y, localInertia.z);
+                break;
+            }
+            case RigidBodyCommand.Translate: {
+                const translation = args[0] as Vector3;
+                wasmInstance.rigidBodyTranslate(bodyPtr, translation.x, translation.y, translation.z);
+                break;
             }
             }
         }
@@ -190,5 +196,14 @@ export class BufferedRigidBodyImpl implements IRigidBodyImpl {
         const result = new Vector3(outBuffer[0], outBuffer[1], outBuffer[2]);
         wasmInstance.deallocateBuffer(outBufferPtr, 3 * Constants.A32BytesPerElement);
         return result;
+    }
+
+    public translate(
+        _wasmInstance: BulletWasmInstance,
+        _bodyPtr: number,
+        translation: DeepImmutable<Vector3>
+    ): void {
+        this._commandBuffer.set(RigidBodyCommand.Translate, [translation.clone()]);
+        this._isDirty = true;
     }
 }

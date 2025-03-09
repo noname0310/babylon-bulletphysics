@@ -165,6 +165,12 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
                 case RigidBodyCommand.SetMassProps: {
                     const localInertia = args[1] as Vector3;
                     wasmInstance.rigidBodyBundleSetMassProps(bundlePtr, index, args[0], localInertia.x, localInertia.y, localInertia.z);
+                    break;
+                }
+                case RigidBodyCommand.Translate: {
+                    const translation = args[0] as Vector3;
+                    wasmInstance.rigidBodyBundleTranslate(bundlePtr, index, translation.x, translation.y, translation.z);
+                    break;
                 }
                 }
             }
@@ -303,5 +309,15 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
         const result = new Vector3(outBuffer[0], outBuffer[1], outBuffer[2]);
         wasmInstance.deallocateBuffer(outBufferPtr, 3 * Constants.A32BytesPerElement);
         return result;
+    }
+
+    public translate(
+        _wasmInstance: BulletWasmInstance,
+        _bundlePtr: number,
+        index: number,
+        translation: DeepImmutable<Vector3>
+    ): void {
+        this._commandBuffer[index].set(RigidBodyCommand.Translate, [translation.clone()]);
+        this._isDirty = true;
     }
 }

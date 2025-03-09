@@ -378,6 +378,14 @@ export class RigidBody {
         return this.impl.getLocalInertia(this.runtime.wasmInstance, this._inner.ptr);
     }
 
+    public translate(translation: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        this.impl.translate(this.runtime.wasmInstance, this._inner.ptr, translation);
+    }
+
     public get needToCommit(): boolean {
         return this.impl.needToCommit ?? false;
     }

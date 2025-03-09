@@ -483,6 +483,18 @@ export class RigidBodyBundle {
         return this.impl.getLocalInertia(this.runtime.wasmInstance, this._inner.ptr, index);
     }
 
+    public translate(index: number, translation: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+
+        if (this._inner.hasReferences && this.impl.shouldSync) {
+            this.runtime.lock.wait();
+        }
+        this.impl.translate(this.runtime.wasmInstance, this._inner.ptr, index, translation);
+    }
+
     public get needToCommit(): boolean {
         return this.impl.needToCommit ?? false;
     }
