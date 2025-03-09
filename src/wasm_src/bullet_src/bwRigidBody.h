@@ -340,15 +340,15 @@ public:
         m_body.setAngularVelocity(btVector3(velocity[0], velocity[1], velocity[2]));
     }
 
-    btVector3 getVelocityInLocalPoint(const float* relativePosition) const
-    {
-        return m_body.getVelocityInLocalPoint(btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
-    }
+    // btVector3 getVelocityInLocalPoint(const float* relativePosition) const
+    // {
+    //     return m_body.getVelocityInLocalPoint(btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
+    // }
 
-    btVector3 getPushVelocityInLocalPoint(const float* relativePosition) const
-    {
-        return m_body.getPushVelocityInLocalPoint(btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
-    }
+    // btVector3 getPushVelocityInLocalPoint(const float* relativePosition) const
+    // {
+    //     return m_body.getPushVelocityInLocalPoint(btVector3(relativePosition[0], relativePosition[1], relativePosition[2]));
+    // }
 
     void translate(const float* translation)
     {
@@ -606,23 +606,23 @@ extern "C" void bw_rigidbody_set_angular_velocity(void* body, const float* veloc
     b->setAngularVelocity(velocity);
 }
 
-extern "C" void bw_rigidbody_get_velocity_in_local_point(const void* body, const float* relativePosition, float* velocity)
-{
-    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
-    btVector3 v = b->getVelocityInLocalPoint(relativePosition);
-    velocity[0] = v.x();
-    velocity[1] = v.y();
-    velocity[2] = v.z();
-}
+// extern "C" void bw_rigidbody_get_velocity_in_local_point(const void* body, const float* relativePosition, float* velocity)
+// {
+//     const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+//     btVector3 v = b->getVelocityInLocalPoint(relativePosition);
+//     velocity[0] = v.x();
+//     velocity[1] = v.y();
+//     velocity[2] = v.z();
+// }
 
-extern "C" void bw_rigidbody_get_push_velocity_in_local_point(const void* body, const float* relativePosition, float* velocity)
-{
-    const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
-    btVector3 v = b->getPushVelocityInLocalPoint(relativePosition);
-    velocity[0] = v.x();
-    velocity[1] = v.y();
-    velocity[2] = v.z();
-}
+// extern "C" void bw_rigidbody_get_push_velocity_in_local_point(const void* body, const float* relativePosition, float* velocity)
+// {
+//     const bwRigidBody* b = static_cast<const bwRigidBody*>(body);
+//     btVector3 v = b->getPushVelocityInLocalPoint(relativePosition);
+//     velocity[0] = v.x();
+//     velocity[1] = v.y();
+//     velocity[2] = v.z();
+// }
 
 extern "C" void bw_rigidbody_translate(void* body, const float* translation)
 {

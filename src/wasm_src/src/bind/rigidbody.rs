@@ -61,9 +61,9 @@ extern "C" {
 
     fn bw_rigidbody_set_angular_velocity(body: *mut std::ffi::c_void, velocity: *const f32);
 
-    fn bw_rigidbody_get_velocity_in_local_point(body: *const std::ffi::c_void, relative_position: *const f32, velocity: *mut f32);
+    // fn bw_rigidbody_get_velocity_in_local_point(body: *const std::ffi::c_void, relative_position: *const f32, velocity: *mut f32);
 
-    fn bw_rigidbody_get_push_velocity_in_local_point(body: *const std::ffi::c_void, relative_position: *const f32, velocity: *mut f32);
+    // fn bw_rigidbody_get_push_velocity_in_local_point(body: *const std::ffi::c_void, relative_position: *const f32, velocity: *mut f32);
 
     fn bw_rigidbody_translate(body: *mut std::ffi::c_void, translation: *const f32);
 
@@ -409,17 +409,17 @@ impl RigidBody {
         unsafe { bw_rigidbody_set_angular_velocity(self.ptr, velocity.as_ref().as_ptr()) };
     }
 
-    pub(crate) fn get_velocity_in_local_point(&self, relative_position: Vec3) -> Vec3 {
-        let mut velocity = Vec3::ZERO;
-        unsafe { bw_rigidbody_get_velocity_in_local_point(self.ptr, relative_position.as_ref().as_ptr(), velocity.as_mut().as_mut_ptr()) };
-        velocity
-    }
+    // pub(crate) fn get_velocity_in_local_point(&self, relative_position: Vec3) -> Vec3 {
+    //     let mut velocity = Vec3::ZERO;
+    //     unsafe { bw_rigidbody_get_velocity_in_local_point(self.ptr, relative_position.as_ref().as_ptr(), velocity.as_mut().as_mut_ptr()) };
+    //     velocity
+    // }
 
-    pub(crate) fn get_push_velocity_in_local_point(&self, relative_position: Vec3) -> Vec3 {
-        let mut velocity = Vec3::ZERO;
-        unsafe { bw_rigidbody_get_push_velocity_in_local_point(self.ptr, relative_position.as_ref().as_ptr(), velocity.as_mut().as_mut_ptr()) };
-        velocity
-    }
+    // pub(crate) fn get_push_velocity_in_local_point(&self, relative_position: Vec3) -> Vec3 {
+    //     let mut velocity = Vec3::ZERO;
+    //     unsafe { bw_rigidbody_get_push_velocity_in_local_point(self.ptr, relative_position.as_ref().as_ptr(), velocity.as_mut().as_mut_ptr()) };
+    //     velocity
+    // }
 
     pub(crate) fn translate(&mut self, translation: Vec3) {
         unsafe { bw_rigidbody_translate(self.ptr, translation.as_ref().as_ptr()) };
