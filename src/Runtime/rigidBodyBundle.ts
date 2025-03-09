@@ -796,4 +796,38 @@ export class RigidBodyBundle {
         }
         this.runtime.wasmInstance.rigidBodyBundleSetAngularVelocity(this._inner.ptr, index, velocity.x, velocity.y, velocity.z);
     }
+
+    public getVelocityInLocalPointToRef(index: number, relativePosition: DeepImmutable<Vector3>, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer1[0] = relativePosition.x;
+        vector3Buffer1[1] = relativePosition.y;
+        vector3Buffer1[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyBundleGetVelocityInLocalPoint(this._inner.ptr, index, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+        return result.set(vector3Buffer2[0], vector3Buffer2[1], vector3Buffer2[2]);
+    }
+
+    public getPushVelocityInLocalPointToRef(index: number, relativePosition: DeepImmutable<Vector3>, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer1[0] = relativePosition.x;
+        vector3Buffer1[1] = relativePosition.y;
+        vector3Buffer1[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyBundleGetPushVelocityInLocalPoint(this._inner.ptr, index, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+        return result.set(vector3Buffer2[0], vector3Buffer2[1], vector3Buffer2[2]);
+    }
 }

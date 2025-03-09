@@ -627,4 +627,32 @@ export class RigidBody {
         }
         this.runtime.wasmInstance.rigidBodySetAngularVelocity(this._inner.ptr, velocity.x, velocity.y, velocity.z);
     }
+
+    public getVelocityInLocalPointToRef(relativePosition: DeepImmutable<Vector3>, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer1[0] = relativePosition.x;
+        vector3Buffer1[1] = relativePosition.y;
+        vector3Buffer1[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyGetVelocityInLocalPoint(this._inner.ptr, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+        return result.set(vector3Buffer2[0], vector3Buffer2[1], vector3Buffer2[2]);
+    }
+
+    public getPushVelocityInLocalPointToRef(relativePosition: DeepImmutable<Vector3>, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer1[0] = relativePosition.x;
+        vector3Buffer1[1] = relativePosition.y;
+        vector3Buffer1[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyGetPushVelocityInLocalPoint(this._inner.ptr, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+        return result.set(vector3Buffer2[0], vector3Buffer2[1], vector3Buffer2[2]);
+    }
 }
