@@ -302,7 +302,7 @@ export class BufferedRigidBodyBundleImpl implements IRigidBodyBundleImpl {
     }
 
     // this member is not updated by wasm so no need to synchronization before read
-    public getLocalInertia(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): DeepImmutable<Vector3> {
+    public getLocalInertia(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): Vector3 {
         const outBufferPtr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
         const outBuffer = wasmInstance.createTypedArray(Float32Array, outBufferPtr, 3).array;
         wasmInstance.rigidBodyBundleGetLocalInertia(bundlePtr, index, outBufferPtr);

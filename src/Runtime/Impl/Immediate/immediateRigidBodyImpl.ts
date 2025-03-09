@@ -98,7 +98,7 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         return wasmInstance.rigidBodyGetMass(bodyPtr);
     }
 
-    public getLocalInertia(wasmInstance: BulletWasmInstance, bodyPtr: number): DeepImmutable<Vector3> {
+    public getLocalInertia(wasmInstance: BulletWasmInstance, bodyPtr: number): Vector3 {
         const outBufferPtr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
         const outBuffer = wasmInstance.createTypedArray(Float32Array, outBufferPtr, 3).array;
         wasmInstance.rigidBodyGetLocalInertia(bodyPtr, outBufferPtr);
@@ -106,7 +106,7 @@ export class ImmediateRigidBodyImpl implements IRigidBodyImpl {
         wasmInstance.deallocateBuffer(outBufferPtr, 3 * Constants.A32BytesPerElement);
         return result;
     }
-    
+
     public translate(wasmInstance: BulletWasmInstance, bodyPtr: number, translation: DeepImmutable<Vector3>): void {
         wasmInstance.rigidBodyTranslate(bodyPtr, translation.x, translation.y, translation.z);
     }

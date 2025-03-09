@@ -13,13 +13,22 @@ import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoL
 class RigidBodyBundleInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
     private _ptr: number;
+    private readonly _vector3Buffer1: IWasmTypedArray<Float32Array>;
+    private readonly _vector3Buffer2: IWasmTypedArray<Float32Array>;
     private readonly _shapeReferences: Set<PhysicsShape>;
     private _referenceCount: number;
     private _shadowCount: number;
 
-    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, shapeReferences: Set<PhysicsShape>) {
-        this._wasmInstance = wasmInstance;
+    public constructor(wasmInstance: BulletWasmInstance, ptr: number, shapeReferences: Set<PhysicsShape>) {
+        this._wasmInstance = new WeakRef(wasmInstance);
         this._ptr = ptr;
+
+        const vector3Buffer1Ptr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
+        this._vector3Buffer1 = wasmInstance.createTypedArray(Float32Array, vector3Buffer1Ptr, 3);
+
+        const vector3Buffer2Ptr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
+        this._vector3Buffer2 = wasmInstance.createTypedArray(Float32Array, vector3Buffer2Ptr, 3);
+
         this._shapeReferences = shapeReferences;
         for (const shape of shapeReferences) {
             shape.addReference();
@@ -37,8 +46,15 @@ class RigidBodyBundleInner {
             return;
         }
 
-        // this operation is thread-safe because the rigid body bundle is not belong to any physics world
-        this._wasmInstance.deref()?.destroyRigidBodyBundle(this._ptr);
+        const wasmInstance = this._wasmInstance.deref();
+
+        if (wasmInstance !== undefined) {
+            wasmInstance.deallocateBuffer(this._vector3Buffer1.array.byteOffset, 3 * Constants.A32BytesPerElement);
+            wasmInstance.deallocateBuffer(this._vector3Buffer2.array.byteOffset, 3 * Constants.A32BytesPerElement);
+
+            // this operation is thread-safe because the rigid body bundle is not belong to any physics world
+            wasmInstance.destroyRigidBodyBundle(this._ptr);
+        }
 
         this._ptr = 0;
         for (const shape of this._shapeReferences) {
@@ -49,6 +65,14 @@ class RigidBodyBundleInner {
 
     public get ptr(): number {
         return this._ptr;
+    }
+
+    public get vector3Buffer1(): IWasmTypedArray<Float32Array> {
+        return this._vector3Buffer1;
+    }
+
+    public get vector3Buffer2(): IWasmTypedArray<Float32Array> {
+        return this._vector3Buffer2;
     }
 
     public addReference(): void {
@@ -137,7 +161,7 @@ export class RigidBodyBundle {
         this._worldTransformPtrArray = worldTransformPtrArray;
         const temporalKinematicStatesPtr = wasmInstance.rigidBodyBundleGetTemporalKinematicStatesPtr(ptr);
         this._temporalKinematicStatesPtr = wasmInstance.createTypedArray(Uint8Array, temporalKinematicStatesPtr, count);
-        this._inner = new RigidBodyBundleInner(new WeakRef(runtime.wasmInstance), ptr, shapeReferences);
+        this._inner = new RigidBodyBundleInner(runtime.wasmInstance, ptr, shapeReferences);
         this._count = count;
         this._worldReference = null;
 
@@ -470,7 +494,7 @@ export class RigidBodyBundle {
         return this.impl.getMass(this.runtime.wasmInstance, this._inner.ptr, index);
     }
 
-    public getLocalInertia(index: number): DeepImmutable<Vector3> {
+    public getLocalInertia(index: number): Vector3 {
         this._nullCheck();
         if (index < 0 || this._count <= index) {
             throw new RangeError("Index out of range");
@@ -513,5 +537,263 @@ export class RigidBodyBundle {
             this._temporalKinematicStatesPtr,
             this._worldTransformPtrArray
         );
+    }
+
+    // these methods need to be always synchronized
+
+    public getTotalForceToRef(index: number, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyBundleGetTotalForce(this._inner.ptr, index, vector3Buffer1.byteOffset);
+        return result.copyFromFloats(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public getTotalTorqueToRef(index: number, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyBundleGetTotalTorque(this._inner.ptr, index, vector3Buffer1.byteOffset);
+        return result.copyFromFloats(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public applyCentralForce(index: number, force: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleApplyCentralForce(this._inner.ptr, index, force.x, force.y, force.z);
+    }
+
+    public applyTorque(index: number, torque: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleApplyTorque(this._inner.ptr, index, torque.x, torque.y, torque.z);
+    }
+
+    public applyForce(index: number, force: DeepImmutable<Vector3>, relativePosition: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        vector3Buffer1[0] = force.x;
+        vector3Buffer1[1] = force.y;
+        vector3Buffer1[2] = force.z;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer2[0] = relativePosition.x;
+        vector3Buffer2[1] = relativePosition.y;
+        vector3Buffer2[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyBundleApplyForce(this._inner.ptr, index, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+    }
+
+    public applyCentralImpulse(index: number, impulse: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleApplyCentralImpulse(this._inner.ptr, index, impulse.x, impulse.y, impulse.z);
+    }
+
+    public applyTorqueImpulse(index: number, impulse: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleApplyTorqueImpulse(this._inner.ptr, index, impulse.x, impulse.y, impulse.z);
+    }
+
+    public applyImpulse(index: number, impulse: DeepImmutable<Vector3>, relativePosition: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        vector3Buffer1[0] = impulse.x;
+        vector3Buffer1[1] = impulse.y;
+        vector3Buffer1[2] = impulse.z;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer2[0] = relativePosition.x;
+        vector3Buffer2[1] = relativePosition.y;
+        vector3Buffer2[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyBundleApplyImpulse(this._inner.ptr, index, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+    }
+
+    public applyPushImpulse(index: number, impulse: DeepImmutable<Vector3>, relativePosition: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        vector3Buffer1[0] = impulse.x;
+        vector3Buffer1[1] = impulse.y;
+        vector3Buffer1[2] = impulse.z;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer2[0] = relativePosition.x;
+        vector3Buffer2[1] = relativePosition.y;
+        vector3Buffer2[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyBundleApplyPushImpulse(this._inner.ptr, index, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+    }
+
+    public getPushVelocityToRef(index: number, result: Vector3): DeepImmutable<Vector3> {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyBundleGetPushVelocity(this._inner.ptr, index, vector3Buffer1.byteOffset);
+        return result.copyFromFloats(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public getTurnVelocityToRef(index: number, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyBundleGetTurnVelocity(this._inner.ptr, index, vector3Buffer1.byteOffset);
+        return result.copyFromFloats(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public setPushVelocity(index: number, velocity: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleSetPushVelocity(this._inner.ptr, index, velocity.x, velocity.y, velocity.z);
+    }
+
+    public setTurnVelocity(index: number, velocity: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleSetTurnVelocity(this._inner.ptr, index, velocity.x, velocity.y, velocity.z);
+    }
+
+    public applyCentralPushImpulse(index: number, impulse: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleApplyCentralPushImpulse(this._inner.ptr, index, impulse.x, impulse.y, impulse.z);
+    }
+
+    public applyTorqueTurnImpulse(index: number, impulse: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleApplyTorqueTurnImpulse(this._inner.ptr, index, impulse.x, impulse.y, impulse.z);
+    }
+
+    public clearForces(index: number): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleClearForces(this._inner.ptr, index);
+    }
+
+    public getLinearVelocityToRef(index: number, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyBundleGetLinearVelocity(this._inner.ptr, index, vector3Buffer1.byteOffset);
+        return result.copyFromFloats(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public getAngularVelocityToRef(index: number, result: Vector3): Vector3 {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyBundleGetAngularVelocity(this._inner.ptr, index, vector3Buffer1.byteOffset);
+        return result.copyFromFloats(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public setLinearVelocity(index: number, velocity: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleSetLinearVelocity(this._inner.ptr, index, velocity.x, velocity.y, velocity.z);
+    }
+
+    public setAngularVelocity(index: number, velocity: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyBundleSetAngularVelocity(this._inner.ptr, index, velocity.x, velocity.y, velocity.z);
     }
 }

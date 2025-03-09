@@ -50,6 +50,6 @@ export interface IRigidBodyBundleImpl {
         localInertia: DeepImmutable<Vector3>
     ): void;
     getMass(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): number;
-    getLocalInertia(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): DeepImmutable<Vector3>;
+    getLocalInertia(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number): Vector3;
     translate(wasmInstance: BulletWasmInstance, bundlePtr: number, index: number, translation: DeepImmutable<Vector3>): void;
 }

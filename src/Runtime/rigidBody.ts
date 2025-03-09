@@ -14,13 +14,22 @@ import type { RigidBodyConstructionInfoList } from "./rigidBodyConstructionInfoL
 class RigidBodyInner {
     private readonly _wasmInstance: WeakRef<BulletWasmInstance>;
     private _ptr: number;
+    private readonly _vector3Buffer1: IWasmTypedArray<Float32Array>;
+    private readonly _vector3Buffer2: IWasmTypedArray<Float32Array>;
     private _shapeReference: Nullable<PhysicsShape>;
     private _referenceCount: number;
     private _shadowCount: number;
 
-    public constructor(wasmInstance: WeakRef<BulletWasmInstance>, ptr: number, shapeReference: PhysicsShape) {
-        this._wasmInstance = wasmInstance;
+    public constructor(wasmInstance: BulletWasmInstance, ptr: number, shapeReference: PhysicsShape) {
+        this._wasmInstance = new WeakRef(wasmInstance);
         this._ptr = ptr;
+
+        const vector3Buffer1Ptr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
+        this._vector3Buffer1 = wasmInstance.createTypedArray(Float32Array, vector3Buffer1Ptr, 3);
+
+        const vector3Buffer2Ptr = wasmInstance.allocateBuffer(3 * Constants.A32BytesPerElement);
+        this._vector3Buffer2 = wasmInstance.createTypedArray(Float32Array, vector3Buffer2Ptr, 3);
+
         this._shapeReference = shapeReference;
         shapeReference.addReference();
         this._referenceCount = 0;
@@ -40,8 +49,15 @@ class RigidBodyInner {
             return;
         }
 
-        // this operation is thread-safe because the rigid body is not belong to any physics world
-        this._wasmInstance.deref()?.destroyRigidBody(this._ptr);
+        const wasmInstance = this._wasmInstance.deref();
+
+        if (wasmInstance !== undefined) {
+            wasmInstance.deallocateBuffer(this._vector3Buffer1.array.byteOffset, 3 * Constants.A32BytesPerElement);
+            wasmInstance.deallocateBuffer(this._vector3Buffer2.array.byteOffset, 3 * Constants.A32BytesPerElement);
+
+            // this operation is thread-safe because the rigid body is not belong to any physics world
+            wasmInstance.destroyRigidBody(this._ptr);
+        }
 
         this._ptr = 0;
         this._shapeReference!.removeReference();
@@ -50,6 +66,14 @@ class RigidBodyInner {
 
     public get ptr(): number {
         return this._ptr;
+    }
+
+    public get vector3Buffer1(): IWasmTypedArray<Float32Array> {
+        return this._vector3Buffer1;
+    }
+
+    public get vector3Buffer2(): IWasmTypedArray<Float32Array> {
+        return this._vector3Buffer2;
     }
 
     public addReference(): void {
@@ -142,7 +166,7 @@ export class RigidBody {
         }
         const temporalKinematicStatePtr = wasmInstance.rigidBodyGetTemporalKinematicStatePtr(ptr);
         this._temporalKinematicStatePtr = wasmInstance.createTypedArray(Uint8Array, temporalKinematicStatePtr, 1);
-        this._inner = new RigidBodyInner(new WeakRef(runtime.wasmInstance), ptr, shape);
+        this._inner = new RigidBodyInner(runtime.wasmInstance, ptr, shape);
         this._worldReference = null;
 
         let registry = physicsRigidBodyRegistryMap.get(wasmInstance);
@@ -372,7 +396,7 @@ export class RigidBody {
         return this.impl.getMass(this.runtime.wasmInstance, this._inner.ptr);
     }
 
-    public getLocalInertia(): DeepImmutable<Vector3> {
+    public getLocalInertia(): Vector3 {
         this._nullCheck();
         // does not need to synchronization because local inertia is not changed by physics simulation
         return this.impl.getLocalInertia(this.runtime.wasmInstance, this._inner.ptr);
@@ -404,5 +428,203 @@ export class RigidBody {
             this._temporalKinematicStatePtr,
             this._worldTransformPtr
         );
+    }
+
+    // these methods need to be always synchronized
+
+    public getTotalForceToRef(result: Vector3): Vector3 {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyGetTotalForce(this._inner.ptr, vector3Buffer1.byteOffset);
+        return result.set(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public getTotalTorqueToRef(result: Vector3): Vector3 {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyGetTotalTorque(this._inner.ptr, vector3Buffer1.byteOffset);
+        return result.set(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public applyCentralForce(force: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyApplyCentralForce(this._inner.ptr, force.x, force.y, force.z);
+    }
+
+    public applyTorque(torque: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyApplyTorque(this._inner.ptr, torque.x, torque.y, torque.z);
+    }
+
+    public applyForce(force: DeepImmutable<Vector3>, relativePosition: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        vector3Buffer1[0] = force.x;
+        vector3Buffer1[1] = force.y;
+        vector3Buffer1[2] = force.z;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer2[0] = relativePosition.x;
+        vector3Buffer2[1] = relativePosition.y;
+        vector3Buffer2[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyApplyForce(this._inner.ptr, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+    }
+
+    public applyCentralImpulse(impulse: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyApplyCentralImpulse(this._inner.ptr, impulse.x, impulse.y, impulse.z);
+    }
+
+    public applyTorqueImpulse(impulse: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyApplyTorqueImpulse(this._inner.ptr, impulse.x, impulse.y, impulse.z);
+    }
+
+    public applyImpulse(impulse: DeepImmutable<Vector3>, relativePosition: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        vector3Buffer1[0] = impulse.x;
+        vector3Buffer1[1] = impulse.y;
+        vector3Buffer1[2] = impulse.z;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer2[0] = relativePosition.x;
+        vector3Buffer2[1] = relativePosition.y;
+        vector3Buffer2[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyApplyImpulse(this._inner.ptr, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+    }
+
+    public applyPushImpulse(impulse: DeepImmutable<Vector3>, relativePosition: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        vector3Buffer1[0] = impulse.x;
+        vector3Buffer1[1] = impulse.y;
+        vector3Buffer1[2] = impulse.z;
+        const vector3Buffer2 = this._inner.vector3Buffer2.array;
+        vector3Buffer2[0] = relativePosition.x;
+        vector3Buffer2[1] = relativePosition.y;
+        vector3Buffer2[2] = relativePosition.z;
+        this.runtime.wasmInstance.rigidBodyApplyPushImpulse(this._inner.ptr, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
+    }
+
+    public getPushVelocityToRef(result: Vector3): DeepImmutable<Vector3> {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyGetPushVelocity(this._inner.ptr, vector3Buffer1.byteOffset);
+        return result.set(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public getTurnVelocityToRef(result: Vector3): Vector3 {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyGetTurnVelocity(this._inner.ptr, vector3Buffer1.byteOffset);
+        return result.set(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public setPushVelocity(velocity: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodySetPushVelocity(this._inner.ptr, velocity.x, velocity.y, velocity.z);
+    }
+
+    public setTurnVelocity(velocity: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodySetTurnVelocity(this._inner.ptr, velocity.x, velocity.y, velocity.z);
+    }
+
+    public applyCentralPushImpulse(impulse: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyApplyCentralPushImpulse(this._inner.ptr, impulse.x, impulse.y, impulse.z);
+    }
+
+    public applyTorqueTurnImpulse(impulse: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyApplyTorqueTurnImpulse(this._inner.ptr, impulse.x, impulse.y, impulse.z);
+    }
+
+    public clearForces(): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodyClearForces(this._inner.ptr);
+    }
+
+    public getLinearVelocityToRef(result: Vector3): Vector3 {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyGetLinearVelocity(this._inner.ptr, vector3Buffer1.byteOffset);
+        return result.set(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public getAngularVelocityToRef(result: Vector3): Vector3 {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        const vector3Buffer1 = this._inner.vector3Buffer1.array;
+        this.runtime.wasmInstance.rigidBodyGetAngularVelocity(this._inner.ptr, vector3Buffer1.byteOffset);
+        return result.set(vector3Buffer1[0], vector3Buffer1[1], vector3Buffer1[2]);
+    }
+
+    public setLinearVelocity(velocity: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodySetLinearVelocity(this._inner.ptr, velocity.x, velocity.y, velocity.z);
+    }
+
+    public setAngularVelocity(velocity: DeepImmutable<Vector3>): void {
+        this._nullCheck();
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this.runtime.wasmInstance.rigidBodySetAngularVelocity(this._inner.ptr, velocity.x, velocity.y, velocity.z);
     }
 }
