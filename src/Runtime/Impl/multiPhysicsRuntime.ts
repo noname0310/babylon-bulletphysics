@@ -62,6 +62,10 @@ function multiPhysicsRuntimeFinalizer(runtime: MultiPhysicsRuntimeInner): void {
 const multiPhysicsRuntimeRegistryMap = new WeakMap<BulletWasmInstance, FinalizationRegistry<MultiPhysicsRuntimeInner>>();
 
 export class MultiPhysicsRuntime implements IRuntime {
+    /**
+     * in this observable callback scope, ensure that the physics world is not being evaluated
+     */
+    public readonly onSyncObservable: Observable<void>;
     public readonly onTickObservable: Observable<void>;
 
     /**
@@ -107,6 +111,7 @@ export class MultiPhysicsRuntime implements IRuntime {
             preserveBackBuffer = false
         } = options;
 
+        this.onSyncObservable = new Observable<void>();
         this.onTickObservable = new Observable<void>();
 
         this.wasmInstance = wasmInstance;
@@ -265,6 +270,7 @@ export class MultiPhysicsRuntime implements IRuntime {
                 }
             }
 
+            this.onSyncObservable.notifyObservers();
             this.wasmInstance.multiPhysicsRuntimeBufferedStepSimulation?.(this._inner.ptr, deltaTime, this.maxSubSteps, this.fixedTimeStep);
         } else {
             if (this._preserveBackBuffer) {
@@ -294,6 +300,7 @@ export class MultiPhysicsRuntime implements IRuntime {
             }
 
             this._physicsWorld.stepSimulation(deltaTime, this.maxSubSteps, this.fixedTimeStep);
+            this.onSyncObservable.notifyObservers();
         }
 
         this.onTickObservable.notifyObservers();
@@ -370,6 +377,17 @@ export class MultiPhysicsRuntime implements IRuntime {
             if (this._rigidBodyUsingBackBuffer) {
                 rigidBody.updateBufferedMotionState(false);
             }
+
+            const isBufferedImpl = rigidBody.impl instanceof BufferedRigidBodyImpl;
+            if (isBufferedImpl !== (this._evaluationType === PhysicsRuntimeEvaluationType.Buffered)) {
+                if (isBufferedImpl && rigidBody.needToCommit) {
+                    this.lock.wait();
+                    rigidBody.commitToWasm();
+                }
+                rigidBody.impl = this._evaluationType === PhysicsRuntimeEvaluationType.Buffered
+                    ? new BufferedRigidBodyImpl()
+                    : new ImmediateRigidBodyImpl();
+            }
         }
         return result;
     }
@@ -394,6 +412,17 @@ export class MultiPhysicsRuntime implements IRuntime {
             this._rigidBodyBundleList.push(rigidBodyBundle);
             if (this._rigidBodyUsingBackBuffer) {
                 rigidBodyBundle.updateBufferedMotionStates(false);
+            }
+
+            const isBufferedImpl = rigidBodyBundle.impl instanceof BufferedRigidBodyBundleImpl;
+            if (isBufferedImpl !== (this._evaluationType === PhysicsRuntimeEvaluationType.Buffered)) {
+                if (isBufferedImpl && rigidBodyBundle.needToCommit) {
+                    this.lock.wait();
+                    rigidBodyBundle.commitToWasm();
+                }
+                rigidBodyBundle.impl = this._evaluationType === PhysicsRuntimeEvaluationType.Buffered
+                    ? new BufferedRigidBodyBundleImpl(rigidBodyBundle.count)
+                    : new ImmediateRigidBodyBundleImpl(rigidBodyBundle.count);
             }
         }
         return result;
