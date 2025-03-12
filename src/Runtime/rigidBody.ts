@@ -347,13 +347,18 @@ export class RigidBody {
         this.impl.setTransformMatrixFromArray(this._motionStatePtr, this._temporalKinematicStatePtr, array, offset);
     }
 
-    public setDynamicTransformMatrix(matrix: Matrix): void {
-        this.setDynamicTransformMatrixFromArray(matrix.m, 0);
+    public setDynamicTransformMatrix(matrix: Matrix, fallbackToSetTransformMatrix: boolean = false): void {
+        this.setDynamicTransformMatrixFromArray(matrix.m, 0, fallbackToSetTransformMatrix);
     }
 
-    public setDynamicTransformMatrixFromArray(array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+    public setDynamicTransformMatrixFromArray(array: DeepImmutable<Tuple<number, 16>>, offset: number = 0, fallbackToSetTransformMatrix: boolean = false): void {
         if (this._worldTransformPtr === null) {
-            throw new Error("Cannot set dynamic transform of non-dynamic body");
+            if (fallbackToSetTransformMatrix) {
+                this.setTransformMatrixFromArray(array, offset);
+                return;
+            } else {
+                throw new Error("Cannot set dynamic transform of non-dynamic body");
+            }
         }
         this._nullCheck();
         if (this._inner.hasReferences && this.impl.shouldSync) {

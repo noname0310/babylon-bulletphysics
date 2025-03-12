@@ -412,13 +412,18 @@ export class RigidBodyBundle {
         this.impl.setTransformMatricesFromArray(this._motionStatesPtr, this._temporalKinematicStatesPtr, array, offset);
     }
 
-    public setDynamicTransformMatrix(index: number, matrix: Matrix): void {
-        this.setDynamicTransformMatrixFromArray(index, matrix.m, 0);
+    public setDynamicTransformMatrix(index: number, matrix: Matrix, fallbackToSetTransformMatrix: boolean = false): void {
+        this.setDynamicTransformMatrixFromArray(index, matrix.m, 0, fallbackToSetTransformMatrix);
     }
 
-    public setDynamicTransformMatrixFromArray(index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
+    public setDynamicTransformMatrixFromArray(index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0, fallbackToSetTransformMatrix: boolean = false): void {
         if (this._worldTransformPtrArray[index] === null) {
-            throw new Error("Cannot set dynamic transform of non-dynamic body");
+            if (fallbackToSetTransformMatrix) {
+                this.setTransformMatrixFromArray(index, array, offset);
+                return;
+            } else {
+                throw new Error("Cannot set dynamic transform of non-dynamic body");
+            }
         }
         this._nullCheck();
         if (index < 0 || this._count <= index) {
