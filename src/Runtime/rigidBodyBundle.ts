@@ -412,8 +412,8 @@ export class RigidBodyBundle {
         this.impl.setTransformMatricesFromArray(this._motionStatesPtr, this._temporalKinematicStatesPtr, array, offset);
     }
 
-    public setDynamicTransformMatrix(matrix: Matrix): void {
-        this.setTransformMatricesFromArray(matrix.m, 0);
+    public setDynamicTransformMatrix(index: number, matrix: Matrix): void {
+        this.setDynamicTransformMatrixFromArray(index, matrix.m, 0);
     }
 
     public setDynamicTransformMatrixFromArray(index: number, array: DeepImmutable<Tuple<number, 16>>, offset: number = 0): void {
