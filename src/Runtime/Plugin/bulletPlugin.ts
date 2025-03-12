@@ -1,6 +1,7 @@
 import type { BoundingBox } from "@babylonjs/core/Culling/boundingBox";
-import type { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Matrix } from "@babylonjs/core/Maths/math.vector";
+import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Quaternion } from "@babylonjs/core/Maths/math.vector";
+import { Matrix, TmpVectors } from "@babylonjs/core/Maths/math.vector";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Logger } from "@babylonjs/core/Misc/logger";
@@ -17,10 +18,20 @@ import type { Nullable } from "@babylonjs/core/types";
 import type { BulletWasmInstance } from "../bulletWasmInstance";
 import { MultiPhysicsRuntime } from "../Impl/multiPhysicsRuntime";
 import { MotionType } from "../motionType";
-import { RigidBodyConstructionInfo } from "../rigidBodyConstructionInfo";
-import { RigidBodyConstructionInfoList } from "../rigidBodyConstructionInfoList";
+import { PluginBody } from "./pluginBody";
+import { PluginBodyBundle } from "./pluginBodyBundle";
+import { PluginConstructionInfo } from "./pluginConstructionInfo";
+import { PluginConstructionInfoList } from "./pluginConstructionInfoList";
 import type { IPluginShape} from "./pluginShape";
 import { PluginBoxShape } from "./pluginShape";
+
+export class BulletPluginCommandContext {
+    public worldId: number;
+
+    public constructor() {
+        this.worldId = 0;
+    }
+}
 
 /**
  * The Bullet Physics plugin
@@ -49,6 +60,10 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * Observable for trigger entered and trigger exited events
      */
     public onTriggerCollisionObservable = new Observable<IBasePhysicsCollisionEvent>();
+
+    private readonly _initializedBodies: PhysicsBody[] = [];
+    private readonly _unInitializedBodies: PhysicsBody[] = [];
+    public readonly commandContext = new BulletPluginCommandContext();
 
     public constructor(wasmInstance: BulletWasmInstance) {
         this.world = new MultiPhysicsRuntime(wasmInstance);
@@ -95,6 +110,37 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * to accurately simulate the physics bodies in the world.
      */
     public executeStep(delta: number, bodies: PhysicsBody[]): void {
+        // initialize any un-initialized bodies before stepping the world
+        {
+            const unInitializedBodies = this._unInitializedBodies;
+            for (let i = 0; i < unInitializedBodies.length; ++i) {
+                const body = unInitializedBodies[i];
+                const pluginData = body._pluginData;
+                if (pluginData) {
+                    if (pluginData instanceof PluginConstructionInfo) {
+                        const instance = new PluginBody(this.world, pluginData);
+                        this.world.addRigidBody(instance, pluginData.worldId);
+                        this._initializedBodies.push(unInitializedBodies[i]);
+                        body._pluginData = instance;
+                    } else {
+                        throw new Error("Invalid body type.");
+                    }
+                }
+                const pluginDataInstances = body._pluginDataInstances;
+                if (pluginDataInstances) {
+                    if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                        const instance = new PluginBodyBundle(this.world, pluginDataInstances);
+                        this.world.addRigidBodyBundle(instance, pluginDataInstances.worldId);
+                        this._initializedBodies.push(unInitializedBodies[i]);
+                        body._pluginDataInstances = instance as unknown as any[];
+                    } else {
+                        throw new Error("Invalid body type.");
+                    }
+                }
+            }
+            unInitializedBodies.length = 0;
+        }
+
         for (let i = 0; i < bodies.length; ++i) {
             const physicsBody = bodies[i];
             if (physicsBody.disablePreStep) {
@@ -131,18 +177,32 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
     public setPhysicsBodyTransformation(body: PhysicsBody, node: TransformNode): void {
         if (body.getPrestepType() === PhysicsPrestepType.TELEPORT) {
             const transformNode = body.transformNode;
-            if (body.numInstances > 0) {
-                // instances
+            // regular
+            const pluginData = body._pluginData;
+            if (pluginData) {
+                if (pluginData instanceof PluginBody) {
+                    pluginData.setTransformMatrix(this._getTransformInfos(node, BulletPlugin._TempMatrix));
+                } else if (pluginData instanceof PluginConstructionInfo) {
+                    pluginData.setInitialTransform(this._getTransformInfos(node, BulletPlugin._TempMatrix));
+                }
+            }
+
+            // instances
+            const pluginDataInstances = body._pluginDataInstances;
+            if (pluginDataInstances) {
                 const m = transformNode as Mesh;
                 const matrixData = m._thinInstanceDataStorage.matrixData;
                 if (!matrixData) {
                     return; // TODO: error handling
                 }
-                // const instancesCount = body.numInstances;
-                // this._createOrUpdateBodyInstances(body, body.getMotionType(), matrixData, 0, instancesCount, true);
-            } else {
-                // regular
-                // this._hknp.HP_Body_SetQTransform(body._pluginData.hpBodyId, this._getTransformInfos(node));
+                if (pluginDataInstances instanceof PluginBodyBundle) {
+                    pluginDataInstances.setTransformMatricesFromArray(matrixData);
+                } else if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                    for (let i = 0; i < pluginDataInstances.count; ++i) {
+                        const transform = Matrix.FromArrayToRef(matrixData, i * 16, BulletPlugin._TempMatrix);
+                        pluginDataInstances.setInitialTransform(i, transform);
+                    }
+                }
             }
         } else if (body.getPrestepType() === PhysicsPrestepType.ACTION) {
             this.setTargetTransform(body, node.absolutePosition, node.absoluteRotationQuaternion);
@@ -192,6 +252,19 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    private static _MotionTypeToBullet(motionType: PhysicsMotionType): MotionType {
+        switch (motionType) {
+        case PhysicsMotionType.DYNAMIC:
+            return MotionType.Dynamic;
+        case PhysicsMotionType.STATIC:
+            return MotionType.Static;
+        case PhysicsMotionType.ANIMATED:
+            return MotionType.Kinematic;
+        default:
+            throw new Error("Invalid motion type");
+        }
+    }
+
     private static readonly _TempMatrix: Matrix = new Matrix();
 
     /**
@@ -206,29 +279,15 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * and orientation to a transform and sets the body's transform to the given values.
      */
     public initBody(body: PhysicsBody, motionType: PhysicsMotionType, position: Vector3, orientation: Quaternion): void {
-        const constructionInfo = body._pluginData = new RigidBodyConstructionInfo(this.world.wasmInstance);
+        const info = body._pluginData = new PluginConstructionInfo(this.world.wasmInstance);
 
-        let bulletMotionType: MotionType;
-        switch (motionType) {
-        case PhysicsMotionType.DYNAMIC:
-            bulletMotionType = MotionType.Dynamic;
-            break;
-        case PhysicsMotionType.STATIC:
-            bulletMotionType = MotionType.Static;
-            break;
-        case PhysicsMotionType.ANIMATED:
-            bulletMotionType = MotionType.Kinematic;
-            break;
-        default:
-            throw new Error("Invalid motion type");
-        }
-        constructionInfo.motionType = bulletMotionType;
+        info.motionType = BulletPlugin._MotionTypeToBullet(motionType);
 
         const transform = Matrix.FromQuaternionToRef(orientation, BulletPlugin._TempMatrix);
         transform.setTranslation(position);
-        constructionInfo.setInitialTransform(transform);
+        info.setInitialTransform(transform);
 
-        // this._bodies.set(body._pluginData.hpBodyId[0], { body: body, index: 0 });
+        this._unInitializedBodies.push(body);
     }
 
     /**
@@ -245,10 +304,24 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * world.
      */
     public initBodyInstances(body: PhysicsBody, motionType: PhysicsMotionType, mesh: Mesh): void {
-        body;
-        motionType;
-        mesh;
-        throw new Error("Method not implemented.");
+        const instancesCount = mesh._thinInstanceDataStorage?.instancesCount ?? 0;
+        const matrixData = mesh._thinInstanceDataStorage.matrixData;
+        if (!matrixData) {
+            return; // TODO: error handling
+        }
+
+        const info = new PluginConstructionInfoList(this.world.wasmInstance, instancesCount);
+        body._pluginDataInstances = info as unknown as any[];
+
+        const bulletMotionType = BulletPlugin._MotionTypeToBullet(motionType);
+
+        for (let i = 0; i < instancesCount; ++i) {
+            info.setMotionType(i, bulletMotionType);
+            const transform = Matrix.FromArrayToRef(matrixData, i * 16, BulletPlugin._TempMatrix);
+            info.setInitialTransform(i, transform);
+        }
+
+        this._unInitializedBodies.push(body);
     }
 
     /**
@@ -257,9 +330,51 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * @param mesh the mesh with reference instances
      */
     public updateBodyInstances(body: PhysicsBody, mesh: Mesh): void {
-        body;
-        mesh;
-        throw new Error("Method not implemented.");
+        const instancesCount = mesh._thinInstanceDataStorage?.instancesCount ?? 0;
+        const matrixData = mesh._thinInstanceDataStorage.matrixData;
+        if (!matrixData) {
+            return; // TODO: error handling
+        }
+        const pluginInstances = body._pluginDataInstances;
+        const pluginInstancesCount = pluginInstances.length;
+        const motionType = BulletPlugin._MotionTypeToBullet(this.getMotionType(body));
+
+        if (instancesCount !== pluginInstancesCount) {
+            if (pluginInstances instanceof PluginBodyBundle) {
+                this.world.removeRigidBodyBundle(pluginInstances, pluginInstances.info.worldId);
+                const oldInfo = pluginInstances.info;
+                const newInfo = new PluginConstructionInfoList(this.world.wasmInstance, instancesCount);
+                // copy old info to new info
+                {
+                    const count = Math.min(instancesCount, pluginInstancesCount);
+                    for (let i = 0; i < count; ++i) {
+                        newInfo.setShape(i, oldInfo.getShape(i));
+                        newInfo.setInitialTransform(i, pluginInstances.getTransformMatrixToRef(i, BulletPlugin._TempMatrix));
+                        newInfo.setMotionType(i, oldInfo.getMotionType(i));
+                        newInfo.setMass(i, oldInfo.getMass(i));
+                        newInfo.setLocalInertia(i, oldInfo.getLocalInertiaToRef(i, TmpVectors.Vector3[0]));
+                        newInfo.setLinearDamping(i, oldInfo.getLinearDamping(i));
+                        newInfo.setAngularDamping(i, oldInfo.getAngularDamping(i));
+                        newInfo.setFriction(i, oldInfo.getFriction(i));
+                        newInfo.setRestitution(i, oldInfo.getRestitution(i));
+                        newInfo.setLinearSleepingThreshold(i, oldInfo.getLinearSleepingThreshold(i));
+                        newInfo.setAngularSleepingThreshold(i, oldInfo.getAngularSleepingThreshold(i));
+                        newInfo.setCollisionGroup(i, oldInfo.getCollisionGroup(i));
+                        newInfo.setCollisionMask(i, oldInfo.getCollisionMask(i));
+                        newInfo.setAdditionalDamping(i, oldInfo.getAdditionalDamping(i));
+                        newInfo.setNoContactResponse(i, oldInfo.getNoContactResponse(i));
+                        newInfo.setDisableDeactivation(i, oldInfo.getDisableDeactivation(i));
+                    }
+                }
+                // set new info
+                for (let i = pluginInstancesCount; i < instancesCount; ++i) {
+                    newInfo.setInitialTransform(i, Matrix.FromArrayToRef(matrixData, i * 16, BulletPlugin._TempMatrix));
+                    newInfo.setMotionType(i, motionType);
+                }
+                const newBundle = new PluginBodyBundle(this.world, newInfo);
+                this.world.addRigidBodyBundle(newBundle, newInfo.worldId);
+            }
+        }
     }
 
     /**
@@ -386,6 +501,12 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Gets the motion type of a physics body.
+     * @param body - The physics body to get the motion type from.
+     * @param instanceIndex - The index of the instance to get the motion type from. If not specified, the motion type of the first instance will be returned.
+     * @returns The motion type of the physics body.
+     */
     public getMotionType(body: PhysicsBody, instanceIndex?: number): PhysicsMotionType {
         body;
         instanceIndex;
@@ -415,10 +536,10 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         if (massProps.inertiaOrientation !== undefined) Logger.Warn("Inertia orientation is not supported in bullet.");
         if (massProps.centerOfMass !== undefined) Logger.Warn("Center of mass is not supported in bullet.");
 
-        if (info instanceof RigidBodyConstructionInfo) {
+        if (info instanceof PluginConstructionInfo) {
             if (massProps.mass !== undefined) info.mass = massProps.mass;
             if (massProps.inertia !== undefined) info.localInertia = massProps.inertia;
-        } else if (info instanceof RigidBodyConstructionInfoList) {
+        } else if (info instanceof PluginConstructionInfoList) {
             const start = instanceIndex ?? 0;
             const end = instanceIndex !== undefined ? instanceIndex + 1 : info.count;
             for (let i = start; i < end; ++i) {
@@ -572,11 +693,32 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
     }
 
     public setTargetTransform(body: PhysicsBody, position: Vector3, rotation: Quaternion, instanceIndex?: number): void {
-        body;
-        position;
-        rotation;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const tramsformMatrix = Matrix.FromQuaternionToRef(rotation, BulletPlugin._TempMatrix);
+        tramsformMatrix.setTranslation(position);
+
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.setInitialTransform(tramsformMatrix);
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.setDynamicTransformMatrix(tramsformMatrix, true);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setInitialTransform(i, tramsformMatrix);
+                }
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setDynamicTransformMatrix(i, tramsformMatrix, true);
+                }
+            }
+        }
     }
 
     /**
@@ -697,6 +839,32 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
     public getDensity(shape: PhysicsShape): number {
         shape;
         throw new Error("Method not implemented.");
+    }
+
+    /**
+     * Gets the transform infos of a given transform node.
+     * This code is useful for getting the position and orientation of a given transform node.
+     * It first checks if the node has a rotation quaternion, and if not, it creates one from the node's rotation.
+     * It then creates an array containing the position and orientation of the node and returns it.
+     * @param node - The transform node.
+     * @returns An array containing the position and orientation of the node.
+     */
+    private _getTransformInfos(node: TransformNode, result: Matrix): Matrix {
+        if (node.parent) {
+            const worldMatrix = node.computeWorldMatrix(true);
+            return result.copyFrom(worldMatrix);
+        }
+
+        let orientation = TmpVectors.Quaternion[0];
+        if (node.rotationQuaternion) {
+            orientation = node.rotationQuaternion;
+        } else {
+            const r = node.rotation;
+            Quaternion.FromEulerAnglesToRef(r.x, r.y, r.z, orientation);
+        }
+        Matrix.FromQuaternionToRef(orientation, result);
+        result.setTranslation(node.position);
+        return result;
     }
 
     public addChild(shape: PhysicsShape, newChild: PhysicsShape, translation?: Vector3, rotation?: Quaternion, scale?: Vector3): void {
