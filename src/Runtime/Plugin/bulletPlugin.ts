@@ -1,5 +1,5 @@
 import type { BoundingBox } from "@babylonjs/core/Culling/boundingBox";
-import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Quaternion } from "@babylonjs/core/Maths/math.vector";
 import { Matrix, TmpVectors } from "@babylonjs/core/Maths/math.vector";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
@@ -383,8 +383,35 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * @param body - The body to remove.
      */
     public removeBody(body: PhysicsBody): void {
-        body;
-        throw new Error("Method not implemented.");
+        let isInitialized = false;
+
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginBody) {
+                isInitialized = true;
+                this.world.removeRigidBody(pluginData, pluginData.worldId);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            if (pluginDataInstances instanceof PluginBodyBundle) {
+                isInitialized = true;
+                this.world.removeRigidBodyBundle(pluginDataInstances, pluginDataInstances.info.worldId);
+            }
+        }
+
+        if (isInitialized) {
+            const index = this._initializedBodies.indexOf(body);
+            if (index !== -1) {
+                this._initializedBodies.splice(index, 1);
+            }
+        } else {
+            const index = this._unInitializedBodies.indexOf(body);
+            if (index !== -1) {
+                this._unInitializedBodies.splice(index, 1);
+            }
+        }
     }
 
     /**
@@ -563,10 +590,45 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         }
     }
 
+    /**
+     * Gets the mass properties of a physics body.
+     * @param body - The physics body to get the mass properties from.
+     * @param instanceIndex - The index of the instance to get the mass properties from. If not specified, the mass properties of the first instance will be returned.
+     * @returns The mass properties of the physics body.
+     */
     public getMassProperties(body: PhysicsBody, instanceIndex?: number): PhysicsMassProperties {
-        body;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                return {
+                    mass: pluginData.mass,
+                    inertia: pluginData.localInertia ?? undefined
+                };
+            } else if (pluginData instanceof PluginBody) {
+                return {
+                    mass: pluginData.getMass(),
+                    inertia: pluginData.getLocalInertia()
+                };
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                return {
+                    mass: pluginDataInstances.getMass(start),
+                    inertia: pluginDataInstances.getLocalInertiaToRef(start, new Vector3()) ?? undefined
+                };
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                return {
+                    mass: pluginDataInstances.getMass(start),
+                    inertia: pluginDataInstances.getLocalInertia(start)
+                };
+            }
+        }
+
+        throw new Error("Invalid body type.");
     }
 
     /**

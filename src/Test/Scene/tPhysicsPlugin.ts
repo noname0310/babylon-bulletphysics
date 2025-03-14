@@ -91,6 +91,7 @@ export class SceneBuilder implements ISceneBuilder {
             body.setLinearDamping(0.3);
             body.setAngularDamping(0.3);
             body.computeMassProperties();
+            body.shape = groundShape;
         }
 
         // const rbCount = 512 * 2;
