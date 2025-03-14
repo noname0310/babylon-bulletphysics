@@ -355,6 +355,12 @@ public:
         m_body.translate(btVector3(translation[0], translation[1], translation[2]));
     }
 
+    void setShape(btCollisionShape* shape)
+    {
+        m_shape = shape;
+        m_body.setCollisionShape(shape);
+    }
+
     btTransform& getWorldTransform()
     {
         return m_body.getWorldTransform();
@@ -628,6 +634,12 @@ extern "C" void bw_rigidbody_translate(void* body, const float* translation)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     b->translate(translation);
+}
+
+extern "C" void bw_rigidbody_set_shape(void* body, void* shape)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->setShape(static_cast<btCollisionShape*>(shape));
 }
 
 extern "C" void* bw_rigidbody_get_world_transform_ptr(void* body)

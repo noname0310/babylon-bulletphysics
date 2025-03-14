@@ -180,6 +180,12 @@ public:
         m_broadphasePairCache.cleanProxyFromPairs(proxy, &m_dispatcher);
         m_world.refreshBroadphaseProxy(btBody);
     }
+
+    void cleanBodyProxyFromPairs(bwRigidBody* body)
+    {
+        btBroadphaseProxy* proxy = body->getBody()->getBroadphaseHandle();
+        m_broadphasePairCache.cleanProxyFromPairs(proxy, &m_dispatcher);
+    }
 };
 
 extern "C" void* bw_create_world()
@@ -260,4 +266,11 @@ extern "C" void bw_world_restore_body_dynamic(void* world, void* body)
     bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     w->restoreBodyDynamic(b);
+}
+
+extern "C" void bw_world_clean_body_proxy_from_pairs(void* world, void* body)
+{
+    bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    w->cleanBodyProxyFromPairs(b);
 }
