@@ -531,23 +531,35 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      *
      */
     public setMassProperties(body: PhysicsBody, massProps: PhysicsMassProperties, instanceIndex?: number): void {
-        const info = body._pluginData;
-
         if (massProps.inertiaOrientation !== undefined) Logger.Warn("Inertia orientation is not supported in bullet.");
         if (massProps.centerOfMass !== undefined) Logger.Warn("Center of mass is not supported in bullet.");
 
-        if (info instanceof PluginConstructionInfo) {
-            if (massProps.mass !== undefined) info.mass = massProps.mass;
-            if (massProps.inertia !== undefined) info.localInertia = massProps.inertia;
-        } else if (info instanceof PluginConstructionInfoList) {
-            const start = instanceIndex ?? 0;
-            const end = instanceIndex !== undefined ? instanceIndex + 1 : info.count;
-            for (let i = start; i < end; ++i) {
-                if (massProps.mass !== undefined) info.setMass(i, massProps.mass);
-                if (massProps.inertia !== undefined) info.setLocalInertia(i, massProps.inertia);
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                if (massProps.mass !== undefined) pluginData.mass = massProps.mass;
+                if (massProps.inertia !== undefined) pluginData.localInertia = massProps.inertia;
+            } else if (pluginData instanceof PluginBody) {
+                const mass = massProps.mass ?? pluginData.getMass();
+                const inertia = massProps.inertia ?? pluginData.getLocalInertia();
+                pluginData.setMassProps(mass, inertia);
             }
-        } else { // if (info instanceof RigidBody || info instanceof RigidBodyBundle) {
-            throw new Error("mass cannot be set after body is initialized");
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginData.count;
+            if (pluginData instanceof PluginConstructionInfoList) {
+                for (let i = start; i < end; ++i) {
+                    if (massProps.mass !== undefined) pluginData.setMass(i, massProps.mass);
+                    if (massProps.inertia !== undefined) pluginData.setLocalInertia(i, massProps.inertia);
+                }
+            } else if (pluginData instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginData.setMassProps(i, massProps.mass ?? pluginData.getMass(i), massProps.inertia ?? pluginData.getLocalInertia(i));
+                }
+            }
         }
     }
 
@@ -557,30 +569,140 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Sets the linear damping of the given body.
+     * @param body - The body to set the linear damping for.
+     * @param damping - The linear damping to set.
+     * @param instanceIndex - The index of the instance to set the linear damping for. If not specified, the linear damping of the first instance will be set.
+     *
+     * This method is useful for controlling the linear damping of a body in a physics engine.
+     * Linear damping is a force that opposes the motion of the body, and is proportional to the velocity of the body.
+     * This method allows the user to set the linear damping of a body, which can be used to control the motion of the body.
+     */
     public setLinearDamping(body: PhysicsBody, damping: number, instanceIndex?: number): void {
-        body;
-        damping;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.linearDamping = damping;
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.setDamping(damping, pluginData.getAngularDamping());
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setLinearDamping(i, damping);
+                }
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setDamping(i, damping, pluginDataInstances.getAngularDamping(i));
+                }
+            }
+        }
     }
 
+    /**
+     * Gets the linear damping of the given body.
+     * @param body - The body to get the linear damping from.
+     * @param instanceIndex - The index of the instance to get the linear damping from. If not specified, the linear damping of the first instance will be returned.
+     * @returns The linear damping of the given body.
+     *
+     * This method is useful for getting the linear damping of a body in a physics engine.
+     * Linear damping is a force that opposes the motion of the body and is proportional to the velocity of the body.
+     * It is used to simulate the effects of air resistance and other forms of friction.
+     */
     public getLinearDamping(body: PhysicsBody, instanceIndex?: number): number {
-        body;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                return pluginData.linearDamping;
+            } else if (pluginData instanceof PluginBody) {
+                return pluginData.getLinearDamping();
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                return pluginDataInstances.getLinearDamping(start);
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                return pluginDataInstances.getLinearDamping(start);
+            }
+        }
+
+        throw new Error("Invalid body type.");
     }
 
+    /**
+     * Gets the angular damping of a physics body.
+     * @param body - The physics body to get the angular damping from.
+     * @param instanceIndex - The index of the instance to get the angular damping from. If not specified, the angular damping of the first instance will be returned.
+     * @returns The angular damping of the body.
+     *
+     * This function is useful for retrieving the angular damping of a physics body,
+     * which is used to control the rotational motion of the body. The angular damping is a value between 0 and 1, where 0 is no damping and 1 is full damping.
+     */
     public setAngularDamping(body: PhysicsBody, damping: number, instanceIndex?: number): void {
-        body;
-        damping;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.angularDamping = damping;
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.setDamping(pluginData.getLinearDamping(), damping);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setAngularDamping(i, damping);
+                }
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setDamping(i, pluginDataInstances.getLinearDamping(i), damping);
+                }
+            }
+        }
     }
 
+    /**
+     * Gets the angular damping of a physics body.
+     * @param body - The physics body to get the angular damping from.
+     * @param instanceIndex - The index of the instance to get the angular damping from. If not specified, the angular damping of the first instance will be returned.
+     * @returns The angular damping of the body.
+     *
+     * This function is useful for retrieving the angular damping of a physics body,
+     * which is used to control the rotational motion of the body. The angular damping is a value between 0 and 1, where 0 is no damping and 1 is full damping.
+     */
     public getAngularDamping(body: PhysicsBody, instanceIndex?: number): number {
-        body;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                return pluginData.angularDamping;
+            } else if (pluginData instanceof PluginBody) {
+                return pluginData.getAngularDamping();
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                return pluginDataInstances.getAngularDamping(start);
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                return pluginDataInstances.getAngularDamping(start);
+            }
+        }
+
+        throw new Error("Invalid body type.");
     }
 
     public setLinearVelocity(body: PhysicsBody, linVel: Vector3, instanceIndex?: number): void {
