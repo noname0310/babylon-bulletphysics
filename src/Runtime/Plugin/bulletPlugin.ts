@@ -18,11 +18,12 @@ import type { Nullable } from "@babylonjs/core/types";
 import type { BulletWasmInstance } from "../bulletWasmInstance";
 import { MultiPhysicsRuntime } from "../Impl/multiPhysicsRuntime";
 import { MotionType } from "../motionType";
+import type { PhysicsShape as BulletPhysicsShape } from "../physicsShape";
 import { PluginBody } from "./pluginBody";
 import { PluginBodyBundle } from "./pluginBodyBundle";
 import { PluginConstructionInfo } from "./pluginConstructionInfo";
 import { PluginConstructionInfoList } from "./pluginConstructionInfoList";
-import type { IPluginShape} from "./pluginShape";
+import type { IPluginShape } from "./pluginShape";
 import { PluginBoxShape } from "./pluginShape";
 
 export class BulletPluginCommandContext {
@@ -458,9 +459,27 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * will set the shape for each instance of the mesh.
      */
     public setShape(body: PhysicsBody, shape: Nullable<PhysicsShape>): void {
-        body;
-        shape;
-        throw new Error("Method not implemented.");
+        const shapePluginData = (shape?._pluginData ?? null) as Nullable<BulletPhysicsShape>;
+
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.shape = shapePluginData;
+            } else if (pluginData instanceof PluginBody) {
+                // pluginData.shape
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                for (let i = 0; i < pluginDataInstances.count; ++i) {
+                    pluginDataInstances.setShape(i, shapePluginData);
+                }
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                // pluginDataInstances.setShape(shapePluginData);
+            }
+        }
     }
 
     /**
