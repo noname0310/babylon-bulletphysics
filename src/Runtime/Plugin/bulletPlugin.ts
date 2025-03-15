@@ -919,6 +919,14 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Disposes a physics body.
+     *
+     * @param body - The physics body to dispose.
+     *
+     * This method is useful for releasing the resources associated with a physics body when it is no longer needed.
+     * This is important for avoiding memory leaks in the physics engine.
+     */
     public disposeBody(body: PhysicsBody): void {
         if (body._pluginData) {
             body._pluginData.dispose();
@@ -1195,6 +1203,13 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Releases a physics shape from the physics engine.
+     *
+     * @param shape - The physics shape to be released.
+     *
+     * This method is useful for releasing a physics shape from the physics engine, freeing up resources and preventing memory leaks.
+     */
     public disposeShape(shape: PhysicsShape): void {
         const bulletShape = shape._pluginData as BulletPhysicsShape;
         this._shapeMap.delete(bulletShape);
