@@ -3,11 +3,19 @@ import type { DeepImmutable, Vector3 } from "@babylonjs/core";
 import type { IRuntime } from "../Impl/IRuntime";
 import { RigidBodyBundle } from "../rigidBodyBundle";
 import type { PluginConstructionInfoList } from "./pluginConstructionInfoList";
+import type { IPluginShape } from "./pluginShape";
 
 export class PluginBodyBundle extends RigidBodyBundle {
     public readonly info: PluginConstructionInfoList;
 
     public constructor(runtime: IRuntime, info: PluginConstructionInfoList) {
+        const material = (info.getShape(0) as unknown as IPluginShape)?.material;
+        if (material) {
+            for (let i = 0; i < info.count; ++i) {
+                info.setFriction(i, material.friction);
+                info.setRestitution(i, material.restitution);
+            }
+        }
         super(runtime, info);
         this.info = info;
     }
