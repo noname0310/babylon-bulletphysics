@@ -128,8 +128,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                         throw new Error("Invalid body type.");
                     }
                 }
-                const pluginDataInstances = body._pluginDataInstances;
-                if (pluginDataInstances) {
+                const pluginDataInstances = body._pluginDataInstances as any;
+                if (!Array.isArray(pluginDataInstances)) {
                     if (pluginDataInstances instanceof PluginConstructionInfoList) {
                         const instance = new PluginBodyBundle(this.world, pluginDataInstances);
                         this.world.addRigidBodyBundle(instance, pluginDataInstances.worldId);
@@ -190,8 +190,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
 
             // instances
-            const pluginDataInstances = body._pluginDataInstances;
-            if (pluginDataInstances) {
+            const pluginDataInstances = body._pluginDataInstances as any;
+            if (!Array.isArray(pluginDataInstances)) {
                 const m = transformNode as Mesh;
                 const matrixData = m._thinInstanceDataStorage.matrixData;
                 if (!matrixData) {
@@ -401,19 +401,15 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         let isInitialized = false;
 
         const pluginData = body._pluginData;
-        if (pluginData) {
-            if (pluginData instanceof PluginBody) {
-                isInitialized = true;
-                this.world.removeRigidBody(pluginData, pluginData.worldId);
-            }
+        if (pluginData instanceof PluginBody) {
+            isInitialized = true;
+            this.world.removeRigidBody(pluginData, pluginData.worldId);
         }
 
         const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
-            if (pluginDataInstances instanceof PluginBodyBundle) {
-                isInitialized = true;
-                this.world.removeRigidBodyBundle(pluginDataInstances, pluginDataInstances.info.worldId);
-            }
+        if (pluginDataInstances instanceof PluginBodyBundle) {
+            isInitialized = true;
+            this.world.removeRigidBodyBundle(pluginDataInstances, pluginDataInstances.info.worldId);
         }
 
         if (isInitialized) {
@@ -437,8 +433,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * This is important for ensuring that the physics body is accurately represented in the physics engine.
      */
     public sync(body: PhysicsBody): void {
-        body;
-        throw new Error("Method not implemented.");
+        this.syncTransform(body, body.transformNode);
     }
 
     /**
@@ -487,8 +482,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
                 for (let i = 0; i < pluginDataInstances.count; ++i) {
                     pluginDataInstances.setShape(i, shapePluginData);
@@ -521,8 +516,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
                 const shape = pluginDataInstances.getShape(0);
                 return shape !== null ? this._shapeMap.get(shape) ?? null : null;
@@ -591,8 +586,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
@@ -621,8 +616,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
                 return BulletPlugin._BulletMotionTypeToMotionType(pluginDataInstances.getMotionType(start));
@@ -674,8 +669,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginData.count;
             if (pluginData instanceof PluginConstructionInfoList) {
@@ -713,8 +708,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
                 return {
@@ -752,8 +747,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
@@ -788,8 +783,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
                 return pluginDataInstances.getLinearDamping(start);
@@ -820,8 +815,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
@@ -855,8 +850,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
                 return pluginDataInstances.getAngularDamping(start);
@@ -1003,8 +998,8 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             }
         }
 
-        const pluginDataInstances = body._pluginDataInstances;
-        if (pluginDataInstances) {
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
             const start = instanceIndex ?? 0;
             const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
