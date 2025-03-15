@@ -104,7 +104,7 @@ class RigidBodyInner {
         return this._shapeReference!;
     }
 
-    public setShapeReference(shape: PhysicsShape) {
+    public setShapeReference(shape: PhysicsShape): void {
         this._shapeReference!.removeReference();
         this._shapeReference = shape;
         shape.addReference();
