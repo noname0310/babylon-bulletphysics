@@ -64,6 +64,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
 
     private readonly _initializedBodies: PhysicsBody[] = [];
     private readonly _unInitializedBodies: PhysicsBody[] = [];
+    private readonly _shapeMap: Map<BulletPhysicsShape, PhysicsShape> = new Map();
     public readonly commandContext = new BulletPluginCommandContext();
 
     public constructor(wasmInstance: BulletWasmInstance) {
@@ -498,8 +499,27 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      *
      */
     public getShape(body: PhysicsBody): Nullable<PhysicsShape> {
-        body;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                return pluginData.shape !== null ? this._shapeMap.get(pluginData.shape) ?? null : null;
+            } else if (pluginData instanceof PluginBody) {
+                return this._shapeMap.get(pluginData.getShape()) ?? null;
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                const shape = pluginDataInstances.getShape(0);
+                return shape !== null ? this._shapeMap.get(shape) ?? null : null;
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                const shape = pluginDataInstances.getShape(0);
+                return this._shapeMap.get(shape) ?? null;
+            }
+        }
+
+        throw new Error("Invalid body type.");
     }
 
     /**
@@ -944,13 +964,15 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * For example, a sphere requires a radius, while a box requires extents and a rotation.
      */
     public initShape(shape: PhysicsShape, type: PhysicsShapeType, options: PhysicsShapeParameters): void {
+        let pluginData: Nullable<BulletPhysicsShape> = null;
+
         switch (type) {
         case PhysicsShapeType.SPHERE:
             // use btSphereShape
             throw new Error("Sphere shape not supported.");
             break;
         case PhysicsShapeType.BOX:
-            shape._pluginData = new PluginBoxShape(this.world, options.center, options.rotation, options.extents);
+            pluginData = new PluginBoxShape(this.world, options.center, options.rotation, options.extents);
             break;
         case PhysicsShapeType.CAPSULE:
             // use btCapsuleShape
@@ -976,6 +998,9 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         default:
             throw new Error("Unsupported Shape Type.");
         }
+
+        shape._pluginData = pluginData;
+        this._shapeMap.set(pluginData, shape);
     }
 
     /**
