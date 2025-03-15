@@ -254,7 +254,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
-    private static _MotionTypeToBullet(motionType: PhysicsMotionType): MotionType {
+    private static _MotionTypeToBulletMotionType(motionType: PhysicsMotionType): MotionType {
         switch (motionType) {
         case PhysicsMotionType.DYNAMIC:
             return MotionType.Dynamic;
@@ -262,6 +262,19 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             return MotionType.Static;
         case PhysicsMotionType.ANIMATED:
             return MotionType.Kinematic;
+        default:
+            throw new Error("Invalid motion type");
+        }
+    }
+
+    private static _BulletMotionTypeToMotionType(motionType: MotionType): PhysicsMotionType {
+        switch (motionType) {
+        case MotionType.Dynamic:
+            return PhysicsMotionType.DYNAMIC;
+        case MotionType.Static:
+            return PhysicsMotionType.STATIC;
+        case MotionType.Kinematic:
+            return PhysicsMotionType.ANIMATED;
         default:
             throw new Error("Invalid motion type");
         }
@@ -283,7 +296,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
     public initBody(body: PhysicsBody, motionType: PhysicsMotionType, position: Vector3, orientation: Quaternion): void {
         const info = body._pluginData = new PluginConstructionInfo(this.world.wasmInstance);
 
-        info.motionType = BulletPlugin._MotionTypeToBullet(motionType);
+        info.motionType = BulletPlugin._MotionTypeToBulletMotionType(motionType);
 
         const transform = Matrix.FromQuaternionToRef(orientation, BulletPlugin._TempMatrix);
         transform.setTranslation(position);
@@ -315,7 +328,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         const info = new PluginConstructionInfoList(this.world.wasmInstance, instancesCount);
         body._pluginDataInstances = info as unknown as any[];
 
-        const bulletMotionType = BulletPlugin._MotionTypeToBullet(motionType);
+        const bulletMotionType = BulletPlugin._MotionTypeToBulletMotionType(motionType);
 
         for (let i = 0; i < instancesCount; ++i) {
             info.setMotionType(i, bulletMotionType);
@@ -339,7 +352,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         }
         const pluginInstances = body._pluginDataInstances;
         const pluginInstancesCount = pluginInstances.length;
-        const motionType = BulletPlugin._MotionTypeToBullet(this.getMotionType(body));
+        const motionType = BulletPlugin._MotionTypeToBulletMotionType(this.getMotionType(body));
 
         if (instancesCount !== pluginInstancesCount) {
             if (pluginInstances instanceof PluginBodyBundle) {
@@ -569,10 +582,27 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * @param instanceIndex - The index of the instance to set the motion type for. If undefined, the motion type of all the bodies will be set.
      */
     public setMotionType(body: PhysicsBody, motionType: PhysicsMotionType, instanceIndex?: number): void {
-        body;
-        motionType;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.motionType = BulletPlugin._MotionTypeToBulletMotionType(motionType);
+            } else if (pluginData instanceof PluginBody) {
+                throw new Error("Cannot set motion type on a body that has already been initialized.");
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setMotionType(i, BulletPlugin._MotionTypeToBulletMotionType(motionType));
+                }
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                throw new Error("Cannot set motion type on a body that has already been initialized.");
+            }
+        }
     }
 
     /**
@@ -582,9 +612,26 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * @returns The motion type of the physics body.
      */
     public getMotionType(body: PhysicsBody, instanceIndex?: number): PhysicsMotionType {
-        body;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                return BulletPlugin._BulletMotionTypeToMotionType(pluginData.motionType);
+            } else if (pluginData instanceof PluginBody) {
+                return BulletPlugin._BulletMotionTypeToMotionType(pluginData.motionType);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances;
+        if (pluginDataInstances) {
+            const start = instanceIndex ?? 0;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                return BulletPlugin._BulletMotionTypeToMotionType(pluginDataInstances.getMotionType(start));
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                return BulletPlugin._BulletMotionTypeToMotionType(pluginDataInstances.info.getMotionType(start));
+            }
+        }
+
+        throw new Error("Invalid body type.");
     }
 
     public computeMassProperties(body: PhysicsBody, instanceIndex?: number): PhysicsMassProperties {
