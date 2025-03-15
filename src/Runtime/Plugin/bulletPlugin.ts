@@ -634,6 +634,13 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Invalid body type.");
     }
 
+    /**
+     * Computes the mass properties of a physics body, from it's shape
+     *
+     * @param body - The physics body to copmute the mass properties of
+     * @param instanceIndex - The index of the instance to compute the mass properties of.
+     * @returns The mass properties of the physics body.
+     */
     public computeMassProperties(body: PhysicsBody, instanceIndex?: number): PhysicsMassProperties {
         body;
         instanceIndex;
@@ -976,6 +983,13 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Set the target transformation (position and rotation) of the body, such that the body will set its velocity to reach that target
+     * @param body The physics body to set the target transformation for.
+     * @param position The target position
+     * @param rotation The target rotation
+     * @param instanceIndex The index of the instance in an instanced body
+     */
     public setTargetTransform(body: PhysicsBody, position: Vector3, rotation: Quaternion, instanceIndex?: number): void {
         const tramsformMatrix = Matrix.FromQuaternionToRef(rotation, BulletPlugin._TempMatrix);
         tramsformMatrix.setTranslation(position);
@@ -1336,6 +1350,9 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Dispose the world and free resources
+     */
     public dispose(): void {
         const initializedBodies = this._initializedBodies;
         for (let i = 0; i < initializedBodies.length; ++i) {
