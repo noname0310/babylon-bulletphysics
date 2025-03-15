@@ -128,6 +128,13 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                 if (pluginData) {
                     if (pluginData instanceof PluginConstructionInfo) {
                         const instance = new PluginBody(this.world, pluginData);
+                        {
+                            const commandsOnCreation = pluginData.commandsOnCreation;
+                            for (let j = 0; j < commandsOnCreation.length; ++j) {
+                                commandsOnCreation[j](instance);
+                            }
+                            commandsOnCreation.length = 0;
+                        }
                         this.world.addRigidBody(instance, pluginData.worldId);
                         this._initializedBodies.push(unInitializedBodies[i]);
                         body._pluginData = instance;
@@ -139,6 +146,13 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                 if (!Array.isArray(pluginDataInstances)) {
                     if (pluginDataInstances instanceof PluginConstructionInfoList) {
                         const instance = new PluginBodyBundle(this.world, pluginDataInstances);
+                        {
+                            const commandsOnCreation = pluginDataInstances.commandsOnCreation;
+                            for (let j = 0; j < commandsOnCreation.length; ++j) {
+                                commandsOnCreation[j](instance);
+                            }
+                            commandsOnCreation.length = 0;
+                        }
                         this.world.addRigidBodyBundle(instance, pluginDataInstances.worldId);
                         this._initializedBodies.push(unInitializedBodies[i]);
                         body._pluginDataInstances = instance as unknown as any[];
@@ -302,9 +316,6 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         const info = body._pluginData = new PluginConstructionInfo(this.world.wasmInstance);
 
         info.motionType = BulletPlugin._MotionTypeToBulletMotionType(motionType);
-        // TODO: Update friction and restitution by shape material changes
-        // info.friction
-        // info.restitution
 
         const transform = Matrix.FromQuaternionToRef(orientation, BulletPlugin._TempMatrix);
         transform.setTranslation(position);
@@ -936,7 +947,9 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         const pluginData = body._pluginData;
         if (pluginData) {
             if (pluginData instanceof PluginConstructionInfo) {
-                // pluginData.linearVelocity = linVel;
+                pluginData.commandsOnCreation.push((body) => {
+                    body.setLinearVelocity(linVel);
+                });
             } else if (pluginData instanceof PluginBody) {
                 pluginData.setLinearVelocity(linVel);
             }
@@ -947,9 +960,11 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             const start = instanceIndex ?? 0;
             const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
-                for (let i = start; i < end; ++i) {
-                    // pluginDataInstances.setLinearVelocity(i, linVel);
-                }
+                pluginDataInstances.commandsOnCreation.push((bundle) => {
+                    for (let i = start; i < end; ++i) {
+                        bundle.setLinearVelocity(i, linVel);
+                    }
+                });
             } else if (pluginDataInstances instanceof PluginBodyBundle) {
                 for (let i = start; i < end; ++i) {
                     pluginDataInstances.setLinearVelocity(i, linVel);
@@ -1000,11 +1015,33 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * This can be used to simulate physical forces such as explosions, collisions, and gravity.
      */
     public applyImpulse(body: PhysicsBody, impulse: Vector3, location: Vector3, instanceIndex?: number): void {
-        body;
-        impulse;
-        location;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.commandsOnCreation.push((body) => {
+                    body.applyImpulse(impulse, location);
+                });
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.applyImpulse(impulse, location);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                pluginDataInstances.commandsOnCreation.push((bundle) => {
+                    for (let i = start; i < end; ++i) {
+                        bundle.applyImpulse(i, impulse, location);
+                    }
+                });
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.applyImpulse(i, impulse, location);
+                }
+            }
+        }
     }
 
     /**
@@ -1014,10 +1051,33 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * @param instanceIndex - The index of the instance to apply the impulse to. If not specified, the impulse will be applied to all instances.
      */
     public applyAngularImpulse(body: PhysicsBody, angularImpulse: Vector3, instanceIndex?: number): void {
-        body;
-        angularImpulse;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.commandsOnCreation.push((body) => {
+                    body.applyTorque(angularImpulse);
+                });
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.applyTorque(angularImpulse);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                pluginDataInstances.commandsOnCreation.push((bundle) => {
+                    for (let i = start; i < end; ++i) {
+                        bundle.applyTorque(i, angularImpulse);
+                    }
+                });
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.applyTorque(i, angularImpulse);
+                }
+            }
+        }
     }
 
     /**
@@ -1031,11 +1091,33 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * This can be used to simulate physical forces such as explosions, collisions, and gravity.
      */
     public applyForce(body: PhysicsBody, force: Vector3, location: Vector3, instanceIndex?: number): void {
-        body;
-        force;
-        location;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.commandsOnCreation.push((body) => {
+                    body.applyForce(force, location);
+                });
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.applyForce(force, location);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                pluginDataInstances.commandsOnCreation.push((bundle) => {
+                    for (let i = start; i < end; ++i) {
+                        bundle.applyForce(i, force, location);
+                    }
+                });
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.applyForce(i, force, location);
+                }
+            }
+        }
     }
 
     /**
@@ -1052,7 +1134,9 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         const pluginData = body._pluginData;
         if (pluginData) {
             if (pluginData instanceof PluginConstructionInfo) {
-                // pluginData.angularVelocity = angVel;
+                pluginData.commandsOnCreation.push((body) => {
+                    body.setAngularVelocity(angVel);
+                });
             } else if (pluginData instanceof PluginBody) {
                 pluginData.setAngularVelocity(angVel);
             }
@@ -1063,9 +1147,11 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             const start = instanceIndex ?? 0;
             const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
             if (pluginDataInstances instanceof PluginConstructionInfoList) {
-                for (let i = start; i < end; ++i) {
-                    // pluginDataInstances.setAngularVelocity(i, angVel);
-                }
+                pluginDataInstances.commandsOnCreation.push((bundle) => {
+                    for (let i = start; i < end; ++i) {
+                        bundle.setAngularVelocity(i, angVel);
+                    }
+                });
             } else if (pluginDataInstances instanceof PluginBodyBundle) {
                 for (let i = start; i < end; ++i) {
                     pluginDataInstances.setAngularVelocity(i, angVel);
@@ -1165,16 +1251,30 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Sets the gravity factor of a body
+     * @param body the physics body to set the gravity factor for
+     * @param factor the gravity factor
+     * @param instanceIndex the index of the instance in an instanced body
+     */
     public setGravityFactor(body: PhysicsBody, factor: number, instanceIndex?: number): void {
         body;
         factor;
         instanceIndex;
+        // there is no support for gravity factor in bullet
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Get the gravity factor of a body
+     * @param body the physics body to get the gravity factor from
+     * @param instanceIndex the index of the instance in an instanced body. If not specified, the gravity factor of the first instance will be returned.
+     * @returns the gravity factor
+     */
     public getGravityFactor(body: PhysicsBody, instanceIndex?: number): number {
         body;
         instanceIndex;
+        // there is no support for gravity factor in bullet
         throw new Error("Method not implemented.");
     }
 
@@ -1323,9 +1423,18 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         (shape._pluginData as IPluginShape).setMaterial(dynamicFriction, restitution);
     }
 
+    /**
+     * Gets the material associated with a physics shape.
+     * @param shape - The shape to get the material from.
+     * @returns The material associated with the shape.
+     */
     public getMaterial(shape: PhysicsShape): PhysicsMaterial {
-        shape;
-        throw new Error("Method not implemented.");
+        const pluginData = shape._pluginData as IPluginShape;
+        const material = pluginData.material;
+        return {
+            friction: material?.friction,
+            restitution: material?.restitution
+        };
     }
 
     public setDensity(shape: PhysicsShape, density: number): void {
@@ -1414,6 +1523,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         isTrigger;
         throw new Error("Method not implemented.");
     }
+
     public initConstraint(constraint: PhysicsConstraint, body: PhysicsBody, childBody: PhysicsBody): void {
         constraint;
         body;
