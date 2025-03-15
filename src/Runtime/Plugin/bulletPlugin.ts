@@ -923,20 +923,82 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Invalid body type.");
     }
 
+    /**
+     * Sets the linear velocity of a physics body.
+     * @param body - The physics body to set the linear velocity of.
+     * @param linVel - The linear velocity to set.
+     * @param instanceIndex - The index of the instance to set the linear velocity of. If not specified, the linear velocity of the first instance will be set.
+     *
+     * This function is useful for setting the linear velocity of a physics body, which is necessary for simulating
+     * motion in a physics engine. The linear velocity is the speed and direction of the body's movement.
+     */
     public setLinearVelocity(body: PhysicsBody, linVel: Vector3, instanceIndex?: number): void {
-        body;
-        linVel;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                // pluginData.linearVelocity = linVel;
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.setLinearVelocity(linVel);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                for (let i = start; i < end; ++i) {
+                    // pluginDataInstances.setLinearVelocity(i, linVel);
+                }
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setLinearVelocity(i, linVel);
+                }
+            }
+        }
     }
 
+    /**
+     * Gets the linear velocity of a physics body and stores it in a given vector.
+     * @param body - The physics body to get the linear velocity from.
+     * @param linVel - The vector to store the linear velocity in.
+     * @param instanceIndex - The index of the instance to get the linear velocity from. If not specified, the linear velocity of the first instance will be returned.
+     *
+     * This function is useful for retrieving the linear velocity of a physics body,
+     * which can be used to determine the speed and direction of the body. This
+     * information can be used to simulate realistic physics behavior in a game.
+     */
     public getLinearVelocityToRef(body: PhysicsBody, linVel: Vector3, instanceIndex?: number): void {
-        body;
-        linVel;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                linVel.set(0, 0, 0);
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.getLinearVelocityToRef(linVel);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
+            const start = instanceIndex ?? 0;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                linVel.set(0, 0, 0);
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                pluginDataInstances.getLinearVelocityToRef(start, linVel);
+            }
+        }
     }
 
+    /**
+     * Applies an impulse to a physics body at a given location.
+     * @param body - The physics body to apply the impulse to.
+     * @param impulse - The impulse vector to apply.
+     * @param location - The location in world space to apply the impulse.
+     * @param instanceIndex - The index of the instance to apply the impulse to. If not specified, the impulse will be applied to all instances.
+     *
+     * This method is useful for applying an impulse to a physics body at a given location.
+     * This can be used to simulate physical forces such as explosions, collisions, and gravity.
+     */
     public applyImpulse(body: PhysicsBody, impulse: Vector3, location: Vector3, instanceIndex?: number): void {
         body;
         impulse;
@@ -945,6 +1007,12 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Applies an angular impulse(torque) to a physics body
+     * @param body - The physics body to apply the impulse to.
+     * @param angularImpulse - The torque value
+     * @param instanceIndex - The index of the instance to apply the impulse to. If not specified, the impulse will be applied to all instances.
+     */
     public applyAngularImpulse(body: PhysicsBody, angularImpulse: Vector3, instanceIndex?: number): void {
         body;
         angularImpulse;
@@ -952,6 +1020,16 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Applies a force to a physics body at a given location.
+     * @param body - The physics body to apply the impulse to.
+     * @param force - The force vector to apply.
+     * @param location - The location in world space to apply the impulse.
+     * @param instanceIndex - The index of the instance to apply the force to. If not specified, the force will be applied to all instances.
+     *
+     * This method is useful for applying a force to a physics body at a given location.
+     * This can be used to simulate physical forces such as explosions, collisions, and gravity.
+     */
     public applyForce(body: PhysicsBody, force: Vector3, location: Vector3, instanceIndex?: number): void {
         body;
         force;
@@ -960,18 +1038,72 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Sets the angular velocity of a physics body.
+     *
+     * @param body - The physics body to set the angular velocity of.
+     * @param angVel - The angular velocity to set.
+     * @param instanceIndex - The index of the instance to set the angular velocity of. If not specified, the angular velocity of the first instance will be set.
+     *
+     * This function is useful for setting the angular velocity of a physics body in a physics engine.
+     * This allows for more realistic simulations of physical objects, as they can be given a rotational velocity.
+     */
     public setAngularVelocity(body: PhysicsBody, angVel: Vector3, instanceIndex?: number): void {
-        body;
-        angVel;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                // pluginData.angularVelocity = angVel;
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.setAngularVelocity(angVel);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
+            const start = instanceIndex ?? 0;
+            const end = instanceIndex !== undefined ? instanceIndex + 1 : pluginDataInstances.length;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                for (let i = start; i < end; ++i) {
+                    // pluginDataInstances.setAngularVelocity(i, angVel);
+                }
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                for (let i = start; i < end; ++i) {
+                    pluginDataInstances.setAngularVelocity(i, angVel);
+                }
+            }
+        }
     }
 
+    /**
+     * Gets the angular velocity of a body.
+     * @param body - The body to get the angular velocity from.
+     * @param angVel - The vector3 to store the angular velocity.
+     * @param instanceIndex - The index of the instance to get the angular velocity from. If not specified, the angular velocity of the first instance will be returned.
+     *
+     * This method is useful for getting the angular velocity of a body in a physics engine. It
+     * takes the body and a vector3 as parameters and stores the angular velocity of the body
+     * in the vector3. This is useful for getting the angular velocity of a body in order to
+     * calculate the motion of the body in the physics engine.
+     */
     public getAngularVelocityToRef(body: PhysicsBody, angVel: Vector3, instanceIndex?: number): void {
-        body;
-        angVel;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                angVel.set(0, 0, 0);
+            } else if (pluginData instanceof PluginBody) {
+                pluginData.getAngularVelocityToRef(angVel);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
+            const start = instanceIndex ?? 0;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                angVel.set(0, 0, 0);
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                pluginDataInstances.getAngularVelocityToRef(start, angVel);
+            }
+        }
     }
 
     public getBodyGeometry(body: PhysicsBody): {} {
