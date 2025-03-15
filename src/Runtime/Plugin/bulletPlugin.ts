@@ -1,7 +1,7 @@
 import type { BoundingBox } from "@babylonjs/core/Culling/boundingBox";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Quaternion } from "@babylonjs/core/Maths/math.vector";
-import { Matrix, TmpVectors } from "@babylonjs/core/Maths/math.vector";
+import { Matrix } from "@babylonjs/core/Maths/math.vector";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Logger } from "@babylonjs/core/Misc/logger";
@@ -66,6 +66,13 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
     private readonly _unInitializedBodies: PhysicsBody[] = [];
     private readonly _shapeMap: Map<BulletPhysicsShape, PhysicsShape> = new Map();
     public readonly commandContext = new BulletPluginCommandContext();
+
+    private static readonly _TempMatrix: Matrix = new Matrix();
+    private static readonly _TempMatrix2: Matrix = new Matrix();
+    private static readonly _TempMatrix3: Matrix = new Matrix();
+    private static readonly _TempVector: Vector3 = new Vector3();
+    private static readonly _TempVector2: Vector3 = new Vector3();
+    private static readonly _TempQuaternion: Quaternion = new Quaternion();
 
     public constructor(wasmInstance: BulletWasmInstance) {
         this.world = new MultiPhysicsRuntime(wasmInstance);
@@ -280,8 +287,6 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         }
     }
 
-    private static readonly _TempMatrix: Matrix = new Matrix();
-
     /**
      * Initializes a physics body with the given position and orientation.
      *
@@ -297,6 +302,9 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         const info = body._pluginData = new PluginConstructionInfo(this.world.wasmInstance);
 
         info.motionType = BulletPlugin._MotionTypeToBulletMotionType(motionType);
+        // TODO: Update friction and restitution by shape material changes
+        // info.friction
+        // info.restitution
 
         const transform = Matrix.FromQuaternionToRef(orientation, BulletPlugin._TempMatrix);
         transform.setTranslation(position);
@@ -367,7 +375,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                         newInfo.setInitialTransform(i, pluginInstances.getTransformMatrixToRef(i, BulletPlugin._TempMatrix));
                         newInfo.setMotionType(i, oldInfo.getMotionType(i));
                         newInfo.setMass(i, oldInfo.getMass(i));
-                        newInfo.setLocalInertia(i, oldInfo.getLocalInertiaToRef(i, TmpVectors.Vector3[0]));
+                        newInfo.setLocalInertia(i, oldInfo.getLocalInertiaToRef(i, BulletPlugin._TempVector));
                         newInfo.setLinearDamping(i, oldInfo.getLinearDamping(i));
                         newInfo.setAngularDamping(i, oldInfo.getAngularDamping(i));
                         newInfo.setFriction(i, oldInfo.getFriction(i));
@@ -451,9 +459,61 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * physical behavior of the body.
      */
     public syncTransform(body: PhysicsBody, transformNode: TransformNode): void {
-        body;
-        transformNode;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData instanceof PluginBody) {
+            try {
+                // regular
+                const bodyTransform = pluginData.getTransformMatrixToRef(BulletPlugin._TempMatrix);
+                const bodyTranslation = BulletPlugin._TempVector;
+
+                bodyTransform.getTranslationToRef(bodyTranslation);
+                const bodyOrientation = Quaternion.FromRotationMatrixToRef(bodyTransform, BulletPlugin._TempQuaternion);
+
+                const parent = transformNode.parent as TransformNode;
+                // transform position/orientation in parent space
+                if (parent && !parent.getWorldMatrix().isIdentity()) {
+                    parent.computeWorldMatrix(true);
+                    // Save scaling for future use
+                    const scaling = BulletPlugin._TempVector2.copyFrom(transformNode.scaling);
+
+                    bodyOrientation.normalize();
+                    // reuse of _TempMatrix is safe here because bodyTransform is not used anymore
+                    const finalTransform = BulletPlugin._TempMatrix;
+                    Matrix.ComposeToRef(transformNode.absoluteScaling, bodyOrientation, bodyTranslation, finalTransform);
+
+                    const parentInverseTransform = BulletPlugin._TempMatrix2;
+                    parent.getWorldMatrix().invertToRef(parentInverseTransform);
+
+                    const localTransform = BulletPlugin._TempMatrix3;
+                    finalTransform.multiplyToRef(parentInverseTransform, localTransform);
+                    localTransform.decomposeToTransformNode(transformNode);
+                    transformNode.rotationQuaternion?.normalize();
+                    // Keep original scaling. Re-injecting scaling can introduce discontinuity between frames. Basically, it grows or shrinks.
+                    transformNode.scaling.copyFrom(scaling);
+                } else {
+                    transformNode.position.copyFrom(bodyTranslation);
+                    if (transformNode.rotationQuaternion) {
+                        transformNode.rotationQuaternion.copyFrom(bodyOrientation);
+                    } else {
+                        bodyOrientation.toEulerAnglesToRef(transformNode.rotation);
+                    }
+                }
+            } catch (e: any) {
+                Logger.Error(`Syncing transform failed for node ${transformNode.name}: ${e.message}...`);
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (pluginDataInstances instanceof PluginBodyBundle) {
+            // instances
+            const m = transformNode as Mesh;
+            const matrixData = m._thinInstanceDataStorage.matrixData;
+            if (!matrixData) {
+                return; // TODO: error handling
+            }
+            pluginDataInstances.getTransformMatricesToArray(matrixData);
+            m.thinInstanceBufferUpdated("matrix");
+        }
     }
 
     /**
@@ -1161,7 +1221,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             return result.copyFrom(worldMatrix);
         }
 
-        let orientation = TmpVectors.Quaternion[0];
+        let orientation = BulletPlugin._TempQuaternion;
         if (node.rotationQuaternion) {
             orientation = node.rotationQuaternion;
         } else {
