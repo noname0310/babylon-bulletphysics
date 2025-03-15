@@ -466,7 +466,10 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             if (pluginData instanceof PluginConstructionInfo) {
                 pluginData.shape = shapePluginData;
             } else if (pluginData instanceof PluginBody) {
-                // pluginData.shape
+                if (shapePluginData === null) {
+                    throw new Error("Cannot set shape to null on a body that has already been initialized.");
+                }
+                pluginData.setShape(shapePluginData);
             }
         }
 
@@ -477,7 +480,12 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                     pluginDataInstances.setShape(i, shapePluginData);
                 }
             } else if (pluginDataInstances instanceof PluginBodyBundle) {
-                // pluginDataInstances.setShape(shapePluginData);
+                if (shapePluginData === null) {
+                    throw new Error("Cannot set shape to null on a body that has already been initialized.");
+                }
+                for (let i = 0; i < pluginDataInstances.count; ++i) {
+                    pluginDataInstances.setShape(i, shapePluginData);
+                }
             }
         }
     }

@@ -84,11 +84,13 @@ public:
         const int16_t mask = body->getCollisionMask();
 
         m_world.addRigidBody(body->getBody(), group, mask);
+        body->setWorld(this);
     }
 
     void removeRigidBody(bwRigidBody* body)
     {
         m_world.removeRigidBody(body->getBody());
+        body->setWorld(nullptr);
     }
 
     void addRigidBodyShadow(bwRigidBodyShadow* shadow)
@@ -180,7 +182,24 @@ public:
         m_broadphasePairCache.cleanProxyFromPairs(proxy, &m_dispatcher);
         m_world.refreshBroadphaseProxy(btBody);
     }
+
+    void cleanBodyProxyFromPairs(bwRigidBody* body)
+    {
+        btBroadphaseProxy* proxy = body->getBody()->getBroadphaseHandle();
+        m_broadphasePairCache.cleanProxyFromPairs(proxy, &m_dispatcher);
+    }
 };
+
+// for better complier optimization, we don't separate the .cpp file
+// so bwRigidBody::setShape is defined here due to dependency on bwPhysicsWorld
+void bwRigidBody::setShape(btCollisionShape* shape)
+{
+    m_shape = shape;
+    m_body.setCollisionShape(shape);
+    if (m_world) {
+        m_world->cleanBodyProxyFromPairs(this);
+    }
+}
 
 extern "C" void* bw_create_world()
 {

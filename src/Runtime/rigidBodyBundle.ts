@@ -15,11 +15,11 @@ class RigidBodyBundleInner {
     private _ptr: number;
     private readonly _vector3Buffer1: IWasmTypedArray<Float32Array>;
     private readonly _vector3Buffer2: IWasmTypedArray<Float32Array>;
-    private readonly _shapeReferences: Set<PhysicsShape>;
+    private readonly _shapeReferences: PhysicsShape[];
     private _referenceCount: number;
     private _shadowCount: number;
 
-    public constructor(wasmInstance: BulletWasmInstance, ptr: number, shapeReferences: Set<PhysicsShape>) {
+    public constructor(wasmInstance: BulletWasmInstance, ptr: number, shapeReferences: PhysicsShape[]) {
         this._wasmInstance = new WeakRef(wasmInstance);
         this._ptr = ptr;
 
@@ -30,8 +30,8 @@ class RigidBodyBundleInner {
         this._vector3Buffer2 = wasmInstance.createTypedArray(Float32Array, vector3Buffer2Ptr, 3);
 
         this._shapeReferences = shapeReferences;
-        for (const shape of shapeReferences) {
-            shape.addReference();
+        for (let i = 0; i < shapeReferences.length; ++i) {
+            shapeReferences[i].addReference();
         }
         this._referenceCount = 0;
         this._shadowCount = 0;
@@ -60,7 +60,7 @@ class RigidBodyBundleInner {
         for (const shape of this._shapeReferences) {
             shape.removeReference();
         }
-        this._shapeReferences.clear();
+        this._shapeReferences.length = 0;
     }
 
     public get ptr(): number {
@@ -98,6 +98,16 @@ class RigidBodyBundleInner {
     public get hasShadows(): boolean {
         return 0 < this._shadowCount;
     }
+
+    public getShapeReference(index: number): PhysicsShape {
+        return this._shapeReferences[index];
+    }
+
+    public setShapeReference(index: number, shape: PhysicsShape): void {
+        this._shapeReferences[index].removeReference();
+        this._shapeReferences[index] = shape;
+        shape.addReference();
+    }
 }
 
 function rigidBodyBundleFinalizer(inner: RigidBodyBundleInner): void {
@@ -128,7 +138,7 @@ export class RigidBodyBundle {
             throw new Error("Cannot create rigid body bundle with null pointer");
         }
         const count = info.count;
-        const shapeReferences = new Set<PhysicsShape>();
+        const shapeReferences: PhysicsShape[] = [];
         for (let i = 0; i < count; ++i) {
             const shape = info.getShape(i);
             if (shape === null) {
@@ -137,7 +147,7 @@ export class RigidBodyBundle {
             if (shape.runtime !== runtime) {
                 throw new Error("Cannot create rigid body bundle with shapes from different runtimes");
             }
-            shapeReferences.add(shape);
+            shapeReferences.push(shape);
         }
 
         this.runtime = runtime;
@@ -834,5 +844,28 @@ export class RigidBodyBundle {
         vector3Buffer1[2] = relativePosition.z;
         this.runtime.wasmInstance.rigidBodyBundleGetPushVelocityInLocalPoint(this._inner.ptr, index, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
         return result.set(vector3Buffer2[0], vector3Buffer2[1], vector3Buffer2[2]);
+    }
+
+    public getShape(index: number): PhysicsShape {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        return this._inner.getShapeReference(index);
+    }
+
+    public setShape(index: number, shape: PhysicsShape): void {
+        this._nullCheck();
+        if (index < 0 || this._count <= index) {
+            throw new RangeError("Index out of range");
+        }
+        if (shape.runtime !== this.runtime) {
+            throw new Error("Cannot set shape from different runtime");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this._inner.setShapeReference(index, shape);
+        this.runtime.wasmInstance.rigidBodyBundleSetShape(this._inner.ptr, index, shape.ptr);
     }
 }

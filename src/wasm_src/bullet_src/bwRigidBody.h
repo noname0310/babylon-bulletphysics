@@ -3,6 +3,8 @@
 #include "btBulletDynamicsMinimal.h"
 #include "bwMotionState.h"
 
+class bwPhysicsWorld;
+
 enum class bwRigidBodyConstructionInfoDataMask : uint16_t
 {
     LOCAL_INERTIA = 1 << 0
@@ -90,6 +92,7 @@ class bwRigidBody final
 private:
     btCollisionShape* m_shape;
     bwMotionState* m_motionState;
+    bwPhysicsWorld* m_world;
     btRigidBody m_body;
     uint16_t m_collisionGroup;
     uint16_t m_collisionMask;
@@ -145,6 +148,7 @@ public:
     bwRigidBody(bwRigidBodyConstructionInfo* info):
         m_shape(static_cast<btCollisionShape*>(info->m_shape)),
         m_motionState(static_cast<bwMotionState*>(info->m_motionState)),
+        m_world(nullptr),
         m_body(createRigidBodyConstructionInfo(info)),
         m_collisionGroup(info->m_collisionGroup),
         m_collisionMask(info->m_collisionMask),
@@ -353,6 +357,14 @@ public:
     void translate(const float* translation)
     {
         m_body.translate(btVector3(translation[0], translation[1], translation[2]));
+    }
+
+    void setShape(btCollisionShape* shape);
+
+    void setWorld(bwPhysicsWorld* world)
+    {
+        btAssert(m_world == nullptr);
+        m_world = world;
     }
 
     btTransform& getWorldTransform()
@@ -628,6 +640,12 @@ extern "C" void bw_rigidbody_translate(void* body, const float* translation)
 {
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     b->translate(translation);
+}
+
+extern "C" void bw_rigidbody_set_shape(void* body, void* shape)
+{
+    bwRigidBody* b = static_cast<bwRigidBody*>(body);
+    b->setShape(static_cast<btCollisionShape*>(shape));
 }
 
 extern "C" void* bw_rigidbody_get_world_transform_ptr(void* body)
