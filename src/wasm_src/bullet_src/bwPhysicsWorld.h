@@ -190,6 +190,17 @@ public:
     }
 };
 
+// for better complier optimization, we don't separate the .cpp file
+// so bwRigidBody::setShape is defined here due to dependency on bwPhysicsWorld
+void bwRigidBody::setShape(btCollisionShape* shape)
+{
+    m_shape = shape;
+    m_body.setCollisionShape(shape);
+    if (m_world) {
+        m_world->cleanBodyProxyFromPairs(this);
+    }
+}
+
 extern "C" void* bw_create_world()
 {
     bwPhysicsWorld* world = new bwPhysicsWorld();

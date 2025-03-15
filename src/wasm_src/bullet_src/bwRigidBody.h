@@ -3,6 +3,8 @@
 #include "btBulletDynamicsMinimal.h"
 #include "bwMotionState.h"
 
+class bwPhysicsWorld;
+
 enum class bwRigidBodyConstructionInfoDataMask : uint16_t
 {
     LOCAL_INERTIA = 1 << 0
@@ -357,14 +359,7 @@ public:
         m_body.translate(btVector3(translation[0], translation[1], translation[2]));
     }
 
-    void setShape(btCollisionShape* shape)
-    {
-        m_shape = shape;
-        m_body.setCollisionShape(shape);
-        if (m_world) {
-            m_world->cleanBodyProxyFromPairs(this);
-        }
-    }
+    void setShape(btCollisionShape* shape);
 
     void setWorld(bwPhysicsWorld* world)
     {

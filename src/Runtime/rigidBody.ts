@@ -99,6 +99,16 @@ class RigidBodyInner {
     public get hasShadows(): boolean {
         return 0 < this._shadowCount;
     }
+
+    public getShapeReference(): PhysicsShape {
+        return this._shapeReference!;
+    }
+
+    public setShapeReference(shape: PhysicsShape) {
+        this._shapeReference!.removeReference();
+        this._shapeReference = shape;
+        shape.addReference();
+    }
 }
 
 function rigidBodyFinalizer(inner: RigidBodyInner): void {
@@ -659,5 +669,22 @@ export class RigidBody {
         vector3Buffer1[2] = relativePosition.z;
         this.runtime.wasmInstance.rigidBodyGetPushVelocityInLocalPoint(this._inner.ptr, vector3Buffer1.byteOffset, vector3Buffer2.byteOffset);
         return result.set(vector3Buffer2[0], vector3Buffer2[1], vector3Buffer2[2]);
+    }
+
+    public getShape(): PhysicsShape {
+        this._nullCheck();
+        return this._inner.getShapeReference();
+    }
+
+    public setShape(shape: PhysicsShape): void {
+        this._nullCheck();
+        if (shape.runtime !== this.runtime) {
+            throw new Error("Cannot set shape from different runtime");
+        }
+        if (this._inner.hasReferences) {
+            this.runtime.lock.wait();
+        }
+        this._inner.setShapeReference(shape);
+        this.runtime.wasmInstance.rigidBodySetShape(this._inner.ptr, shape.ptr);
     }
 }

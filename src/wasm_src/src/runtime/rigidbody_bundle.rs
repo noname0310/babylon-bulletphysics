@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 use crate::bind;
 use crate::rigidbody::MotionType;
 
-use super::collision_shape::CollisionShapeHandle;
+use super::collision_shape::{CollisionShape, CollisionShapeHandle};
 use super::physics_world::PhysicsWorldHandle;
 use super::rigidbody_construction_info::RigidBodyConstructionInfo;
 use super::temporal_kinematic_state::TemporalKinematicState;
@@ -255,6 +255,14 @@ impl RigidBodyBundle {
 
     pub(crate) fn translate(&mut self, index: usize, translation: Vec3) {
         self.bodies[index].translate(translation);
+    }
+
+    pub(crate) fn set_shape(&mut self, index: usize, shape: CollisionShapeHandle) {
+        self.bodies[index].set_shape(shape.get().ptr());
+        #[cfg(debug_assertions)]
+        {
+            self.shape_handle_vec[index] = shape;
+        }
     }
 
     pub(crate) fn get_world_transform_ptr_mut(&mut self, index: usize) -> *mut std::ffi::c_void {
@@ -657,6 +665,13 @@ pub fn rigid_body_bundle_translate(ptr: *mut usize, index: usize, translation_x:
     let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
     let translation = Vec3::new(translation_x, translation_y, translation_z);
     bundle.translate(index, translation);
+}
+
+#[wasm_bindgen(js_name = "rigidBodyBundleSetShape")]
+pub fn rigid_body_bundle_set_shape(ptr: *mut usize, index: usize, shape: *mut usize) {
+    let bundle = unsafe { &mut *(ptr as *mut RigidBodyBundle) };
+    let shape = unsafe { &mut *(shape as *mut CollisionShape) };
+    bundle.set_shape(index, shape.create_handle());
 }
 
 #[wasm_bindgen(js_name = "rigidBodyBundleGetWorldTransformPtr")]
