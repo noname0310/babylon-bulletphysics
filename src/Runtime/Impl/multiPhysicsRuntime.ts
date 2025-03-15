@@ -161,6 +161,7 @@ export class MultiPhysicsRuntime implements IRuntime {
         }
 
         this._inner.dispose();
+        this._physicsWorld.dispose();
 
         const registry = multiPhysicsRuntimeRegistryMap.get(this.wasmInstance);
         registry?.unregister(this);

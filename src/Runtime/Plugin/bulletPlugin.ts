@@ -871,8 +871,14 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
     }
 
     public disposeBody(body: PhysicsBody): void {
-        body;
-        throw new Error("Method not implemented.");
+        if (body._pluginData) {
+            body._pluginData.dispose();
+            body._pluginData = undefined;
+        }
+        if (body._pluginDataInstances instanceof PluginBodyBundle || body._pluginDataInstances instanceof PluginConstructionInfoList) {
+            body._pluginDataInstances.dispose();
+            body._pluginDataInstances = [];
+        }
     }
 
     public setCollisionCallbackEnabled(body: PhysicsBody, enabled: boolean, instanceIndex?: number): void {
@@ -1134,8 +1140,10 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
     }
 
     public disposeShape(shape: PhysicsShape): void {
-        shape;
-        throw new Error("Method not implemented.");
+        const bulletShape = shape._pluginData as BulletPhysicsShape;
+        this._shapeMap.delete(bulletShape);
+        bulletShape.dispose();
+        shape._pluginData = undefined;
     }
 
     public setTrigger(shape: PhysicsShape, isTrigger: boolean): void {
@@ -1282,6 +1290,51 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
     }
 
     public dispose(): void {
-        throw new Error("Method not implemented.");
+        const initializedBodies = this._initializedBodies;
+        for (let i = 0; i < initializedBodies.length; ++i) {
+            const body = initializedBodies[i];
+
+            const pluginData = body._pluginData;
+            if (pluginData instanceof PluginBody) {
+                this.world.removeRigidBody(pluginData, pluginData.worldId);
+                pluginData.dispose();
+                body._pluginData = undefined;
+            }
+
+            const pluginDataInstances = body._pluginDataInstances;
+            if (pluginDataInstances instanceof PluginBodyBundle) {
+                this.world.removeRigidBodyBundle(pluginDataInstances, pluginDataInstances.info.worldId);
+                pluginDataInstances.dispose();
+                body._pluginDataInstances = [];
+            }
+        }
+        this._initializedBodies.length = 0;
+
+        const unInitializedBodies = this._unInitializedBodies;
+        for (let i = 0; i < unInitializedBodies.length; ++i) {
+            const body = unInitializedBodies[i];
+
+            const pluginData = body._pluginData;
+            if (pluginData instanceof PluginConstructionInfo) {
+                pluginData.dispose();
+                body._pluginData = undefined;
+            }
+
+            const pluginDataInstances = body._pluginDataInstances;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                pluginDataInstances.dispose();
+                body._pluginDataInstances = [];
+            }
+        }
+        this._unInitializedBodies.length = 0;
+
+        const shapeMap = this._shapeMap;
+        for (const [bulletShape, shape] of shapeMap) {
+            bulletShape.dispose();
+            shape._pluginData = undefined;
+        }
+        shapeMap.clear();
+
+        this.world.dispose();
     }
 }

@@ -140,6 +140,7 @@ export class PhysicsRuntime implements IRuntime {
         }
 
         this._inner.dispose();
+        this._physicsWorld.dispose();
 
         const registry = physicsRuntimeRegistryMap.get(this.wasmInstance);
         registry?.unregister(this);
