@@ -90,6 +90,7 @@ class bwRigidBody final
 private:
     btCollisionShape* m_shape;
     bwMotionState* m_motionState;
+    bwPhysicsWorld* m_world;
     btRigidBody m_body;
     uint16_t m_collisionGroup;
     uint16_t m_collisionMask;
@@ -145,6 +146,7 @@ public:
     bwRigidBody(bwRigidBodyConstructionInfo* info):
         m_shape(static_cast<btCollisionShape*>(info->m_shape)),
         m_motionState(static_cast<bwMotionState*>(info->m_motionState)),
+        m_world(nullptr),
         m_body(createRigidBodyConstructionInfo(info)),
         m_collisionGroup(info->m_collisionGroup),
         m_collisionMask(info->m_collisionMask),
@@ -359,6 +361,15 @@ public:
     {
         m_shape = shape;
         m_body.setCollisionShape(shape);
+        if (m_world) {
+            m_world->cleanBodyProxyFromPairs(this);
+        }
+    }
+
+    void setWorld(bwPhysicsWorld* world)
+    {
+        btAssert(m_world == nullptr);
+        m_world = world;
     }
 
     btTransform& getWorldTransform()

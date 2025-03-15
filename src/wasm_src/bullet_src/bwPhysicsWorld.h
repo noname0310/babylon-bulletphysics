@@ -84,11 +84,13 @@ public:
         const int16_t mask = body->getCollisionMask();
 
         m_world.addRigidBody(body->getBody(), group, mask);
+        body->setWorld(this);
     }
 
     void removeRigidBody(bwRigidBody* body)
     {
         m_world.removeRigidBody(body->getBody());
+        body->setWorld(nullptr);
     }
 
     void addRigidBodyShadow(bwRigidBodyShadow* shadow)
@@ -266,11 +268,4 @@ extern "C" void bw_world_restore_body_dynamic(void* world, void* body)
     bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
     bwRigidBody* b = static_cast<bwRigidBody*>(body);
     w->restoreBodyDynamic(b);
-}
-
-extern "C" void bw_world_clean_body_proxy_from_pairs(void* world, void* body)
-{
-    bwPhysicsWorld* w = static_cast<bwPhysicsWorld*>(world);
-    bwRigidBody* b = static_cast<bwRigidBody*>(body);
-    w->cleanBodyProxyFromPairs(b);
 }

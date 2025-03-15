@@ -25,8 +25,6 @@ extern "C" {
     fn bw_world_make_body_kinematic(world: *mut std::ffi::c_void, rigidbody: *mut std::ffi::c_void);
 
     fn bw_world_restore_body_dynamic(world: *mut std::ffi::c_void, rigidbody: *mut std::ffi::c_void);
-
-    fn bw_world_clean_body_proxy_from_pairs(world: *mut std::ffi::c_void, rigidbody: *mut std::ffi::c_void);
 }
 
 pub(crate) struct PhysicsWorld {
@@ -78,10 +76,6 @@ impl PhysicsWorld {
 
     pub(crate) fn restore_body_dynamic(&mut self, rigidbody: &mut RigidBody) {
         unsafe { bw_world_restore_body_dynamic(self.ptr, rigidbody.ptr_mut()) };
-    }
-
-    pub(crate) fn clean_body_proxy_from_pairs(&mut self, rigidbody: &mut RigidBody) {
-        unsafe { bw_world_clean_body_proxy_from_pairs(self.ptr, rigidbody.ptr_mut()) };
     }
 }
 
