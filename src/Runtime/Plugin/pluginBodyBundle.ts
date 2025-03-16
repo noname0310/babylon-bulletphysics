@@ -1,10 +1,10 @@
+import type { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Nullable } from "@babylonjs/core/types";
 
 import type { IRuntime } from "../Impl/IRuntime";
 import { RigidBodyBundle } from "../rigidBodyBundle";
 import type { PluginConstructionInfoList } from "./pluginConstructionInfoList";
 import type { IPluginShape } from "./pluginShape";
-import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 export class PluginBodyBundle extends RigidBodyBundle {
     public readonly info: PluginConstructionInfoList;
