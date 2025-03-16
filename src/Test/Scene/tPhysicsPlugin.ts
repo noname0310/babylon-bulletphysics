@@ -75,9 +75,9 @@ export class SceneBuilder implements ISceneBuilder {
             ground.position.y = 0;
 
             const groundShape = new PhysicsShapeBox(
-                new Vector3(0, 0, 0),
+                new Vector3(0, 0, 100),
                 Quaternion.Identity(),
-                new Vector3(1000, 1000, 0.1),
+                new Vector3(1000, 1000, 200),
                 scene
             );
             groundShape.material = {
