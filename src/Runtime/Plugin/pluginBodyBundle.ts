@@ -9,11 +9,18 @@ export class PluginBodyBundle extends RigidBodyBundle {
     public readonly info: PluginConstructionInfoList;
 
     public constructor(runtime: IRuntime, info: PluginConstructionInfoList) {
-        const material = (info.getShape(0) as unknown as IPluginShape)?.material;
-        if (material) {
+        const shape = info.getShape(0) as unknown as IPluginShape;
+        if (shape !== null) {
             for (let i = 0; i < info.count; ++i) {
-                info.setFriction(i, material.friction);
-                info.setRestitution(i, material.restitution);
+                info.setCollisionGroup(i, shape.collisionGroup);
+                info.setCollisionMask(i, shape.collisionMask);
+            }
+            const material = shape.material;
+            if (material) {
+                for (let i = 0; i < info.count; ++i) {
+                    info.setFriction(i, material.friction);
+                    info.setRestitution(i, material.restitution);
+                }
             }
         }
         super(runtime, info);

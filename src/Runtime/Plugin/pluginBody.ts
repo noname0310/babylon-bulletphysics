@@ -1,3 +1,5 @@
+import type { Nullable } from "@babylonjs/core/types";
+
 import type { IRuntime } from "../Impl/IRuntime";
 import type { MotionType } from "../motionType";
 import { RigidBody } from "../rigidBody";
@@ -9,10 +11,15 @@ export class PluginBody extends RigidBody {
     public readonly motionType: MotionType;
 
     public constructor(runtime: IRuntime, info: PluginConstructionInfo) {
-        const material = (info.shape as unknown as IPluginShape)?.material;
-        if (material) {
-            info.friction = material.friction;
-            info.restitution = material.restitution;
+        const shape = info.shape as unknown as Nullable<IPluginShape>;
+        if (shape !== null) {
+            info.collisionGroup = shape.collisionGroup;
+            info.collisionMask = shape.collisionMask;
+            const material = shape.material;
+            if (material) {
+                info.friction = material.friction;
+                info.restitution = material.restitution;
+            }
         }
         super(runtime, info);
         this.worldId = info.worldId;
