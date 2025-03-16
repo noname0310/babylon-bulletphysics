@@ -172,7 +172,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             this.setPhysicsBodyTransformation(physicsBody, physicsBody.transformNode);
         }
 
-        this.world.afterAnimations(delta);
+        this.world.afterAnimations(delta * 1000);
 
         for (let i = 0; i < bodies.length; ++i) {
             const physicsBody = bodies[i];

@@ -10,6 +10,7 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { CreatePlane } from "@babylonjs/core/Meshes/Builders/planeBuilder";
 import { PhysicsMotionType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
 import { PhysicsBody } from "@babylonjs/core/Physics/v2/physicsBody";
@@ -71,11 +72,12 @@ export class SceneBuilder implements ISceneBuilder {
             ground.rotationQuaternion = Quaternion.RotationAxis(new Vector3(1, 0, 0), Math.PI / 2);
             shadowGenerator.addShadowCaster(ground);
             ground.receiveShadows = true;
+            ground.position.y = 0;
 
             const groundShape = new PhysicsShapeBox(
-                new Vector3(0, 0, -100),
+                new Vector3(0, 0, 0),
                 Quaternion.Identity(),
-                new Vector3(1000, 1000, 200),
+                new Vector3(1000, 1000, 0.1),
                 scene
             );
             groundShape.material = {
@@ -90,9 +92,32 @@ export class SceneBuilder implements ISceneBuilder {
 
             body.setLinearDamping(0.3);
             body.setAngularDamping(0.3);
-            body.computeMassProperties();
             body.shape = groundShape;
         }
+
+        const box = CreateBox("box", { size: 2 }, scene);
+        shadowGenerator.addShadowCaster(box);
+        box.receiveShadows = true;
+        box.position.y = 10;
+
+        const boxShape = new PhysicsShapeBox(
+            new Vector3(0, 0, 0),
+            Quaternion.Identity(),
+            new Vector3(2, 2, 2),
+            scene
+        );
+        boxShape.material = {
+            friction: 1,
+            restitution: 0.5
+        };
+        boxShape.filterCollideMask = 0xFFFF;
+        boxShape.filterMembershipMask = 1 << 1;
+
+        const body = new PhysicsBody(box, PhysicsMotionType.DYNAMIC, false, scene);
+        body.setMassProperties({ mass: 1 });
+        body.setLinearDamping(0.3);
+        body.setAngularDamping(0.3);
+        body.shape = boxShape;
 
         // const rbCount = 512 * 2;
 
