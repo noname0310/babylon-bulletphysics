@@ -608,8 +608,7 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      *
      */
     public getShapeType(shape: PhysicsShape): PhysicsShapeType {
-        shape;
-        throw new Error("Method not implemented.");
+        return shape.type;
     }
 
     /**
@@ -1437,14 +1436,29 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
         };
     }
 
+    /**
+     * Sets the density of a physics shape.
+     * @param shape - The physics shape to set the density of.
+     * @param density - The density to set.
+     *
+     */
     public setDensity(shape: PhysicsShape, density: number): void {
         shape;
         density;
+        // there is no support for setting density in bullet
         throw new Error("Method not implemented.");
     }
 
+    /**
+     * Calculates the density of a given physics shape.
+     *
+     * @param shape - The physics shape to calculate the density of.
+     * @returns The density of the given physics shape.
+     *
+     */
     public getDensity(shape: PhysicsShape): number {
         shape;
+        // there is no support for setting density in bullet
         throw new Error("Method not implemented.");
     }
 
