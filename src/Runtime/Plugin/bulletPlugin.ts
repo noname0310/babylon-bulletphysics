@@ -127,7 +127,18 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                 const pluginData = body._pluginData;
                 if (pluginData) {
                     if (pluginData instanceof PluginConstructionInfo) {
+                        const shape = pluginData.shape as unknown as Nullable<IPluginShape>;
+                        let transform: Nullable<Matrix> = null;
+                        if (shape !== null && shape.localTransform !== null) {
+                            transform = pluginData.getInitialTransformToRef(BulletPlugin._TempMatrix);
+                            const finalTransform = transform.multiplyToRef(shape.localTransform, BulletPlugin._TempMatrix2);
+                            pluginData.setInitialTransform(finalTransform);
+                        }
                         const instance = new PluginBody(this.world, pluginData);
+                        if (transform !== null) {
+                            instance.setTransformMatrix(transform);
+                        }
+
                         {
                             const commandsOnCreation = pluginData.commandsOnCreation;
                             for (let j = 0; j < commandsOnCreation.length; ++j) {
@@ -145,7 +156,22 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                 const pluginDataInstances = body._pluginDataInstances as any;
                 if (!Array.isArray(pluginDataInstances)) {
                     if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                        const shape = pluginDataInstances.getShape(0) as unknown as Nullable<IPluginShape>;
+                        let transforms: Nullable<Float32Array> = null;
+                        if (shape !== null && shape.localTransform !== null) {
+                            transforms = new Float32Array(pluginDataInstances.count * 16);
+                            for (let j = 0; j < pluginDataInstances.count; ++j) {
+                                const transform = pluginDataInstances.getInitialTransformToRef(j, BulletPlugin._TempMatrix);
+                                transforms.set(transform.m, j * 16);
+                                const finalTransform = transform.multiplyToRef(shape.localTransform, BulletPlugin._TempMatrix2);
+                                pluginDataInstances.setInitialTransform(j, finalTransform);
+                            }
+                        }
                         const instance = new PluginBodyBundle(this.world, pluginDataInstances);
+                        if (transforms !== null) {
+                            instance.setTransformMatricesFromArray(transforms);
+                        }
+
                         {
                             const commandsOnCreation = pluginDataInstances.commandsOnCreation;
                             for (let j = 0; j < commandsOnCreation.length; ++j) {
@@ -204,7 +230,14 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             const pluginData = body._pluginData;
             if (pluginData) {
                 if (pluginData instanceof PluginBody) {
-                    pluginData.setTransformMatrix(this._getTransformInfos(node, BulletPlugin._TempMatrix));
+                    const shape = pluginData.getShape() as unknown as Nullable<IPluginShape>;
+                    if (shape !== null && shape.localTransform !== null) {
+                        const transform = this._getTransformInfos(node, BulletPlugin._TempMatrix);
+                        const finalTransform = transform.multiplyToRef(shape.localTransform, BulletPlugin._TempMatrix2);
+                        pluginData.setTransformMatrix(finalTransform);
+                    } else {
+                        pluginData.setTransformMatrix(this._getTransformInfos(node, BulletPlugin._TempMatrix));
+                    }
                 } else if (pluginData instanceof PluginConstructionInfo) {
                     pluginData.setInitialTransform(this._getTransformInfos(node, BulletPlugin._TempMatrix));
                 }
@@ -219,7 +252,16 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                     return; // TODO: error handling
                 }
                 if (pluginDataInstances instanceof PluginBodyBundle) {
-                    pluginDataInstances.setTransformMatricesFromArray(matrixData);
+                    const shape = pluginDataInstances.getShape(0) as unknown as Nullable<IPluginShape>;
+                    if (shape !== null && shape.localTransform !== null) {
+                        for (let i = 0; i < pluginDataInstances.count; ++i) {
+                            const nodeTransform = Matrix.FromArrayToRef(matrixData, i * 16, BulletPlugin._TempMatrix);
+                            const finalTransform = nodeTransform.multiplyToRef(shape.localTransform, BulletPlugin._TempMatrix2);
+                            pluginDataInstances.setTransformMatrixFromArray(i, finalTransform.m);
+                        }
+                    } else {
+                        pluginDataInstances.setTransformMatricesFromArray(matrixData);
+                    }
                 } else if (pluginDataInstances instanceof PluginConstructionInfoList) {
                     for (let i = 0; i < pluginDataInstances.count; ++i) {
                         const transform = Matrix.FromArrayToRef(matrixData, i * 16, BulletPlugin._TempMatrix);
@@ -405,8 +447,25 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
                     newInfo.setInitialTransform(i, Matrix.FromArrayToRef(matrixData, i * 16, BulletPlugin._TempMatrix));
                     newInfo.setMotionType(i, motionType);
                 }
+
+                const shape = newInfo.getShape(0) as unknown as Nullable<IPluginShape>;
+                let transforms: Nullable<Float32Array> = null;
+                if (shape !== null && shape.localTransform !== null) {
+                    transforms = new Float32Array(newInfo.count * 16);
+                    for (let j = 0; j < newInfo.count; ++j) {
+                        const transform = newInfo.getInitialTransformToRef(j, BulletPlugin._TempMatrix);
+                        transforms.set(transform.m, j * 16);
+                        const finalTransform = transform.multiplyToRef(shape.localTransform, BulletPlugin._TempMatrix2);
+                        newInfo.setInitialTransform(j, finalTransform);
+                    }
+                }
                 const newBundle = new PluginBodyBundle(this.world, newInfo);
+                if (transforms !== null) {
+                    newBundle.setTransformMatricesFromArray(transforms);
+                }
+
                 this.world.addRigidBodyBundle(newBundle, newInfo.worldId);
+                body._pluginDataInstances = newBundle as unknown as any[];
             }
         }
     }
@@ -475,6 +534,9 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             try {
                 // regular
                 const bodyTransform = pluginData.getTransformMatrixToRef(BulletPlugin._TempMatrix);
+                if (pluginData.localTransformInverse) {
+                    bodyTransform.multiplyInPlace(pluginData.localTransformInverse);
+                }
                 const bodyTranslation = BulletPlugin._TempVector;
 
                 bodyTransform.getTranslationToRef(bodyTranslation);
@@ -522,7 +584,15 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
             if (!matrixData) {
                 return; // TODO: error handling
             }
-            pluginDataInstances.getTransformMatricesToArray(matrixData);
+            if (pluginDataInstances.localTransformInverse) {
+                for (let i = 0; i < pluginDataInstances.count; ++i) {
+                    const transform = pluginDataInstances.getTransformMatrixToRef(i, BulletPlugin._TempMatrix);
+                    transform.multiplyInPlace(pluginDataInstances.localTransformInverse);
+                    matrixData.set(transform.m, i * 16);
+                }
+            } else {
+                pluginDataInstances.getTransformMatricesToArray(matrixData);
+            }
             m.thinInstanceBufferUpdated("matrix");
         }
     }

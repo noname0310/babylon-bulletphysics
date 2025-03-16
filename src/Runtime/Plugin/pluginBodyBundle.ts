@@ -1,16 +1,21 @@
-import type { DeepImmutable, Vector3 } from "@babylonjs/core";
+import type { DeepImmutable, Nullable } from "@babylonjs/core/types";
 
 import type { IRuntime } from "../Impl/IRuntime";
 import { RigidBodyBundle } from "../rigidBodyBundle";
 import type { PluginConstructionInfoList } from "./pluginConstructionInfoList";
 import type { IPluginShape } from "./pluginShape";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 export class PluginBodyBundle extends RigidBodyBundle {
     public readonly info: PluginConstructionInfoList;
+    public readonly localTransform: Nullable<DeepImmutable<Matrix>>;
+    public readonly localTransformInverse: Nullable<DeepImmutable<Matrix>>;
 
     public constructor(runtime: IRuntime, info: PluginConstructionInfoList) {
         const shape = info.getShape(0) as unknown as IPluginShape;
+        let localTransform: Nullable<DeepImmutable<Matrix>> = null;
         if (shape !== null) {
+            localTransform = shape.localTransform;
             for (let i = 0; i < info.count; ++i) {
                 info.setCollisionGroup(i, shape.collisionGroup);
                 info.setCollisionMask(i, shape.collisionMask);
@@ -25,6 +30,8 @@ export class PluginBodyBundle extends RigidBodyBundle {
         }
         super(runtime, info);
         this.info = info;
+        this.localTransform = localTransform;
+        this.localTransformInverse = localTransform?.invert() ?? null;
     }
 
     public override setDamping(index: number, linearDamping: number, angularDamping: number): void {
