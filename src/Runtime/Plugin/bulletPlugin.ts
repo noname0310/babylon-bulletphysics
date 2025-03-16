@@ -707,9 +707,38 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
      * @returns The mass properties of the physics body.
      */
     public computeMassProperties(body: PhysicsBody, instanceIndex?: number): PhysicsMassProperties {
-        body;
-        instanceIndex;
-        throw new Error("Method not implemented.");
+        const pluginData = body._pluginData;
+        if (pluginData) {
+            if (pluginData instanceof PluginConstructionInfo) {
+                return {
+                    mass: pluginData.mass,
+                    inertia: pluginData.localInertia ?? undefined
+                };
+            } else if (pluginData instanceof PluginBody) {
+                return {
+                    mass: pluginData.getMass(),
+                    inertia: pluginData.getLocalInertia()
+                };
+            }
+        }
+
+        const pluginDataInstances = body._pluginDataInstances as any;
+        if (!Array.isArray(pluginDataInstances)) {
+            const start = instanceIndex ?? 0;
+            if (pluginDataInstances instanceof PluginConstructionInfoList) {
+                return {
+                    mass: pluginDataInstances.getMass(start),
+                    inertia: pluginDataInstances.getLocalInertiaToRef(start, new Vector3()) ?? undefined
+                };
+            } else if (pluginDataInstances instanceof PluginBodyBundle) {
+                return {
+                    mass: pluginDataInstances.getMass(start),
+                    inertia: pluginDataInstances.getLocalInertia(start)
+                };
+            }
+        }
+
+        throw new Error("Invalid body type.");
     }
 
     /**
