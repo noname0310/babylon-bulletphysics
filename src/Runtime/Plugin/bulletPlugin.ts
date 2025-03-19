@@ -24,7 +24,7 @@ import { PluginBodyBundle } from "./pluginBodyBundle";
 import { PluginConstructionInfo } from "./pluginConstructionInfo";
 import { PluginConstructionInfoList } from "./pluginConstructionInfoList";
 import type { IPluginShape } from "./pluginShape";
-import { PluginBoxShape } from "./pluginShape";
+import { PluginBoxShape, PluginCapsuleShape, PluginSphereShape } from "./pluginShape";
 
 export class BulletPluginCommandContext {
     public worldId: number;
@@ -1432,15 +1432,13 @@ export class BulletPlugin implements IPhysicsEnginePluginV2 {
 
         switch (type) {
         case PhysicsShapeType.SPHERE:
-            // use btSphereShape
-            throw new Error("Sphere shape not supported.");
+            pluginData = new PluginSphereShape(this.world, options.center, options.radius);
             break;
         case PhysicsShapeType.BOX:
             pluginData = new PluginBoxShape(this.world, options.center, options.rotation, options.extents);
             break;
         case PhysicsShapeType.CAPSULE:
-            // use btCapsuleShape
-            throw new Error("Capsule shape not supported.");
+            pluginData = new PluginCapsuleShape(this.world, options.pointA, options.pointB, options.radius);
             break;
         case PhysicsShapeType.CONTAINER:
             // use btCompoundShape
