@@ -1,6 +1,6 @@
 use glam::Vec3;
 use wasm_bindgen::prelude::*;
-use crate::bind;
+use super::super::bind;
 
 use super::constraint::{Constraint, ConstraintHandle};
 use super::rigidbody::{RigidBody,RigidBodyHandle, RigidBodyShadow};

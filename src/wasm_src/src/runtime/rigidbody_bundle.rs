@@ -1,8 +1,7 @@
 use glam::Vec3;
 use wasm_bindgen::prelude::*;
 
-use crate::bind;
-use crate::rigidbody::MotionType;
+use super::super::bind;
 
 use super::collision_shape::{CollisionShape, CollisionShapeHandle};
 use super::physics_world::PhysicsWorldHandle;
@@ -43,7 +42,7 @@ impl RigidBodyBundle {
             );
             let body = bind::rigidbody::RigidBody::new(&info);
             bodies.push(body);
-            temporal_kinematic_states.push(if info.get_motion_type() == MotionType::Dynamic {
+            temporal_kinematic_states.push(if info.get_motion_type() == bind::rigidbody::MotionType::Dynamic {
                 TemporalKinematicState::Idle
             } else {
                 TemporalKinematicState::Disabled
@@ -59,6 +58,10 @@ impl RigidBodyBundle {
             #[cfg(debug_assertions)]
             shape_handle_vec,
         }
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.bodies.len()
     }
 
     pub(super) fn bodies(&self) -> &[bind::rigidbody::RigidBody] {
@@ -85,7 +88,15 @@ impl RigidBodyBundle {
         &mut self.motion_state_bundle
     }
 
-    fn get_buffered_motion_states_mut(&mut self) -> &mut bind::motion_state::MotionStateBundle {
+    pub(crate) fn get_buffered_motion_states(&self) -> &bind::motion_state::MotionStateBundle {
+        if let Some(motion_state_bundle) = self.buffered_motion_state_bundle.as_ref() {
+            motion_state_bundle
+        } else {
+            &self.motion_state_bundle
+        }
+    }
+
+    pub(crate) fn get_buffered_motion_states_mut(&mut self) -> &mut bind::motion_state::MotionStateBundle {
         if let Some(motion_state_bundle) = self.buffered_motion_state_bundle.as_mut() {
             motion_state_bundle
         } else {
@@ -271,6 +282,10 @@ impl RigidBodyBundle {
 
     pub(crate) fn get_temporal_kinematic_states_ptr_mut(&mut self) -> *mut TemporalKinematicState {
         self.temporal_kinematic_states.as_mut_ptr()
+    }
+
+    pub(crate) fn make_temporal_kinematic(&mut self, index: usize) {
+        self.temporal_kinematic_states[index] = TemporalKinematicState::WaitForRestore;
     }
 
     pub(crate) fn create_handle(&mut self) -> RigidBodyBundleHandle {

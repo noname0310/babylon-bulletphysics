@@ -1,8 +1,7 @@
 use glam::Vec3;
 use wasm_bindgen::prelude::*;
 
-use crate::bind;
-use crate::rigidbody::MotionType;
+use super::super::bind;
 
 use super::collision_shape::{CollisionShape, CollisionShapeHandle};
 use super::physics_world::PhysicsWorldHandle;
@@ -39,7 +38,7 @@ impl RigidBody {
             inner,
             motion_state,
             buffered_motion_state: None,
-            temporal_kinematic_state: if info.get_motion_type() == MotionType::Dynamic {
+            temporal_kinematic_state: if info.get_motion_type() == bind::rigidbody::MotionType::Dynamic {
                 TemporalKinematicState::Idle
             } else {
                 TemporalKinematicState::Disabled

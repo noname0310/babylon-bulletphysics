@@ -5,6 +5,7 @@ mod runtime;
 mod stdlib;
 
 use bind::rigidbody;
+use runtime::collision_shape::CollisionShape;
 use wasm_bindgen::prelude::*;
 
 #[link(name = "bullet")]
@@ -49,7 +50,7 @@ pub fn init() {
     let mut shape = Box::new(shape);
 
     let mut rigidbody_info = runtime::rigidbody_construction_info::RigidBodyConstructionInfo {
-        shape: &mut shape,
+        shape: unsafe { std::mem::transmute::<&mut CollisionShape, &'static mut CollisionShape>(&mut shape) },
         initial_transform: mat4,
         data_mask: 0x0000,
         motion_type: rigidbody::MotionType::Dynamic as u8,

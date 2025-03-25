@@ -1,7 +1,7 @@
 use glam::Vec3;
 use wasm_bindgen::prelude::*;
 
-use crate::bind;
+use super::super::bind;
 
 pub(crate) struct BoxShape {
     inner: bind::collision_shape::BoxShape,
