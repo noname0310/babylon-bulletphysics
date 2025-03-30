@@ -360,8 +360,8 @@ export class MultiPhysicsRuntime implements IRuntime {
 
     private readonly _gravity: Vector3 = new Vector3(0, -10, 0);
 
-    public getGravityToRef(result: Vector3): void {
-        result.copyFrom(this._gravity);
+    public getGravityToRef(result: Vector3): Vector3 {
+        return result.copyFrom(this._gravity);
     }
 
     public setGravity(gravity: Vector3): void {
