@@ -1,10 +1,10 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { DeepImmutable, Tuple } from "@babylonjs/core/types";
 
-import type { BulletWasmInstance } from "@/Runtime/bulletWasmInstance";
 import { BtTransformOffsets, Constants, MotionStateOffsetsInFloat32Array, TemporalKinematicState } from "@/Runtime/constants";
 import type { IWasmTypedArray } from "@/Runtime/Misc/IWasmTypedArray";
 
+import type { BulletWasmInstance } from "../../bulletWasmInstance";
 import type { IRigidBodyImpl } from "../IRigidBodyImpl";
 
 export class ImmediateRigidBodyImpl implements IRigidBodyImpl {

@@ -1,15 +1,20 @@
+import type { IWasmSpinLock } from "@/Runtime/Misc/IWasmSpinLock";
+
 import type { BulletWasmInstance } from "../bulletWasmInstance";
-import type { IWasmSpinLock } from "../Misc/IWasmSpinLock";
 import type { RigidBodyBundle } from "../rigidBodyBundle";
 import { ImmediateRigidBodyBundleImpl } from "./Immediate/immediateRigidBodyBundleImpl";
 import { ImmediateRigidBodyImpl } from "./Immediate/immediateRigidBodyImpl";
-import type { IRuntime } from "./IRuntime";
+import type { IPhysicsRuntime } from "./IPhysicsRuntime";
 
 class NullSpinlock implements IWasmSpinLock {
     public wait(): void { }
 }
 
-export class NullPhysicsRuntime implements IRuntime {
+/**
+ * Empty implementation of the physics runtime
+ * for use PhysicsWorld/MultiPhysicsWorld directly without any additional runtime
+ */
+export class NullPhysicsRuntime implements IPhysicsRuntime {
     /**
      * @internal
      */
@@ -30,10 +35,12 @@ export class NullPhysicsRuntime implements IRuntime {
         this.lock = new NullSpinlock();
     }
 
+    /** @internal */
     public createRigidBodyImpl(): ImmediateRigidBodyImpl {
         return new ImmediateRigidBodyImpl();
     }
 
+    /** @internal */
     public createRigidBodyBundleImpl(bundle: RigidBodyBundle): ImmediateRigidBodyBundleImpl {
         return new ImmediateRigidBodyBundleImpl(bundle.count);
     }

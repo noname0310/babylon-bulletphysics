@@ -384,17 +384,17 @@ impl ConstraintHandle {
         }
     }
 
-    pub(crate) fn get(&self) -> &Constraint {
-        self.constraint
-    }
+    // pub(crate) fn get(&self) -> &Constraint {
+    //     self.constraint
+    // }
 
     pub(crate) fn get_mut(&mut self) -> &mut Constraint {
         self.constraint
     }
 
-    pub(crate) fn clone(&mut self) -> Self {
-        Self::new(self.constraint)
-    }
+    // pub(crate) fn clone(&mut self) -> Self {
+    //     Self::new(self.constraint)
+    // }
 }
 
 #[cfg(debug_assertions)]
@@ -554,6 +554,9 @@ pub fn constraint_set_linear_lower_limit(ptr: *mut usize, x: f32, y: f32, z: f32
             constraint.set_linear_lower_limit(Vec3::new(x, y, z));
         },
         Constraint::Generic6DofSpring(constraint) => {
+            constraint.set_linear_lower_limit(Vec3::new(x, y, z));
+        },
+        Constraint::MmdGeneric6DofSpring(constraint) => {
             constraint.set_linear_lower_limit(Vec3::new(x, y, z));
         },
         _ => {
