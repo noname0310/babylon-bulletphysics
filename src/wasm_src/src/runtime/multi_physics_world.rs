@@ -19,10 +19,13 @@ struct MultiPhysicsWorldHandleInfo {
 
 pub(crate) struct MultiPhysicsWorld {
     worlds: FxHashMap<PhysicsWorldId, PhysicsWorld>,
+    gravity: Vec3,
+
     #[cfg(debug_assertions)]
     ref_count: u32,
     #[cfg(debug_assertions)]
     handle_info: MultiPhysicsWorldHandleInfo,
+
     global_bodies: Vec<RigidBodyHandle>,
     global_body_bundles: Vec<RigidBodyBundleHandle>,
     allow_dynamic_shadow: bool,
@@ -33,6 +36,8 @@ impl MultiPhysicsWorld {
     pub(crate) fn new(allow_dynamic_shadow: bool) -> Self {
         Self {
             worlds: FxHashMap::default(),
+            gravity: Vec3::new(0.0, -10.0, 0.0),
+
             #[cfg(debug_assertions)]
             ref_count: 0,
             #[cfg(debug_assertions)]
@@ -50,6 +55,8 @@ impl MultiPhysicsWorld {
     fn get_or_create_world(&mut self, id: PhysicsWorldId) -> &mut PhysicsWorld {
         self.worlds.entry(id).or_insert_with(|| {
             let mut world = PhysicsWorld::new(self.use_motion_state_buffer);
+            world.set_gravity(self.gravity);
+
             for body in self.global_bodies.iter_mut() {
                 world.add_rigidbody_shadow(body.clone(), true);
             }
@@ -73,6 +80,7 @@ impl MultiPhysicsWorld {
     }
 
     pub(crate) fn set_gravity(&mut self, force: Vec3) {
+        self.gravity = force;
         for (_, world) in self.worlds.iter_mut() {
             world.set_gravity(force);
         }
