@@ -82,7 +82,10 @@ export class SceneBuilder implements ISceneBuilder {
             const material = baseBox.material = new StandardMaterial("boxMat", scene);
             material.diffuseColor = new Color3(0, 1, 0);
             baseBox.rotationQuaternion = new Quaternion();
-            baseBox.scaling = new Vector3(10, 1, 1);
+            baseBox.scaling = new Vector3(10, 3, 3);
+            baseBox.renderOutline = true;
+            baseBox.outlineColor = new Color3(0, 0, 0);
+            baseBox.outlineWidth = 0.1;
             if (mode === "multi") {
                 baseBox.visibility = 0.5;
                 bufferedMeshes.push(baseBox);
@@ -104,7 +107,7 @@ export class SceneBuilder implements ISceneBuilder {
             boxRbInfo.friction = 0.5;
 
             const boxRigidBody = new RigidBody(runtime, boxRbInfo);
-            boxRigidBody.setLinearVelocity(new Vector3(-100, 0, 0));
+            boxRigidBody.setLinearVelocity(new Vector3(-400, 0, 0));
             if (mode === "multi") {
                 runtime.addRigidBody(boxRigidBody, 0);
                 runtime.addRigidBodyShadow(boxRigidBody, 1);
@@ -113,11 +116,13 @@ export class SceneBuilder implements ISceneBuilder {
             }
             bodies.push(boxRigidBody);
         }
+
         {
             const baseBox = CreateBox("box", { size: 1 }, scene);
             const material = baseBox.material = new StandardMaterial("boxMat", scene);
             material.diffuseColor = new Color3(1, 0, 0);
             baseBox.rotationQuaternion = new Quaternion();
+            baseBox.scaling = new Vector3(3, 3, 3);
             if (mode === "multi") {
                 baseBox.visibility = 0.5;
                 bufferedMeshes.push(baseBox);
@@ -128,7 +133,7 @@ export class SceneBuilder implements ISceneBuilder {
                 meshes.push(baseBox);
             }
 
-            const boxShape = new PhysicsBoxShape(runtime, new Vector3(0.5, 0.5, 0.5));
+            const boxShape = new PhysicsBoxShape(runtime, new Vector3(0.5, 0.5, 0.5).multiplyInPlace(baseBox.scaling!));
             const boxRbInfo = new RigidBodyConstructionInfo(wasmInstance);
             boxRbInfo.shape = boxShape;
             boxRbInfo.motionType = MotionType.Dynamic;
@@ -139,7 +144,7 @@ export class SceneBuilder implements ISceneBuilder {
             boxRbInfo.friction = 0.5;
 
             const boxRigidBody = new RigidBody(runtime, boxRbInfo);
-            boxRigidBody.setLinearVelocity(new Vector3(0, 0, -100));
+            boxRigidBody.setLinearVelocity(new Vector3(0, 0, -600));
             if (mode === "multi") {
                 runtime.addRigidBody(boxRigidBody, 1);
                 runtime.addRigidBodyShadow(boxRigidBody, 0);
@@ -190,7 +195,7 @@ export class SceneBuilder implements ISceneBuilder {
         });
 
         runtime.maxSubSteps = 100;
-        runtime.fixedTimeStep = 1 / 600;
+        runtime.fixedTimeStep = 1 / 300;
         runtime.afterAnimations(0);
         document.addEventListener("keydown", (ev) => {
             if (ev.key === " ") {
@@ -198,6 +203,27 @@ export class SceneBuilder implements ISceneBuilder {
             }
         });
         // runtime.register(scene);
+
+        const bufferCanvas = document.createElement("canvas");
+        bufferCanvas.width = engine.getRenderWidth();
+        bufferCanvas.height = engine.getRenderHeight();
+        const bufferContext = bufferCanvas.getContext("2d")!;
+        document.addEventListener("keydown", (ev) => {
+            if (ev.key === "b") {
+                scene.render();
+                bufferContext.drawImage(canvas, 0, 0, bufferCanvas.width, bufferCanvas.height);
+                bufferCanvas.toBlob((blob) => {
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "screenshot.png";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+                });
+            }
+        });
 
         return scene;
     }
