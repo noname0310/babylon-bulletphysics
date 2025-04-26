@@ -1,5 +1,5 @@
 import path from "path";
-import webpack from "webpack";
+import type webpack from "webpack";
 
 export default (env: any): webpack.Configuration => ({
     entry: "./src/index.ts",
@@ -23,6 +23,11 @@ export default (env: any): webpack.Configuration => ({
         minimize: env.production
     },
     module: {
+        parser: {
+            javascript: {
+                dynamicImportMode: "eager"
+            }
+        },
         rules: [
             {
                 test: /\.tsx?$/,
@@ -56,11 +61,6 @@ export default (env: any): webpack.Configuration => ({
             }
             callback();
         }
-    ],
-    plugins: [
-        new webpack.optimize.LimitChunkCountPlugin({
-            maxChunks: 1
-        })
     ],
     mode: env.production ? "production" : "development"
 });
