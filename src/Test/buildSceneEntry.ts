@@ -4,7 +4,7 @@ import type { Nullable } from "@babylonjs/core/types";
 import type { ISceneBuilder } from "./baseRuntime";
 import { BaseRuntime } from "./baseRuntime";
 
-export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBuilder>][], defaultSceneIndex?: number): Promise<void> {
+export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBuilder>][]): Promise<void> {
     await new Promise<void>(resolve => window.onload = (): void => resolve());
 
     const canvas = document.createElement("canvas");
@@ -23,15 +23,13 @@ export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBu
 
             const engine = new Engine(canvas, false, {
                 preserveDrawingBuffer: false,
-                stencil: true,
-                antialias: true,
-                alpha: false,
+                stencil: false,
+                antialias: false,
+                alpha: true,
                 premultipliedAlpha: false,
-                powerPreference: "high-performance",
-                doNotHandleTouchAction: false,
                 doNotHandleContextLost: true,
-                audioEngine: false,
-                disableWebGL2Support: false
+                doNotHandleTouchAction: false,
+                audioEngine: false
             }, true);
 
             const runtime = this._runtime = await BaseRuntime.Create({
@@ -49,6 +47,14 @@ export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBu
     parentDiv.style.display = "flex";
     parentDiv.style.flexDirection = "row-reverse";
 
+    const canvasNewParentDiv = document.createElement("div");
+    canvasNewParentDiv.style.width = "100%";
+    canvasNewParentDiv.style.height = "100%";
+    parentDiv.appendChild(canvasNewParentDiv);
+
+    parentDiv.removeChild(canvas);
+    canvasNewParentDiv.appendChild(canvas);
+
     const listContainerOuter = document.createElement("div");
     listContainerOuter.style.position = "absolute";
     listContainerOuter.style.top = "0";
@@ -57,7 +63,7 @@ export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBu
     listContainerOuter.style.height = "100%";
     listContainerOuter.style.overflow = "hidden";
     listContainerOuter.style.pointerEvents = "none";
-    parentDiv.appendChild(listContainerOuter);
+    canvasNewParentDiv.appendChild(listContainerOuter);
 
 
     const listContainer = document.createElement("div");
@@ -152,15 +158,28 @@ export async function buildSceneEntry(sceneList: [string, () => Promise<ISceneBu
         item.textContent = sceneList[i][0];
         item.onclick = async(): Promise<void> => {
             if (blockLoad) return;
-            blockLoad = true;
-            listContainerOuter.remove();
-            await loader.loadScene(await sceneList[i][1]());
-            blockLoad = false;
+            location.hash = `#${i}`;
         };
         list.appendChild(item);
     }
 
-    if (defaultSceneIndex !== undefined) {
-        await loader.loadScene(await sceneList[defaultSceneIndex][1]());
+    async function loadScene(): Promise<void> {
+        if (blockLoad) return;
+        const hash = location.hash;
+        console.log("Loading scene from hash:", hash);
+        if (hash) {
+            const index = parseInt(hash.slice(1), 10);
+            if (!isNaN(index) && index >= 0 && index < sceneList.length) {
+                blockLoad = true;
+                listContainerToggle.click();
+                loader.loadScene(await sceneList[index][1]()).then(() => {
+                    blockLoad = false;
+                });
+            }
+        }
     }
+    loadScene();
+    window.onhashchange = (): void => {
+        loadScene();
+    };
 }
