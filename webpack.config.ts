@@ -50,33 +50,31 @@ export default (env: any): webpack.Configuration & { devServer?: WebpackDevServe
             chunks: "all",
             cacheGroups: {
                 glslShaders: {
-                    test: (module: { type: string; resource: string | undefined }): boolean => {
-                        if (module.resource === undefined) {
+                    test: (module: webpack.Module): boolean => {
+                        if ((module as webpack.NormalModule).resource === undefined) {
                             return false;
                         }
-                        const resource = module.resource.replace(/\\/g, "/");
+                        const resource = (module as webpack.NormalModule).resource.replace(/\\/g, "/");
                         if (resource.includes("Shaders/")) {
                             return true;
                         }
                         return false;
                     },
                     name: "glslShaders",
-                    chunks: "async",
                     enforce: true
                 },
                 wgslShaders: {
-                    test: (module: { type: string; resource: string | undefined }): boolean => {
-                        if (module.resource === undefined) {
+                    test: (module: webpack.Module): boolean => {
+                        if ((module as webpack.NormalModule).resource === undefined) {
                             return false;
                         }
-                        const resource = module.resource.replace(/\\/g, "/");
+                        const resource = (module as webpack.NormalModule).resource.replace(/\\/g, "/");
                         if (resource.includes("ShadersWGSL/")) {
                             return true;
                         }
                         return false;
                     },
                     name: "wgslShaders",
-                    chunks: "async",
                     enforce: true
                 }
             }
